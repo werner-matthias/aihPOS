@@ -1,0 +1,18 @@
+{
+    "llvm-target": "arm-none-eabihf",
+    "target-endian": "little",
+    "target-pointer-width": "32",
+    "os": "none",
+    "env": "eabihf",
+    "vendor": "unknown",
+    "arch": "arm",
+
+    "linker": "arm-none-eabi-gcc",
+	"linker-flavor": "gcc",
+    "data-layout": "e-m:e-p:32:32-i64:64-v128:64:128-a:0:32-n32-S64",
+    "executables": true,
+    "relocation-model": "static",
+    "no-compiler-rt": true,
+    "no_default_libraries": true,
+    "disable-redzone": true
+}

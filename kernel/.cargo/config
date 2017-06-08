@@ -1,0 +1,13 @@
+[build]
+traget= "arm-none-eabihf"
+
+[target.arm-none-eabihf]
+linker = "arm-none-eabi-gcc"
+rustflags = [
+  "-C", "code-model=kernel",
+  "-C", "link-arg=-nostartfiles",
+  "-C", "link-arg=-nostdlib",
+  "-C", "link-arg=-Tlayout.ld",
+  "-C", "link-arg=-mfloat-abi=hard",
+  "-C", "link-arg=-ffreestanding",
+  ]
