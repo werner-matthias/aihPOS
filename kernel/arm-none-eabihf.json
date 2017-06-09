@@ -5,12 +5,12 @@
     "os": "none",
     "env": "eabihf",
     "vendor": "unknown",
-    "arch": "armv",
+    "arch": "arm",
     "cpu": "arm1176jzf-s",
     "features": "+dsp,+vfp2",
     "linker": "arm-none-eabi-gcc",
     "linker-flavor": "gcc",
-    "pre-link-args": [
+    "pre-link-args": [ 
 	"-march=armv6zk",
 	"-mcpu=arm1176jzf-s",
 	"-mfloat-abi=hard",
@@ -24,6 +24,5 @@
     "eliminate_frame_pointer": true,
     "relocation-model": "static",
     "no-compiler-rt": true,
-    "no_default_libraries": true,
-    "disable-redzone": true
+    "no_default_libraries": true
 }
