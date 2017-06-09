@@ -1,0 +1,19 @@
+shift
+PROFILE=debug
+TARGET=
+for opt in "$@"; do
+    case $opt in
+        --release)
+		PROFILE=release
+     		;;
+	--target=*)
+		TARGET=`echo $opt | cut -f2 -d'='` 
+    esac
+done
+BINPATH=./target/$TARGET/$PROFILE
+xargo build $@
+PKG=`xargo pkgid -q | cut -d# -f2 | cut -d: -f1`
+if [ -a $BINPATH/$PKG ]; then
+   arm-none-eabi-objcopy $BINPATH/$PKG -O binary  $BINPATH/kernel.img
+   arm-none-eabi-objdump -D $BINPATH/$PKG > $BINPATH/$PKG.list
+fi

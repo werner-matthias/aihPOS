@@ -3,6 +3,7 @@ use hal::cpu::memsync::*;
 
 
 // L1 cache kann ignoriert werden, vgl. ARM ARM B1-6
+// Daher ist nur L2-Cache/TLB interessant
 pub struct Cache {}
 
 impl Cache {
