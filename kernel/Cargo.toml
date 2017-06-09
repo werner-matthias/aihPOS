@@ -3,6 +3,10 @@ name = "aihPOS"
 version = "0.0.2"
 authors = ["Matthias Werner <mwerner@informatik.tu-chemnitz.de>"]
 
+[dependencies]
+compiler_builtins = { git = "https://github.com/rust-lang-nursery/compiler-builtins", features = ["mem"] }
+bit_field = "0.7.0"
+
 [profile.dev]
 panic = "abort"
 lto = false
@@ -13,6 +17,3 @@ panic = "abort"
 lto = false
 opt-level = 3
 
-[dependencies]
-compiler_builtins = { git = "https://github.com/rust-lang-nursery/compiler-builtins", features = ["mem"] }
-bit_field = "0.7.0"

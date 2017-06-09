@@ -5,7 +5,7 @@
     "os": "none",
     "env": "eabihf",
     "vendor": "unknown",
-    "arch": "arm",
+    "arch": "armv",
     "cpu": "arm1176jzf-s",
     "features": "+dsp,+vfp2",
     "linker": "arm-none-eabi-gcc",
