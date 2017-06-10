@@ -1,5 +1,5 @@
 use hal::cpu::cache::{Cache,Tlb};
-use hal::cpu::memsync::*;
+use hal::cpu::Cpu;
 use bit_field::BitField;
 
 
@@ -266,12 +266,12 @@ impl MMU {
         }
         reg.set_bit(23,true);  // Subpages aus, ARMv6-Erweiterungen an
         reg.set_bit(0,true);   // MMU an
-        data_synchronization_barrier();
+        Cpu::data_synchronization_barrier();
         unsafe{
             asm!("mcr p15, 0, $0, c1, c0, 0"::"r"(reg)::"volatile");
         }
-        prefetch_flush();
-        data_synchronization_barrier();
+        Cpu::prefetch_flush();
+        Cpu::data_synchronization_barrier();
         Cache::enable_instruction();
         Cache::enable_data();
     }
