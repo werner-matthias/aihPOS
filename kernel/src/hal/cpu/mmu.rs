@@ -1,20 +1,17 @@
-//#[macro_use] mod debug;
-
 use hal::cpu::cache::{Cache,Tlb};
 use hal::cpu::memsync::*;
 use bit_field::BitField;
+
 
 // Der MMU-Code geht von folgender Konfiguration aus:
 //  - keine Rückwärtskompatibilität zu ARMv5.
 //  - TEX-Remapping aus (muss wahrscheinlich für spätere Unterstützung von virtuellen Speicher geändert werden)
 
-// ARM1176JZF-S:
-//  - 16 Domains
-
-
-// Es werden nur die "üblichen" Caching-Varianten benutzt:
-//  - Write trough ohne Allocate
-//  - Write back mit Allocate
+// ARM kennt eine Vielzahl von Speichertypen, die sich auf das Caching in den einzelnen
+// Ebenen auswirken.
+// Es werden hier nur die "üblichen" Caching-Varianten benutzt:
+//  - Write trough => ohne Allocate
+//  - Write back   => mit Allocate
 #[repr(u32)]
 pub enum MemType {
     StronglyOrdered = 0b00000,
@@ -25,6 +22,12 @@ pub enum MemType {
     NormalWB        = 0b00111
 }
 
+// Bei den Zugriffsrechten wird zwischen privilegierten (Sys) und nichtpreviligierten
+// Modi (Usr) unterschieden.
+// Rechte können sein:
+//  - RW: Lesen und Schreiben
+//  - Ro: Nur Lesen
+//  - None: weder Lesen noch Schreiben
 #[repr(u32)]
 pub enum MemoryAccessRight {
     SysNonUsrNone   = 0b000,
@@ -35,14 +38,15 @@ pub enum MemoryAccessRight {
     SysRoUsrRw      = 0b110
 }
 
+// ARMv6 kennt 32 Domains.
 pub enum DomainAccess {
     None,
     Client,
     Manager
 }
 
+// Seitendirectory (1. Stufe)
 pub type PageDirectoryEntry = u32;
-pub type PageTableEntry     = u32;
 
 #[derive(PartialEq,Clone,Copy)]
 pub enum PdEntryType {
@@ -64,7 +68,6 @@ impl PdEntry {
     }
 
     pub fn base_addr(&mut self, a: u32) -> &mut PdEntry {
-        //kprint!("Adr: {:08X}\n",a);
         match (self.entry & 0x3) as u32 {
             v if v == PdEntryType::CoarsePageTable as u32 => {
                 self.entry.set_bits(10..32, a >> 10);
@@ -133,6 +136,9 @@ impl PdEntry {
         self
     }
 }
+
+// PAGE TABLE (2. Stufe)
+pub type PageTableEntry     = u32;
 
 #[derive(PartialEq,Clone,Copy)]
 pub enum PageTableEntryType {
