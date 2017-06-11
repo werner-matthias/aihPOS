@@ -11,10 +11,16 @@ const GPPUDCLK0:  *mut u32 = (GPIO_BASE+0x98) as *mut u32;
 
 fn sleep(value: u32) {  
     for _ in 1..value {
-        unsafe { asm!(""); } 
+        unsafe { asm!("":::"memory":"volatile"); } 
     }
 } 
- 
+
+// kernel_main() erwartet, dass etwas unterhalb von 0x8000 keine
+// Daten/Code liegen. Das ist normalerweise gewährleistet, da
+// der Code entweder bei 0x8000 beginnt oder 0x0000 (bei "kernel_old=1"
+// in config.txt). Für den letzteren Fall ist dieser Kernel klein
+// genug, um nicht mit dem Stack zu kollidieren.
+
 #[no_mangle]   // Name wird für den Export nicht verändert
 #[naked]       // keinen Prolog
 pub extern fn kernel_main() {
@@ -39,6 +45,8 @@ pub extern fn kernel_main() {
     let led_off = GPCLR1; 
     loop {
         unsafe { *(led_on) = 1 << 15; }
+        // Die Zeiten sind für die Debug-Version, die Release-Version benötigt
+        // längere Zeiten.
         sleep(50000);
         unsafe { *(led_off) = 1 << 15; }
         sleep(50000);
