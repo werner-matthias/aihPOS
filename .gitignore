@@ -1,2 +1,4 @@
 .DS_Store
 kernel/target/
+jtag/build/
+jtag/obj/
