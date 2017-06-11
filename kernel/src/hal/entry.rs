@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 use hal::cpu::Cpu;
-use ::kernel_init;
+use ::kernel_start;
 
 // Das ist die Sprungtabelle für Ausnahmen (Interrupts, Syscalls, etc.).
 #[repr(C)]
@@ -28,12 +28,12 @@ const JMPRPC: u32 = 0xe59ff018;  // ARM-Assembler: ldr pc, [pc, 24]
 pub static execption_table: ExceptionTable = ExceptionTable {
     jmp: [JMPRPC; 8],
     dispatch: (
-        kernel_init,             // (Re-)Start
+        kernel_start,            // (Re-)Start
         dispatch_undefined,      // Unbekannter Befehl
         dispatch_svc,            // Systemruf 
         dispatch_prefetch_abort, // Befehl soll von ungültiger Adresse gelesen werden 
         dispatch_data_abort,     // Speicherzugriff mit ungültiger Adresse, z.B. nichtexistent oder unaligned, oder fehlende Zugriffsrechte etc.
-        kernel_init,             // Reserivert, sollte nie auftreten; falls doch => restart
+        kernel_start,            // Reserivert, sollte nie auftreten; falls doch => restart
         dispatch_interrupt,      // Interrupt
         dispatch_fast_interrupt, // Schneller Interrupt
     )

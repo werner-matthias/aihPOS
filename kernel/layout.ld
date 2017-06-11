@@ -7,7 +7,7 @@ SECTIONS
 	. = 0x0;
 	KEEP(*(.except_table))
         .kernel_main = .;
-	KEEP(*(.text.kernel_init))
+	KEEP(*(.text.kernel_start))
         *(.text*)
     }
     __text_end = .;

@@ -1,5 +1,5 @@
 use bit_field::BitField;
-use hal::cpu::memsync::*;
+use hal::cpu::Cpu;
 
 
 // L1 cache kann ignoriert werden, vgl. ARM ARM B1-6
@@ -92,8 +92,8 @@ impl Tlb {
         unsafe {
             asm!("mcr p15, #0, $0, c8, c7, #0"::"r"(0)::"volatile");
         }
-        data_synchronization_barrier();
-        prefetch_flush();
+        Cpu::data_synchronization_barrier();
+        Cpu::prefetch_flush();
     }
 
     #[inline(always)]
@@ -101,8 +101,8 @@ impl Tlb {
         unsafe {
             asm!("mcr p15, #0, $0, c8, c5, #0"::"r"(0)::"volatile");
         }
-        data_synchronization_barrier();
-        prefetch_flush();
+        Cpu::data_synchronization_barrier();
+        Cpu::prefetch_flush();
     }
 
     #[inline(always)]
@@ -110,6 +110,6 @@ impl Tlb {
         unsafe {
             asm!("mcr p15, #0, $0, c8, c6, #0"::"r"(0)::"volatile");
         }
-        data_synchronization_barrier();
+        Cpu::data_synchronization_barrier();
     }
 }

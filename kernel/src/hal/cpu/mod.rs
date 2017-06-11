@@ -35,6 +35,13 @@ impl Cpu {
     pub fn get_mode() -> ProcessorMode {
         unimplemented!();
     }
+
+    #[inline(always)]
+    pub fn set_stack(adr: u32) {
+        unsafe{
+            asm!("mov sp, $0"::"r"(adr)::"volatile");
+        }
+    }
     
     #[inline(always)]
     pub fn save_context() {

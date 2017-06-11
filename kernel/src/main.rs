@@ -37,54 +37,37 @@ mod panic;
 mod sync;
 use hal::board::{MemReport,BoardReport,report_board_info,report_memory};
 use hal::entry::syscall;
+use hal::cpu::{Cpu,ProcessorMode};
 use hal::cpu::mmu::{MMU,PdEntryType,PageDirectoryEntry,PdEntry,DomainAccess,MemoryAccessRight,MemType};
-
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
-#[no_mangle]   // Name wird für den Export nicht verändert
-#[naked]       // Kein Prolog, da dieser den Stack nutzen würde, den wir noch nicht gesetzt haben
-pub extern fn kernel_init() {
+#[no_mangle]      // Name wird für den Export nicht verändert
+#[naked]          // Kein Prolog, da dieser den Stack nutzen würde, den wir noch nicht gesetzt haben
+#[allow(unreachable_code)]
+pub extern fn kernel_start() {
+    // Zum Start existiert noch kein Stack. Daher setzen wir einen temporären Stack, der nach dem Textsegment liegt.
+    // Das Symbol ist in "layout.ld" definiert.
     unsafe {
-        // Zum Start existiert noch kein Stack. Da alle Variablenoperationen über den Stack
-        // laufen, setzen wir einen temporären Stack, der nach dem Textsegment liegt.
-        // Danach holen wir uns Informationen über die Speichergröße und setzen die Stacks
-        // an das Ende des Speichers. Alle Ausnahmen teilen sich einen Stack (der System-Mode nutzt
-        // den User-Mode-Stack).
-        // Das Ganze ist natürlich absolut kein safe Rust.
-        // Temporärer Stack
         asm!("ldr sp, =__kernel_stack");
-        // Nun kann die Größe des Speichers und damit die Adressen für die Stacks bestimmt werden
-        determine_irq_stack();
-        // Register r5 wird als temporäre Variable benutzt
-        asm!("mov r5, r0":::"r5"); 
-        determine_svc_stack();
-        // Umschalten in den Irq-Mode...
-        asm!("cps 0x12");
-        // ...und Setzen des Irq-Stacks
-        asm!("mov sp, r5");
-        // Umschalten in den Irq-Mode...
-        asm!("cps 0x12");
-        // ...und Setzen des Irq-Stacks
-        asm!("mov sp, r5");
-        // Umschalten in den Abort-Mode...
-        asm!("cps 0x17");
-        // ...und Setzen des Abort-Stacks
-        asm!("mov sp, r5");
-        // Umschalten in den Undefined-Mode...
-        asm!("cps 0x1B");
-        // ...und Setzen des Undefined-Stacks
-        asm!("mov sp, r5");
-        // Zurück in den Svc-Mode...
-        asm!("cps 0x13");
-        // ...und Setzen der "richtigen" Stackadresse
-        asm!("mov sp, r0");
     }
+    // Nun kann die Größe des Speichers und damit die Adresse für den "echten" Stacks bestimmt werden
+    Cpu::set_stack(determine_svc_stack());
+    kernel_init();
+    unreachable!();
+}
+
+#[inline(never)] // Verbietet dem Optimizer, kernel_init() und darin aufgerufene Funktionen mit kernel_start()
+                 // zu verschmelzen. Dies würde wegen #[naked]/keinen Stack schief gehen
+#[allow(unreachable_code)]
+fn kernel_init() -> ! {
     report();
     init_mem();
     test();
+    loop {}
+    unreachable!();
 }
-#[inline(never)]
+
 fn determine_irq_stack() -> u32 {
     let addr = (report_memory(MemReport::ArmSize) - 3) & 0xFFFFFFFC;
     addr
@@ -97,6 +80,20 @@ fn determine_svc_stack() -> u32 {
 }
 
 fn init_mem() {
+    // Stack für die anderen Ausnahme-Modi.  Alle Ausnahmen teilen sich einen Stack (der System-Mode nutzt
+    // den User-Mode-Stack).
+    let adr = determine_irq_stack();
+    Cpu::set_mode(ProcessorMode::Irq);
+    Cpu::set_stack(adr);
+    Cpu::set_mode(ProcessorMode::Fiq);
+    Cpu::set_stack(adr);
+    Cpu::set_mode(ProcessorMode::Abort);
+    Cpu::set_stack(adr);
+    Cpu::set_mode(ProcessorMode::Undef);
+    Cpu::set_stack(adr);
+    // ...und zurück in den Svc-Mode
+    Cpu::set_mode(ProcessorMode::Svc);
+
     let mmu = MMU::new(unsafe{ &mut __page_directory});
     // Standard ist Seitenfehler
     for page in 0..4096{ 
