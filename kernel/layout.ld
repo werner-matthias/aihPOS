@@ -29,6 +29,7 @@ SECTIONS
     .pagetables :  ALIGN(16384)
     {
         __page_directory = .;
+	__kernel_page_table = __page_directory + 16384;
     }
   /DISCARD/ :
   {
