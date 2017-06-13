@@ -10,7 +10,7 @@ bit_field = "0.7.0"
 compiler_error = "0.1.1"
 
 [features]
-default = ["page_size_64k"]
+default = ["page_size_4k"]
 
 page_size_64k = []
 page_size_4k = []

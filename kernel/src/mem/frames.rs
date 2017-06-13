@@ -8,10 +8,10 @@ compiler_error!("Multiple page sizes spezified");
 #[cfg (all(not(feature="page_size_64k"),not(feature="page_size_4k")))]
 compiler_error!("No page size configured");
 
-const MEM_SIZE:     u32 = 512*1024*1024;
 #[cfg (feature="page_size_64k")]
-const PAGE_SIZE:    u32 = 64*1024;
-#[cfg (feature="page_size_4k")]
+compiler_error!("Large pagees are not implemented yet");
+
+const MEM_SIZE:     u32 = 512*1024*1024;
 const PAGE_SIZE:    u32 = 4*1024;
 
 const BITMAP_SIZE:  usize = (MEM_SIZE/(PAGE_SIZE*32)) as usize;
