@@ -4,6 +4,7 @@ version = "0.0.2"
 dependencies = [
  "bit_field 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "compiler_builtins 0.1.0 (git+https://github.com/rust-lang-nursery/compiler-builtins)",
+ "compiler_error 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -16,6 +17,12 @@ name = "compiler_builtins"
 version = "0.1.0"
 source = "git+https://github.com/rust-lang-nursery/compiler-builtins#f3ace110712bb552ef89deb63d4d0b78cebb45ea"
 
+[[package]]
+name = "compiler_error"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
 [metadata]
 "checksum bit_field 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ff91a64014e1bc53bf643920f2c9ab5f0980d92a0948295f3ee550e9266849ad"
 "checksum compiler_builtins 0.1.0 (git+https://github.com/rust-lang-nursery/compiler-builtins)" = "<none>"
+"checksum compiler_error 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "ef975f6d3622b15ea669c8075fefa5a9bc4bfae1b8b221ab9962daff003b3047"

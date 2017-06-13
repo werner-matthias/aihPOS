@@ -1,23 +1,26 @@
 #![no_std]
 #![no_main]
-#![feature(asm,                    // Assembler in Funktionen...
-           //global_asm,           // ... und außerhalb
+#![feature(
            //abi_unadjusted,         //  
-           lang_items,             // Funktionen interne Funktionen ersetzen (panic)
-           naked_functions,        // Funktionen ohne Prolog/Epilog
-           linkage,                // Angaben zum Linktyp (z.B. Sichtbarkeit)
-           const_fn,               // const Funktionen (für Constructoren)
-           i128_type,              // 128-Bit-Typen
-           repr_align,             // Alignment
            attr_literals,          // Literale in Attributen (nicht nur Strings)
-//           use_extern_macros,
-           core_intrinsics,        // Nutzung der Intrinsics der Core-Bibliothek
+           asm,                    // Assembler in Funktionen...
+           // concat_idents,
+           const_fn,               // const Funktionen (für Constructoren)
            compiler_builtins_lib,  // Nutzung der Compiler-Buildins-Bibliothek (div, mul, ...)
-           //           concat_idents,
-           used,                   // Verbot, scheinbar toten Code zu eliminieren
            closure_to_fn_coercion, // Zuweisung von Closures zu Funktionen
+           core_intrinsics,        // Nutzung der Intrinsics der Core-Bibliothek
+           i128_type,              // 128-Bit-Typen
+           lang_items,             // Funktionen interne Funktionen ersetzen (panic)
+           linkage,                // Angaben zum Linktyp (z.B. Sichtbarkeit)
+           naked_functions,        // Funktionen ohne Prolog/Epilog
+           plugin,                 // Nutzung von Compiler-Plugins
+           repr_align,             // Alignment
+           step_by,                // Spezifische Schrittweite bei Iterationen
+           // use_extern_macros,
+           used,                   // Verbot, scheinbar toten Code zu eliminieren
           )
   ]
+#![plugin(compiler_error)]
 
 const IRQ_STACK_SIZE: u32 = 2048;
 extern {
@@ -35,10 +38,12 @@ extern crate bit_field;
 #[macro_use] mod hal;
 mod panic;
 mod sync;
+mod mem;
 use hal::board::{MemReport,BoardReport,report_board_info,report_memory};
 use hal::entry::syscall;
 use hal::cpu::{Cpu,ProcessorMode};
 use hal::cpu::mmu::{MMU,PdEntryType,PageDirectoryEntry,PdEntry,DomainAccess,MemoryAccessRight,MemType};
+use mem::frames::FrameManager;
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
@@ -142,12 +147,27 @@ fn test() {
     kprint!("Calling system.\n");
     let ret=syscall!(23,1,2);
     kprint!("Returned from system call: {}.\n",ret);
+    let mut frame_manager = FrameManager::new();
+    frame_manager.mark_not_available(0..0x0002ffff);
+    //kprint!("ff: {}\n",frame_manager.first_free);
+    for _ in 0..17 {
+        let adr: u32 = frame_manager.allocate();
+        kprint!("Neuer Frame @ {:08x}\n",adr);
+    }
+    frame_manager.release(0x00090000);
+    for _ in 0..2 {
+        let adr: u32 = frame_manager.allocate();
+        kprint!("Neuer Frame @ {:08x}\n",adr);
+    }
+    
+    /*
     // Das folgende sollte eine Schutzverletzung geben
     unsafe{
         let pt: *mut u32 = 0x1000000 as *mut u32;
         *pt = 42;
     }
     kprint!("Ich lebe noch.");
+     */
     debug::blink(debug::BS_HI);
 }
 
