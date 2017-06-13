@@ -38,7 +38,7 @@ pub enum MemoryAccessRight {
     SysRoUsrRw      = 0b110
 }
 
-// ARMv6 kennt 32 Domains.
+// ARMv6 kennt 32 Domains. 
 pub enum DomainAccess {
     None,
     Client,
@@ -137,7 +137,7 @@ impl PdEntry {
     }
 }
 
-// PAGE TABLE (2. Stufe)
+//
 pub type PageTableEntry     = u32;
 
 #[derive(PartialEq,Clone,Copy)]
@@ -148,18 +148,18 @@ pub enum PageTableEntryType {
     SmallNonCodePage = 0x3
 }
 
-struct PteBuilder {
+struct Pte {
     pub entry: PageTableEntry
 }
 
-impl PteBuilder {
-    pub fn new_entry(kind: PageTableEntryType) -> PteBuilder {
-        PteBuilder{
+impl Pte {
+    pub fn new_entry(kind: PageTableEntryType) -> Pte {
+        Pte{
             entry: kind as PageTableEntry
         }
     }
 
-    pub fn base_addr(&mut self, a: u32) -> &mut PteBuilder {
+    pub fn base_addr(&mut self, a: u32) -> &mut Pte {
         if self.entry & 0x3 == 0 { // Fault
             return self
         }
@@ -172,7 +172,7 @@ impl PteBuilder {
         
     }    
 
-    pub fn mem_type(&mut self, t: MemType) -> &mut PteBuilder {
+    pub fn mem_type(&mut self, t: MemType) -> &mut Pte {
         if self.entry & 0x3 == 0 { // Fault
             return self
         }
@@ -187,7 +187,7 @@ impl PteBuilder {
         self
     }
 
-    pub fn no_execution(&mut self, b: bool) -> &mut PteBuilder {
+    pub fn no_execution(&mut self, b: bool) -> &mut Pte {
         if self.entry & 0x3 == 0 { // Fault
             return self
         }
@@ -199,7 +199,7 @@ impl PteBuilder {
         self
     }
 
-    pub fn rights(&mut self, r: MemoryAccessRight) -> &mut PteBuilder {
+    pub fn rights(&mut self, r: MemoryAccessRight) -> &mut Pte {
         if self.entry & 0x3 == 0 {
             return self
         }
@@ -209,7 +209,7 @@ impl PteBuilder {
         self
     }
 
-    pub fn process_specific(&mut self) ->  &mut PteBuilder {
+    pub fn process_specific(&mut self) ->  &mut Pte {
         if self.entry & 0x3 == 0 {
             return self
         }
@@ -217,14 +217,13 @@ impl PteBuilder {
         self
     }
 
-    pub fn shared(&mut self) ->  &mut PteBuilder {
+    pub fn shared(&mut self) ->  &mut Pte {
         if self.entry & 0x3 == 0 {
             return self
         }
         self.entry.set_bit(10,true);
         self
     }
-    
 }
 
 pub struct MMU {
