@@ -2,10 +2,18 @@
 name = "aihPOS"
 version = "0.0.2"
 authors = ["Matthias Werner <mwerner@informatik.tu-chemnitz.de>"]
+publish = false
 
 [dependencies]
 compiler_builtins = { git = "https://github.com/rust-lang-nursery/compiler-builtins", features = ["mem"] }
 bit_field = "0.7.0"
+compiler_error = "0.1.1"
+
+[features]
+default = ["page_size_64k"]
+
+page_size_64k = []
+page_size_4k = []
 
 [profile.dev]
 panic = "abort"
