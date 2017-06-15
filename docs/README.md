@@ -1,6 +1,6 @@
 # aihPOS - another incompatible and hackneyed Pi Operating System
 
-aihPOS ist (oder präziser: soll in Zukunft sein :smirk:) das Betriebssystem, das im Bachelorkurs "Betriebssysteme" an der TU Chemnitz eingesetzt wird.
+aihPOS ist (oder präziser: soll in Zukunft sein :smirk: ) das Betriebssystem, das im Bachelorkurs "Betriebssysteme" an der TU Chemnitz eingesetzt wird.
 
 Directories:
 - `bin/`: tools for building; currently `cargo-kernel` only
