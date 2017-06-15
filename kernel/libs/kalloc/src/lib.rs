@@ -3,6 +3,10 @@
 #![no_std]
 #![allow(unused_variables)]  // Remove later
 
+///! Rust verlangt für einen Allocator eine eigene Bibliothek, die mit #![allocator] dekoriert ist.
+///! Um bei Erschöpfung des Heaps eine Seitenneuzuweisung ohne Systemruf und Callback auslösen zu können
+///! ist die eigentliche Funktionalität in mem implementiert.
+
 extern "Rust" {
     fn aihpos_allocate(size: usize, align: usize) -> *mut u8;
     fn aihpos_deallocate(ptr: *mut u8, size: usize, align: usize);
@@ -14,7 +18,7 @@ extern "Rust" {
 }
 
 // Die offizielle Schnittstelle zu Rust sieht für einen Allocator so aus,
-// vgl. Rust - The Unsable Book: https://doc.rust-lang.org/nightly/unstable-book/language-features/allocator.html
+// vgl. Rust - The Unstable Book: https://doc.rust-lang.org/nightly/unstable-book/language-features/allocator.html
 #[no_mangle]
 pub extern fn __rust_allocate(size: usize, align: usize) -> *mut u8 {
     unsafe{
