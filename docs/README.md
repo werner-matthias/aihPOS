@@ -19,3 +19,5 @@ Es müssen installiert sein
 cargo kernel --target=arm-none-eabihf 
 ```
 gestartet werden.
+
+{% github_sample werner-matthias/aihPOS/blob/master/kernel/Cargo.toml %}
