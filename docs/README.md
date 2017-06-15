@@ -2,18 +2,20 @@
 
 aihPOS ist (oder präziser: soll in Zukunft sein :smirk: ) das Betriebssystem, das im Bachelorkurs "Betriebssysteme" an der TU Chemnitz eingesetzt wird.
 
-Directories:
-- `bin/`: tools for building; currently `cargo-kernel` only
-- `jtag/`: small kernel to allow development with use of JTAG
-- `kernel/`: micro kernel for aihPOS
+Verzeichnisse:
+- `bin/`: nötige Tools zum Bauen, z.Z: lediglich `cargo-kernel` 
+- `jtag/`: kleiner Kernel der die Nutzung von JTAG ermöglicht
+- `kernel/`: Microkernel für aihPOS
 
-## How to build the kernel ##
-Prerequisites: 
+## Den Kern bauen ##
+
+Es müssen installiert sein 
 - Nightly Rust
 - Cargo
 - Xargo
 
-Put `cargo-kernel` in your path. Then run
+`cargo-kernel` (aus `bin`) sollte im Suchpfad sein. Dann kann die Übersetzung mit
 ```
 cargo kernel --target=arm-none-eabihf 
 ```
+gestartet werden.
