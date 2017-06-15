@@ -5,6 +5,7 @@ dependencies = [
  "bit_field 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "compiler_builtins 0.1.0 (git+https://github.com/rust-lang-nursery/compiler-builtins)",
  "compiler_error 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "kalloc 0.1.0",
 ]
 
 [[package]]
@@ -21,6 +22,10 @@ source = "git+https://github.com/rust-lang-nursery/compiler-builtins#f3ace110712
 name = "compiler_error"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "kalloc"
+version = "0.1.0"
 
 [metadata]
 "checksum bit_field 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ff91a64014e1bc53bf643920f2c9ab5f0980d92a0948295f3ee550e9266849ad"
