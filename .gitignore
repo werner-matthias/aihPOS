@@ -1,4 +1,5 @@
 .DS_Store
-kernel/target/
+target/
 jtag/build/
 jtag/obj/
+Cargo.lock
