@@ -13,7 +13,7 @@ done
 BINPATH=./target/$TARGET/$PROFILE
 xargo build $@
 PKG=`xargo pkgid -q | cut -d# -f2 | cut -d: -f1`
-if [ -a $BINPATH/$PKG ]; then
+if [ -f $BINPATH/$PKG ]; then
    arm-none-eabi-objcopy $BINPATH/$PKG -O binary  $BINPATH/kernel.img
    arm-none-eabi-objdump -D $BINPATH/$PKG > $BINPATH/$PKG.list
 fi
