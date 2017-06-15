@@ -1,9 +1,7 @@
-pub mod mailbox;
-mod font;
-pub mod framebuffer;
-pub mod propertytags;
-use self::propertytags::{Tag,PropertyTagBuffer};
-use hal::board::mailbox::{mailbox, Channel};
+mod mailbox;
+mod propertytags;
+pub use self::propertytags::{Tag,PropertyTagBuffer,BUFFER_SIZE};
+pub use hal::board::mailbox::{mailbox, Channel};
 
 pub enum BoardReport {
     FirmwareVersion,

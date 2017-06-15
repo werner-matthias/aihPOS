@@ -1,6 +1,6 @@
 pub use core::fmt::{write,Write,Arguments};
 use sync::no_concurrency::NoConcurrency;
-use hal::board::framebuffer::Framebuffer;
+use debug::framebuffer::Framebuffer;
 
 #[allow(dead_code)]
 pub const RED: u32 =    0x00ff0000;
@@ -51,7 +51,7 @@ pub fn fkprint(arg: Arguments) {
 }
 
 pub fn kprint_init() {
-    _KPRINT_FB.set(Some(::hal::board::framebuffer::Framebuffer::new()));
+    _KPRINT_FB.set(Some(::debug::framebuffer::Framebuffer::new()));
     kprint_clear()
 }
 

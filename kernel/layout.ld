@@ -1,4 +1,4 @@
-ENTRY(kernel_init)
+ENTRY(kernel_start)
 
 SECTIONS
 {
@@ -38,6 +38,5 @@ SECTIONS
     *(.note.gnu.build-id*)
     *(.debug*)
   }
-
 }
 

@@ -1,7 +1,9 @@
 #![allow(dead_code)]
-pub mod mmu;
-pub mod cache;
-pub mod context;
+
+mod cache;
+mod mmu;
+
+pub use self::mmu::MMU;
 
 // Siehe ARM Architectur Reference Manual A2-3
 pub enum ProcessorMode {

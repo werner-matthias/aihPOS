@@ -1,8 +1,7 @@
 use core::{fmt,cmp,slice};
 pub use core::fmt::Write;
-use hal::board::mailbox::{mailbox, Channel};
-use hal::board::font::{Font,SystemFont};
-use hal::board::propertytags::{Tag,PropertyTagBuffer,BUFFER_SIZE};
+use hal::board::{mailbox, Channel,Tag,PropertyTagBuffer,BUFFER_SIZE};
+use debug::font::{Font,SystemFont};
 use debug::blink;
 
 const FB_WIDTH: u32     = 800;

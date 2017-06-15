@@ -6,6 +6,7 @@ publish = false
 
 [dependencies]
 compiler_builtins = { git = "https://github.com/rust-lang-nursery/compiler-builtins", features = ["mem"] }
+kalloc =  { version = "0.1.0", path = "libs/kalloc" }
 bit_field = "0.7.0"
 compiler_error = "0.1.1"
 

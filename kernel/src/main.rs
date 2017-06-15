@@ -41,8 +41,8 @@ mod sync;
 mod mem;
 use hal::board::{MemReport,BoardReport,report_board_info,report_memory};
 use hal::entry::syscall;
-use hal::cpu::{Cpu,ProcessorMode};
-use hal::cpu::mmu::{MMU,PdEntryType,PageDirectoryEntry,PdEntry,DomainAccess,MemoryAccessRight,MemType};
+use hal::cpu::{Cpu,ProcessorMode,MMU};
+use mem::paging::{PdEntryType,PageDirectoryEntry,PdEntry,DomainAccess,MemoryAccessRight,MemType};
 use mem::frames::FrameManager;
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
