@@ -3,7 +3,7 @@ use core::mem::transmute;
 
 // Basisadresse des Mailregisters
 const MAILBOX_BASE: u32 = 0x2000B880;
-
+ 
 #[allow(dead_code)]
 #[derive(Clone,Copy)]
 #[repr(u32)]
