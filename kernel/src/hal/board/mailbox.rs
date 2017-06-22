@@ -1,8 +1,7 @@
 use core::intrinsics::volatile_load;
 use core::mem::transmute;
-//use debug::blink;
 
-    
+// Basisadresse des Mailregisters
 const MAILBOX_BASE: u32 = 0x2000B880;
 
 #[allow(dead_code)]
