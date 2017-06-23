@@ -29,7 +29,7 @@ pub const BS_HI: BlinkSeq    =   &[Bc::Short,Bc::Short,Bc::Short,Bc::Short,Bc::P
 #[inline(never)]
 fn sleep(value: u32) {  
     for _ in 1..value {
-        unsafe { asm!(" "::::"volatile"); } 
+        unsafe { asm!("":::"memory":"volatile"); } 
     }
 }
 
