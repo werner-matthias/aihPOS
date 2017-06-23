@@ -92,14 +92,6 @@ pub enum Tag {
     SetCursorState = 0x8010
 }
 
-#[repr(u32)]
-enum ReqResCode {
-    Request = 0,
-    Success = 0x80000000,
-    Error   = 0x80000001,
-}
-
-
 struct ReqProperty {
     pub tag:  Tag,
     pub buf_size: usize,
@@ -195,7 +187,13 @@ impl ReqProperty {
         };
         ReqProperty{ tag: tag, buf_size: buf_size, param_size: param_size}
     }
+}
 
+#[repr(u32)]
+enum ReqResCode {
+    Request = 0,
+    Success = 0x80000000,
+    Error   = 0x80000001,
 }
 
 enum TagReqResp {

@@ -55,7 +55,6 @@ impl<'a> Framebuffer<'a> {
             _   => {
                 blink::blink(blink::BS_SOS);
                 unreachable!();
-                
             }
         };
         
