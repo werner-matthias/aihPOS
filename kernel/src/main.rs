@@ -1,25 +1,27 @@
 #![no_std]
 #![no_main]
 #![feature(
-           //abi_unadjusted,         //  
-           attr_literals,          // Literale in Attributen (nicht nur Strings)
-           asm,                    // Assembler in Funktionen...
-           // concat_idents,
-           const_fn,               // const Funktionen (für Constructoren)
-           compiler_builtins_lib,  // Nutzung der Compiler-Buildins-Bibliothek (div, mul, ...)
-           closure_to_fn_coercion, // Zuweisung von Closures zu Funktionen
-           core_intrinsics,        // Nutzung der Intrinsics der Core-Bibliothek
-           i128_type,              // 128-Bit-Typen
-           lang_items,             // Funktionen interne Funktionen ersetzen (panic)
-           linkage,                // Angaben zum Linktyp (z.B. Sichtbarkeit)
-           naked_functions,        // Funktionen ohne Prolog/Epilog
-           plugin,                 // Nutzung von Compiler-Plugins
-           repr_align,             // Alignment
-           step_by,                // Spezifische Schrittweite bei Iterationen
-           // use_extern_macros,
-           used,                   // Verbot, scheinbar toten Code zu eliminieren
-          )
-  ]
+    //abi_unadjusted,         //
+    alloc,                  // Nutzung der Alloc-Crate
+    attr_literals,          // Literale in Attributen (nicht nur Strings)
+    asm,                    // Assembler in Funktionen...
+    // concat_idents,
+    collections,            // Nutzung des Collection-Crate
+    const_fn,               // const Funktionen (für Constructoren)
+    compiler_builtins_lib,  // Nutzung der Compiler-Buildins-Bibliothek (div, mul, ...)
+    closure_to_fn_coercion, // Zuweisung von Closures zu Funktionen
+    core_intrinsics,        // Nutzung der Intrinsics der Core-Bibliothek
+    i128_type,              // 128-Bit-Typen
+    lang_items,             // Funktionen interne Funktionen ersetzen (panic)
+    linkage,                // Angaben zum Linktyp (z.B. Sichtbarkeit)
+    naked_functions,        // Funktionen ohne Prolog/Epilog
+    plugin,                 // Nutzung von Compiler-Plugins
+    repr_align,             // Alignment
+    step_by,                // Spezifische Schrittweite bei Iterationen
+    // use_extern_macros,
+    used,                   // Verbot, scheinbar toten Code zu eliminieren
+)
+]
 #![plugin(compiler_error)]
 
 const IRQ_STACK_SIZE: u32 = 2048;
@@ -33,6 +35,13 @@ extern {
 
 extern crate compiler_builtins;
 extern crate bit_field;
+#[macro_use]
+extern crate lazy_static;
+extern crate spin;
+extern crate kalloc;
+#[macro_use]
+extern crate alloc;
+extern crate collections;
 
 #[macro_use] mod debug;
 #[macro_use] mod hal;
