@@ -1,4 +1,5 @@
-use hal::cpu::cache::{Cache,Tlb};
+use hal::cpu::cache::Cache;
+use hal::cpu::tlb::Tlb;
 use hal::cpu::Cpu;
 use bit_field::BitField;
 use mem::paging::{MemType,MemoryAccessRight,DomainAccess,PageDirectoryEntry,};

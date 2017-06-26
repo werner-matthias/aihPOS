@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 mod cache;
+mod tlb;
 mod mmu;
 
 pub use self::mmu::MMU;
