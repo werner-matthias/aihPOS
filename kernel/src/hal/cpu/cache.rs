@@ -1,6 +1,4 @@
 use bit_field::BitField;
-use hal::cpu::Cpu;
-
 
 // L1 cache kann ignoriert werden, vgl. ARM ARM B1-6
 // Daher ist nur L2-Cache/TLB interessant

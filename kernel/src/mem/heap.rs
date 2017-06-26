@@ -12,27 +12,38 @@ pub  const INIT_HEAP_SIZE: usize = 256 * 4096; // 256 Seiten = 1MB
 lazy_static! {
     static ref HEAP: Mutex<Heap> = Mutex::new(unsafe {
         Heap::new(&__bss_start as *const u32 as usize, INIT_HEAP_SIZE)
+            // ToDo: mark pages as reserved
     });
 }    
-    
-extern fn aihpos_allocate(size: usize, align: usize) -> *mut u8 {
-   HEAP.lock().allocate_first_fit(size, align).expect("out of memory")
+
+#[linkage="weak"]
+pub extern fn aihpos_allocate(size: usize, align: usize) -> *mut u8 {
+    let ret = HEAP.lock().allocate_first_fit(size, align);
+    match ret {
+        Some(ptr) => ptr,
+        None  => {
+            // ToDo: reserve additional page
+            panic!("Out of memory");
+        }
+    }
 }
 
-extern fn aihpos_deallocate(ptr: *mut u8, size: usize, align: usize) {
+pub extern fn aihpos_deallocate(ptr: *mut u8, size: usize, align: usize) {
     unsafe { HEAP.lock().deallocate(ptr, size, align) };
 }
 
-extern fn aihpos_usable_size(size: usize, align: usize) -> usize {
+#[allow(unused_variables)]
+pub extern fn aihpos_usable_size(size: usize, align: usize) -> usize {
    size
 }
 
-extern fn aihpos_reallocate_inplace(ptr: *mut u8, size: usize,
+#[allow(unused_variables)]
+pub extern fn aihpos_reallocate_inplace(ptr: *mut u8, size: usize,
                                         new_size: usize, align: usize) -> usize {
    size
 }
 
-extern fn aihpos_reallocate(ptr: *mut u8, size: usize, new_size: usize,
+pub extern fn aihpos_reallocate(ptr: *mut u8, size: usize, new_size: usize,
                             align: usize) -> *mut u8 {
     use core::{ptr, cmp};
 

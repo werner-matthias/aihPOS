@@ -53,6 +53,7 @@ use hal::entry::syscall;
 use hal::cpu::{Cpu,ProcessorMode,MMU};
 use mem::paging::{PdEntryType,PageDirectoryEntry,PdEntry,DomainAccess,MemoryAccessRight,MemType};
 use mem::frames::FrameManager;
+pub use mem::heap::{aihpos_allocate,aihpos_deallocate,aihpos_usable_size,aihpos_reallocate_inplace,aihpos_reallocate};
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 

@@ -1,3 +1,4 @@
+#[allow(dead_code)] 
 use bit_field::BitField;
 
 // Der MMU-Code geht von folgender Konfiguration aus:
@@ -9,6 +10,7 @@ use bit_field::BitField;
 // Es werden hier nur die "üblichen" Caching-Varianten benutzt:
 //  - Write trough => ohne Allocate
 //  - Write back   => mit Allocate
+#[allow(dead_code)]
 #[repr(u32)]
 pub enum MemType {
     StronglyOrdered = 0b00000,
@@ -25,6 +27,7 @@ pub enum MemType {
 //  - RW: Lesen und Schreiben
 //  - Ro: Nur Lesen
 //  - None: weder Lesen noch Schreiben
+#[allow(dead_code)]
 #[repr(u32)]
 pub enum MemoryAccessRight {
     SysNonUsrNone   = 0b000,
@@ -36,6 +39,7 @@ pub enum MemoryAccessRight {
 }
 
 // ARMv6 kennt 32 Domains. 
+#[allow(dead_code)] 
 pub enum DomainAccess {
     None,
     Client,
@@ -45,6 +49,7 @@ pub enum DomainAccess {
 // Seitendirectory (1. Stufe)
 pub type PageDirectoryEntry = u32;
 
+#[allow(dead_code)]
 #[derive(PartialEq,Clone,Copy)]
 pub enum PdEntryType {
     Fault           = 0,
