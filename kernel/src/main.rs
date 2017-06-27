@@ -35,6 +35,7 @@ extern {
 
 extern crate compiler_builtins;
 extern crate bit_field;
+#[allow(unused_imports)]  
 #[macro_use]
 extern crate lazy_static;
 extern crate spin;
@@ -51,7 +52,7 @@ mod mem;
 use hal::board::{MemReport,BoardReport,report_board_info,report_memory};
 use hal::entry::syscall;
 use hal::cpu::{Cpu,ProcessorMode,MMU};
-use mem::paging::{PdEntryType,PageDirectoryEntry,PdEntry,DomainAccess,MemoryAccessRight,MemType};
+use mem::{PdEntryType,PageDirectoryEntry,PdEntry,DomainAccess,MemoryAccessRight,MemType};
 use mem::frames::FrameManager;
 pub use mem::heap::{aihpos_allocate,aihpos_deallocate,aihpos_usable_size,aihpos_reallocate_inplace,aihpos_reallocate};
 
