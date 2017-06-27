@@ -98,6 +98,11 @@ fn determine_svc_stack() -> u32 {
 }
 
 fn init_mem() {
+    init_stacks();
+    init_paging();
+}
+
+fn init_stacks() {
     // Stack für die anderen Ausnahme-Modi.  Irq, Fiq, Abort und Undef teilen sich einen Stack, der System-Mode nutzt
     // den User-Mode-Stack und muss nicht gesetzt werden.
     let adr = determine_irq_stack();
@@ -111,7 +116,13 @@ fn init_mem() {
     Cpu::set_stack(adr);
     // ...und zurück in den Svc-Mode
     Cpu::set_mode(ProcessorMode::Svc);
+}
 
+fn init_paging() {
+    unimplemented!();
+}
+
+/*
     let mmu = MMU::new(unsafe{ &mut __page_directory});
     // Standard ist Seitenfehler
     for page in 0..4096{ 
@@ -130,7 +141,7 @@ fn init_mem() {
     MMU::set_domain_access(0,DomainAccess::Manager);
     mmu.start();
     kprint!("MMU aktiviert.\n");
-}
+}*/
 
 fn report() {
     kprint!("aihPOS"; RED);
