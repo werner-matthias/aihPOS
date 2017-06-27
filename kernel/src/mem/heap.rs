@@ -7,7 +7,7 @@ extern {
     static __bss_start: u32;
 }
 
-pub  const INIT_HEAP_SIZE: usize = 256 * 4096; // 256 Seiten = 1MB
+pub  const INIT_HEAP_SIZE: usize = 25 * 4096; // 25 Seiten = 100 kB
 
 lazy_static! {
     static ref HEAP: Mutex<Heap> = Mutex::new(unsafe {
@@ -16,8 +16,9 @@ lazy_static! {
     });
 }    
 
-#[linkage="weak"]
+#[no_mangle]
 pub extern fn aihpos_allocate(size: usize, align: usize) -> *mut u8 {
+    kprint!("allocate {} bytes\n",size; YELLOW);
     let ret = HEAP.lock().allocate_first_fit(size, align);
     match ret {
         Some(ptr) => ptr,
@@ -28,21 +29,26 @@ pub extern fn aihpos_allocate(size: usize, align: usize) -> *mut u8 {
     }
 }
 
+#[no_mangle]
 pub extern fn aihpos_deallocate(ptr: *mut u8, size: usize, align: usize) {
+    kprint!("free {} bytes\n",size; YELLOW);
     unsafe { HEAP.lock().deallocate(ptr, size, align) };
 }
 
+#[no_mangle]
 #[allow(unused_variables)]
 pub extern fn aihpos_usable_size(size: usize, align: usize) -> usize {
    size
 }
 
+#[no_mangle]
 #[allow(unused_variables)]
 pub extern fn aihpos_reallocate_inplace(ptr: *mut u8, size: usize,
                                         new_size: usize, align: usize) -> usize {
    size
 }
 
+#[no_mangle]
 pub extern fn aihpos_reallocate(ptr: *mut u8, size: usize, new_size: usize,
                             align: usize) -> *mut u8 {
     use core::{ptr, cmp};
@@ -56,6 +62,4 @@ pub extern fn aihpos_reallocate(ptr: *mut u8, size: usize, new_size: usize,
     aihpos_deallocate(ptr, size, align);
     new_ptr
 }
-
-
 
