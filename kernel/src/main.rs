@@ -9,7 +9,6 @@
     collections,            // Nutzung des Collection-Crate
     const_fn,               // const Funktionen (für Constructoren)
     compiler_builtins_lib,  // Nutzung der Compiler-Buildins-Bibliothek (div, mul, ...)
-    closure_to_fn_coercion, // Zuweisung von Closures zu Funktionen
     core_intrinsics,        // Nutzung der Intrinsics der Core-Bibliothek
     i128_type,              // 128-Bit-Typen
     lang_items,             // Funktionen interne Funktionen ersetzen (panic)
@@ -24,31 +23,35 @@
 ]
 #![plugin(compiler_error)]
 
+/// Benutzte Crates
+//#[macro_use]
+extern crate alloc;
+extern crate bit_field;
+#[macro_use] extern crate collections;
+extern crate compiler_builtins;
+extern crate kalloc;
+#[allow(unused_imports)]  
+#[macro_use] extern crate lazy_static;
+extern crate spin;
+
 const IRQ_STACK_SIZE: u32 = 2048;
+
+// 
 extern {
     static mut __page_directory: [PageDirectoryEntry;4096];
     static __text_end: u32;
+    static __kernel_stack: u32;
     static __data_end: u32;
     static __shared_begin: u32;
     static __shared_end:   u32;
 }
-
-extern crate compiler_builtins;
-extern crate bit_field;
-#[allow(unused_imports)]  
-#[macro_use]
-extern crate lazy_static;
-extern crate spin;
-extern crate kalloc;
-#[macro_use]
-extern crate alloc;
-extern crate collections;
 
 #[macro_use] mod debug;
 #[macro_use] mod hal;
 mod panic;
 mod sync;
 mod mem;
+
 use hal::board::{MemReport,BoardReport,report_board_info,report_memory};
 use hal::entry::syscall;
 use hal::cpu::{Cpu,ProcessorMode,MMU};
@@ -56,6 +59,7 @@ use mem::{PdEntryType,PageDirectoryEntry,PdEntry,DomainAccess,MemoryAccessRight,
 use mem::frames::FrameManager;
 pub use mem::heap::{aihpos_allocate,aihpos_deallocate,aihpos_usable_size,aihpos_reallocate_inplace,aihpos_reallocate};
 
+use collections::vec::Vec;
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 #[no_mangle]      // Name wird für den Export nicht verändert
@@ -64,9 +68,7 @@ const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 pub extern fn kernel_start() {
     // Zum Start existiert noch kein Stack. Daher setzen wir einen temporären Stack, der nach dem Textsegment liegt.
     // Das Symbol ist in "layout.ld" definiert.
-    unsafe {
-        asm!("ldr sp, =__kernel_stack");
-    }
+    Cpu::set_stack(unsafe {&__kernel_stack}  as *const u32 as u32);
     // Nun kann die Größe des Speichers und damit die Adresse für den "echten" Stacks bestimmt werden
     Cpu::set_stack(determine_svc_stack());
     kernel_init();
@@ -96,8 +98,8 @@ fn determine_svc_stack() -> u32 {
 }
 
 fn init_mem() {
-    // Stack für die anderen Ausnahme-Modi.  Alle Ausnahmen teilen sich einen Stack (der System-Mode nutzt
-    // den User-Mode-Stack).
+    // Stack für die anderen Ausnahme-Modi.  Irq, Fiq, Abort und Undef teilen sich einen Stack, der System-Mode nutzt
+    // den User-Mode-Stack und muss nicht gesetzt werden.
     let adr = determine_irq_stack();
     Cpu::set_mode(ProcessorMode::Irq);
     Cpu::set_stack(adr);
@@ -170,7 +172,12 @@ fn test() {
         let adr: u32 = frame_manager.allocate();
         kprint!("Neuer Frame @ {:08x}\n",adr);
     }
-    
+    {
+        let v = vec![1,2,3];
+        for i in v {
+            kprint!("{} ",i);
+        }
+    }
     /*
     // Das folgende sollte eine Schutzverletzung geben
     unsafe{
