@@ -35,10 +35,6 @@ impl Cpu {
         }
     }
 
-    pub fn get_mode() -> ProcessorMode {
-        unimplemented!();
-    }
-
     #[inline(always)]
     pub fn set_stack(adr: u32) {
         unsafe{

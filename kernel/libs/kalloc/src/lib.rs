@@ -1,10 +1,9 @@
 #![feature(allocator)] 
 #![allocator]
 #![no_std]
-#![allow(unused_variables)]  // Remove later
 
 ///! Rust verlangt für einen Allocator eine eigene Bibliothek, die mit #![allocator] dekoriert ist.
-///! Um bei Erschöpfung des Heaps eine Seitenneuzuweisung ohne Systemruf und Callback auslösen zu können
+///! Um bei Erschöpfung des Heaps eine Seitenneuzuweisung ohne Systemruf und Callback auslösen zu können,
 ///! ist die eigentliche Funktionalität in mem implementiert.
 
 extern "Rust" {
