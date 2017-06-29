@@ -9,9 +9,7 @@ bit_field = "0.7.0"
 compiler_builtins = { git = "https://github.com/rust-lang-nursery/compiler-builtins", features = ["mem"] }
 compiler_error = "0.1.1"
 kalloc =  { version = "0.1.0", path = "libs/kalloc" }
-lazy_static = { version = "0.2.1", features = ["spin_no_std"] }
 linked_list_allocator = "0.2.7"
-spin = "0.4.5"
 
 [profile.dev]
 panic = "abort"

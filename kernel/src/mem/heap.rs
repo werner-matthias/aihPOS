@@ -1,36 +1,45 @@
 extern crate linked_list_allocator;
 use core::{ptr, cmp};
 use self::linked_list_allocator::Heap;
-use spin::Mutex;
+use sync::no_concurrency::NoConcurrency;
 
-extern {
-    static __bss_start: u32;
-}
-
-pub  const INIT_HEAP_SIZE: usize = 25 * 4096; // 25 Seiten = 100 kB
-
-lazy_static! {
-    static ref HEAP: Mutex<Heap> = Mutex::new(unsafe {
-        Heap::new(&__bss_start as *const u32 as usize, INIT_HEAP_SIZE)
-            // ToDo: Markiere Speicherseiten als belegt
-    });
-}    
+static HEAP: NoConcurrency<Option<Heap>> = NoConcurrency::new(None);
 
 #[no_mangle]
 pub extern fn aihpos_allocate(size: usize, align: usize) -> *mut u8 {
-    let ret = HEAP.lock().allocate_first_fit(size, align);
-    match ret {
-        Some(ptr) => ptr,
-        None  => {
-            // ToDo: Reservierung zusätzlicher Seiten durch die logische Addressverwaltung => später
-            panic!("Out of memory");
+    let hpo = HEAP.get();
+    match *hpo {
+        Some(ref mut heap) => {
+            let ret = heap.allocate_first_fit(size, align);
+            match ret {
+                Some(ptr) => ptr,
+                None  => {
+                    // ToDo: Reservierung zusätzlicher Seiten durch die logische Addressverwaltung => später
+                    panic!("Out of memory");
+                }
+            }
+        },
+        None => {
+            panic!("Uninitialized heap");
         }
     }
 }
 
+pub extern fn init_heap(start: usize, size: usize) {
+    unsafe{HEAP.set(Some(Heap::new(start,size)))};
+}
+
 #[no_mangle]
 pub extern fn aihpos_deallocate(ptr: *mut u8, size: usize, align: usize) {
-    unsafe { HEAP.lock().deallocate(ptr, size, align) };
+    let hpo = HEAP.get();
+    match *hpo {
+        Some(ref mut heap) => {
+            unsafe { heap.deallocate(ptr, size, align) };
+        },
+        None => {
+            panic!("Uninitialized heap");
+        }
+    }
 }
 
 #[no_mangle]

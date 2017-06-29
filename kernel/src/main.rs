@@ -5,6 +5,7 @@
     alloc,                  // Nutzung der Alloc-Crate
     attr_literals,          // Literale in Attributen (nicht nur Strings)
     asm,                    // Assembler in Funktionen...
+    associated_type_defaults, // Verknüpfung von Traits mit Typen
     // concat_idents,
     collections,            // Nutzung des Collection-Crate
     const_fn,               // const Funktionen (für Constructoren)
@@ -30,11 +31,9 @@ extern crate bit_field;
 #[macro_use] extern crate collections;
 extern crate compiler_builtins;
 extern crate kalloc;
-#[allow(unused_imports)]  
-#[macro_use] extern crate lazy_static;
-extern crate spin;
 
 const IRQ_STACK_SIZE: u32 = 2048;
+pub  const INIT_HEAP_SIZE: usize = 25 * 4096; // 25 Seiten = 100 kB
 
 // 
 extern {
@@ -44,6 +43,7 @@ extern {
     static __data_end: u32;
     static __shared_begin: u32;
     static __shared_end:   u32;
+    static __bss_start: u32;
 }
 
 #[macro_use] mod debug;
@@ -58,6 +58,7 @@ use hal::cpu::{Cpu,ProcessorMode,MMU};
 use mem::{PdEntryType,PageDirectoryEntry,PdEntry,DomainAccess,MemoryAccessRight,MemType};
 use mem::frames::FrameManager;
 pub use mem::heap::{aihpos_allocate,aihpos_deallocate,aihpos_usable_size,aihpos_reallocate_inplace,aihpos_reallocate};
+use mem::heap::init_heap;
 
 use collections::vec::Vec;
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
@@ -99,6 +100,7 @@ fn determine_svc_stack() -> u32 {
 
 fn init_mem() {
     init_stacks();
+    init_heap(&unsafe{__bss_start} as *const u32 as usize, INIT_HEAP_SIZE);
     init_paging();
 }
 
@@ -119,29 +121,25 @@ fn init_stacks() {
 }
 
 fn init_paging() {
-    unimplemented!();
-}
-
-/*
-    let mmu = MMU::new(unsafe{ &mut __page_directory});
+    let mut mmu = MMU::new(unsafe{ &mut __page_directory});
     // Standard ist Seitenfehler
     for page in 0..4096{ 
         let pde: PageDirectoryEntry;
-        pde = PdEntry::new(PdEntryType::Fault).entry;
-        mmu.page_directory[page as usize] = pde;
+        pde = PdEntry::new(PdEntryType::Fault).entry();
+        mmu[page as usize] = pde;
     }
     // Das erste MB wird jetzt auf sich selbst gemappt
-    mmu.page_directory[0] = PdEntry::new(PdEntryType::Section).base_addr(0).rights(MemoryAccessRight::SysRwUsrNone).mem_type(MemType::NormalUncashed).entry;  // Identitätsmapping;
+    mmu[0] = PdEntry::new(PdEntryType::Section).base_addr(0).rights(MemoryAccessRight::SysRwUsrNone).mem_type(MemType::NormalUncashed).entry();  // Identitätsmapping;
     // Den Stack und alles drüber (eigentlich nur die HW) brauchen wir auch:
     for page in 447..4096 {
         let pde: PageDirectoryEntry;
-        pde = PdEntry::new(PdEntryType::Section).base_addr(page << 20).rights(MemoryAccessRight::SysRwUsrNone).mem_type(MemType::NormalUncashed).entry;  // Identitätsmapping
-        mmu.page_directory[page as usize] = pde;
+        pde = PdEntry::new(PdEntryType::Section).base_addr(page << 20).rights(MemoryAccessRight::SysRwUsrNone).mem_type(MemType::NormalUncashed).entry();  // Identitätsmapping
+        mmu[page as usize] = pde;
     }
     MMU::set_domain_access(0,DomainAccess::Manager);
     mmu.start();
     kprint!("MMU aktiviert.\n");
-}*/
+}
 
 fn report() {
     kprint!("aihPOS"; RED);
