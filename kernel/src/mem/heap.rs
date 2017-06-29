@@ -1,5 +1,5 @@
-
 extern crate linked_list_allocator;
+use core::{ptr, cmp};
 use self::linked_list_allocator::Heap;
 use spin::Mutex;
 
@@ -12,7 +12,7 @@ pub  const INIT_HEAP_SIZE: usize = 25 * 4096; // 25 Seiten = 100 kB
 lazy_static! {
     static ref HEAP: Mutex<Heap> = Mutex::new(unsafe {
         Heap::new(&__bss_start as *const u32 as usize, INIT_HEAP_SIZE)
-            // ToDo: mark pages as reserved
+            // ToDo: Markiere Speicherseiten als belegt
     });
 }    
 
@@ -23,7 +23,7 @@ pub extern fn aihpos_allocate(size: usize, align: usize) -> *mut u8 {
     match ret {
         Some(ptr) => ptr,
         None  => {
-            // ToDo: reserve additional page
+            // ToDo: Reservierung zusätzlicher Seiten durch die logische Addressverwaltung => später
             panic!("Out of memory");
         }
     }
@@ -51,12 +51,6 @@ pub extern fn aihpos_reallocate_inplace(ptr: *mut u8, size: usize,
 #[no_mangle]
 pub extern fn aihpos_reallocate(ptr: *mut u8, size: usize, new_size: usize,
                             align: usize) -> *mut u8 {
-    use core::{ptr, cmp};
-
-    // from: https://github.com/rust-lang/rust/blob/
-    //     c66d2380a810c9a2b3dbb4f93a830b101ee49cc2/
-    //     src/liballoc_system/lib.rs#L98-L101
-
     let new_ptr = aihpos_allocate(new_size, align);
     unsafe { ptr::copy(ptr, new_ptr, cmp::min(size, new_size)) };
     aihpos_deallocate(ptr, size, align);
