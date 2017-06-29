@@ -5,6 +5,10 @@ use sync::no_concurrency::NoConcurrency;
 
 static HEAP: NoConcurrency<Option<Heap>> = NoConcurrency::new(None);
 
+pub extern fn init_heap(start: usize, size: usize) {
+    unsafe{HEAP.set(Some(Heap::new(start,size)))};
+}
+
 #[no_mangle]
 pub extern fn aihpos_allocate(size: usize, align: usize) -> *mut u8 {
     let hpo = HEAP.get();
@@ -23,10 +27,6 @@ pub extern fn aihpos_allocate(size: usize, align: usize) -> *mut u8 {
             panic!("Uninitialized heap");
         }
     }
-}
-
-pub extern fn init_heap(start: usize, size: usize) {
-    unsafe{HEAP.set(Some(Heap::new(start,size)))};
 }
 
 #[no_mangle]
