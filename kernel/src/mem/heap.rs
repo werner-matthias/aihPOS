@@ -18,7 +18,6 @@ lazy_static! {
 
 #[no_mangle]
 pub extern fn aihpos_allocate(size: usize, align: usize) -> *mut u8 {
-    kprint!("allocate {} bytes\n",size; YELLOW);
     let ret = HEAP.lock().allocate_first_fit(size, align);
     match ret {
         Some(ptr) => ptr,
@@ -31,7 +30,6 @@ pub extern fn aihpos_allocate(size: usize, align: usize) -> *mut u8 {
 
 #[no_mangle]
 pub extern fn aihpos_deallocate(ptr: *mut u8, size: usize, align: usize) {
-    kprint!("free {} bytes\n",size; YELLOW);
     unsafe { HEAP.lock().deallocate(ptr, size, align) };
 }
 
