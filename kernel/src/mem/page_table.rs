@@ -1,90 +1,44 @@
-use bit_field::BitField;
-use mem::paging::{MemType,MemoryAccessRight};
+use mem::pte::{PageTableEntry,PageTableEntryType,Pte};
+use core::ops::{Index, IndexMut};
 
-pub type PageTableEntry     = u32;
+pub type PhysAddr  = usize;
+pub type LogicAddr = usize;
 
-#[derive(PartialEq,Clone,Copy)]
-pub enum PageTableEntryType {
-    Fault            = 0x0,
-    LargePage        = 0x1,
-    SmallCodePage    = 0x2,
-    SmallNonCodePage = 0x3
+#[repr(C)]
+#[repr(align(1024))]
+pub struct PageTable {
+    table: [PageTableEntry;256]
 }
 
-pub struct Pte {
-    pub entry: PageTableEntry
-}
-
-impl Pte {
-    pub fn new_entry(kind: PageTableEntryType) -> Pte {
-        Pte{
-            entry: kind as PageTableEntry
+impl PageTable {
+    pub fn new() ->  PageTable {
+        PageTable {
+            table: [0;256]
+        }
+    }
+    
+    pub fn invalidate(&mut self) {
+        for ndx in 0..256 {
+            self.table[ndx] = Pte::new_entry(PageTableEntryType::Fault).entry();
         }
     }
 
-    pub fn base_addr(&mut self, a: u32) -> &mut Pte {
-        if self.entry & 0x3 == 0 { // Fault
-            return self
-        }
-        if self.entry & 0x2 == 0 { // large Page
-            self.entry.set_bits(16..32,a >> 16);
-        } else {                   // small Page
-            self.entry.set_bits(12..32,a >> 12);
-        }
-        self
+    pub fn map(&mut self, paddr: PhysAddr, laddr: LogicAddr) {
         
-    }    
-
-    pub fn mem_type(&mut self, t: MemType) -> &mut Pte {
-        if self.entry & 0x3 == 0 { // Fault
-            return self
-        }
-        let ti = t as u32;
-        if self.entry & 0x2 == 0 { // large Page
-            self.entry.set_bits(12..15,ti >> 2);
-        } else {                   // small Page
-            self.entry.set_bits(6..9,ti  >> 2);
-        }
-        self.entry.set_bit(3,ti & 2 != 0);
-        self.entry.set_bit(2,ti & 1 != 0);
-        self
     }
+    
+}
 
-    pub fn no_execution(&mut self, b: bool) -> &mut Pte {
-        if self.entry & 0x3 == 0 { // Fault
-            return self
-        }
-        if self.entry & 0x2 == 0 { // large Page
-            self.entry.set_bit(15,b);
-        } else {                   // small Page
-            self.entry.set_bit(0,b);
-        }
-        self
+impl Index<usize> for PageTable {
+    type Output = PageTableEntry;
+
+    fn index(&self, index: usize) -> &PageTableEntry {
+        &self.table[index]
     }
+}
 
-    pub fn rights(&mut self, r: MemoryAccessRight) -> &mut Pte {
-        if self.entry & 0x3 == 0 {
-            return self
-        }
-        let ri = r as u32;
-        self.entry.set_bit(9,ri & 0b100 != 0);
-        self.entry.set_bits(4..6,ri & 0b011);
-        self
-    }
-
-    pub fn process_specific(&mut self) ->  &mut Pte {
-        if self.entry & 0x3 == 0 {
-            return self
-        }
-        self.entry.set_bit(11,true);
-        self
-    }
-
-    pub fn shared(&mut self) ->  &mut Pte {
-        if self.entry & 0x3 == 0 {
-            return self
-        }
-        self.entry.set_bit(10,true);
-        self
+impl IndexMut<usize> for PageTable {
+    fn index_mut(&mut self, index: usize) -> &mut PageTableEntry {
+        &mut self.table[index]
     }
 }

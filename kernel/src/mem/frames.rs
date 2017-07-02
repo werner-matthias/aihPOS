@@ -3,15 +3,6 @@ use core::cmp::min;
 use core::ops::Range;
 use core::u32;
 
-#[cfg (all(feature="page_size_64k",feature="page_size_4k"))]
-compiler_error!("Multiple page sizes spezified");
-
-#[cfg (all(not(feature="page_size_64k"),not(feature="page_size_4k")))]
-compiler_error!("No page size configured");
-
-#[cfg (feature="page_size_64k")]
-compiler_error!("Large pagees are not implemented yet");
-
 const MEM_SIZE:     u32 = 512*1024*1024;
 const PAGE_SIZE:    u32 = 4*1024;
 

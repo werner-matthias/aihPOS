@@ -13,7 +13,7 @@ pub enum PdEntryType {
 }
 
 pub struct PdEntry {
-    pub entry: PageDirectoryEntry,
+    entry: PageDirectoryEntry,
 }
 
 impl PdEntry {
@@ -90,5 +90,9 @@ impl PdEntry {
             self.entry.set_bit(4,true);
         }
         self
+    }
+
+    pub fn entry(&self) -> PageDirectoryEntry {
+        self.entry.clone()
     }
 }
