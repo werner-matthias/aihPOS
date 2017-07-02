@@ -17,3 +17,8 @@ Put `cargo-kernel` in your path. Then run
 ```
 cargo kernel --target=arm-none-eabihf 
 ```
+
+## Remark
+Since aihPOS should support an undergraduate course at an German university, all
+source comments are in German. Possibly, I will create a branch with translation
+once the code is stable.
