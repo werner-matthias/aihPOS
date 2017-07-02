@@ -43,7 +43,10 @@ extern {
     static __data_end: u32;
     static __shared_begin: u32;
     static __shared_end:   u32;
-    static __bss_start: u32;
+    //    static __bss_start: u32;
+}
+extern "C" {
+    fn __bss_start();
 }
 
 #[macro_use] mod debug;
@@ -58,7 +61,6 @@ use hal::cpu::{Cpu,ProcessorMode,MMU};
 use mem::{PdEntryType,PageDirectoryEntry,PdEntry,DomainAccess,MemoryAccessRight,MemType};
 use mem::frames::FrameManager;
 pub use mem::heap::{aihpos_allocate,aihpos_deallocate,aihpos_usable_size,aihpos_reallocate_inplace,aihpos_reallocate};
-use mem::heap::init_heap;
 
 use collections::vec::Vec;
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
@@ -100,7 +102,7 @@ fn determine_svc_stack() -> u32 {
 
 fn init_mem() {
     init_stacks();
-    init_heap(&unsafe{__bss_start} as *const u32 as usize, INIT_HEAP_SIZE);
+    init_heap();
     init_paging();
 }
 
@@ -118,6 +120,10 @@ fn init_stacks() {
     Cpu::set_stack(adr);
     // ...und zurück in den Svc-Mode
     Cpu::set_mode(ProcessorMode::Svc);
+}
+
+fn init_heap() {
+    mem::init_heap(__bss_start as usize, INIT_HEAP_SIZE);
 }
 
 fn init_paging() {
