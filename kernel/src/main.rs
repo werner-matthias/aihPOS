@@ -38,14 +38,13 @@ pub  const INIT_HEAP_SIZE: usize = 25 * 4096; // 25 Seiten = 100 kB
 // 
 extern {
     static mut __page_directory: [PageDirectoryEntry;4096];
-    static __text_end: u32;
-    static __kernel_stack: u32;
-    static __data_end: u32;
-    static __shared_begin: u32;
-    static __shared_end:   u32;
-    //    static __bss_start: u32;
 }
 extern "C" {
+    fn __text_end();
+    fn __data_end();
+    fn __shared_begin();
+    fn __shared_end();
+    fn __kernel_stack();
     fn __bss_start();
 }
 
@@ -71,7 +70,7 @@ const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 pub extern fn kernel_start() {
     // Zum Start existiert noch kein Stack. Daher setzen wir einen temporären Stack, der nach dem Textsegment liegt.
     // Das Symbol ist in "layout.ld" definiert.
-    Cpu::set_stack(unsafe {&__kernel_stack}  as *const u32 as u32);
+    Cpu::set_stack(__kernel_stack as u32);
     // Nun kann die Größe des Speichers und damit die Adresse für den "echten" Stacks bestimmt werden
     Cpu::set_stack(determine_svc_stack());
     kernel_init();
@@ -163,12 +162,16 @@ fn report() {
     kprint!(", Version {:#0x}, Seriennummer {:04x}.{:04x}\n",board_revision,serial_high,serial_low);
     kprint!("Firmwareversion {:0x}\n",firmware_version);
     kprint!("Speicherlayout:\n");
-    kprint!(" IRQ-Stack: 0x{:08x}, System-Stack: 0x{:08x}, Seitendirectory: 0x{:08x}\n",determine_irq_stack(),determine_svc_stack(), unsafe{ __page_directory.as_ptr()} as *const
-            u32 as u32; WHITE);
-    kprint!(" Shared: 0x{:08x} - 0x{:08x}, Ende des Kernels: 0x{:08x}\n",
-            unsafe{ &__shared_begin} as *const u32 as u32,
-            unsafe{&__shared_end} as *const u32 as u32,
-            unsafe{&__data_end} as *const u32 as u32; WHITE); 
+    kprint!("0x{:08x}: kernel_start\n",kernel_start as usize; WHITE);
+    kprint!("0x{:08x}: kernel __text_end\n",__text_end as usize; WHITE);
+    kprint!("0x{:08x}: kernel __data_end\n",__data_end as usize; WHITE);
+    kprint!("0x{:08x}: __shared_begin\n",__shared_begin as usize; WHITE);
+    kprint!("0x{:08x}: __shared_end\n",__shared_end as usize; WHITE);
+    //kprint!("0x{:08x}: __page_directory\n",__page_directory as usize; WHITE);
+    kprint!("0x{:08x}: begin kernel heap\n",__bss_start as usize; WHITE);
+    kprint!("0x{:08x}: end initial kernel heap\n",__bss_start as usize + INIT_HEAP_SIZE; WHITE);
+    kprint!("0x{:08x}: TOS system\n",determine_svc_stack() as usize; WHITE);
+    kprint!("0x{:08x}: TOS interrupt\n",determine_irq_stack() as usize; WHITE);
 }
 
 fn test() {
