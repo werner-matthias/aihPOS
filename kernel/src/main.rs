@@ -32,6 +32,28 @@ extern crate bit_field;
 extern crate compiler_builtins;
 extern crate kalloc;
 
+
+#[macro_use] mod aux_macros;
+#[macro_use] mod debug;
+#[macro_use] mod hal;
+mod panic;
+mod sync;
+mod mem;
+use hal::board::{MemReport,BoardReport,report_board_info,report_memory};
+use hal::entry::syscall;
+use hal::cpu::{Cpu,ProcessorMode,MMU};
+use mem::{PdEntryType,PageDirectoryEntry,PdEntry,DomainAccess,MemoryAccessRight,MemType};
+use mem::frames::FrameManager;
+pub use mem::heap::{aihpos_allocate,aihpos_deallocate,aihpos_usable_size,aihpos_reallocate_inplace,aihpos_reallocate};
+use collections::vec::Vec;
+
+import_linker_address!(__text_end);
+import_linker_address!(__data_end);
+import_linker_address!(__shared_begin);
+import_linker_address!(__shared_end);
+import_linker_address!(__kernel_stack);
+import_linker_address!(__bss_start);
+
 const IRQ_STACK_SIZE: u32 = 2048;
 pub  const INIT_HEAP_SIZE: usize = 25 * 4096; // 25 Seiten = 100 kB
 
@@ -39,29 +61,6 @@ pub  const INIT_HEAP_SIZE: usize = 25 * 4096; // 25 Seiten = 100 kB
 extern {
     static mut __page_directory: [PageDirectoryEntry;4096];
 }
-extern "C" {
-    fn __text_end();
-    fn __data_end();
-    fn __shared_begin();
-    fn __shared_end();
-    fn __kernel_stack();
-    fn __bss_start();
-}
-
-#[macro_use] mod debug;
-#[macro_use] mod hal;
-mod panic;
-mod sync;
-mod mem;
-
-use hal::board::{MemReport,BoardReport,report_board_info,report_memory};
-use hal::entry::syscall;
-use hal::cpu::{Cpu,ProcessorMode,MMU};
-use mem::{PdEntryType,PageDirectoryEntry,PdEntry,DomainAccess,MemoryAccessRight,MemType};
-use mem::frames::FrameManager;
-pub use mem::heap::{aihpos_allocate,aihpos_deallocate,aihpos_usable_size,aihpos_reallocate_inplace,aihpos_reallocate};
-
-use collections::vec::Vec;
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 #[no_mangle]      // Name wird für den Export nicht verändert
