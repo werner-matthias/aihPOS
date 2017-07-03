@@ -12,33 +12,26 @@ pub extern fn init_heap(start: usize, size: usize) {
 #[no_mangle]
 pub extern fn aihpos_allocate(size: usize, align: usize) -> *mut u8 {
     let hpo = HEAP.get();
-    match *hpo {
-        Some(ref mut heap) => {
-            let ret = heap.allocate_first_fit(size, align);
-            match ret {
-                Some(ptr) => ptr,
-                None  => {
-                    // ToDo: Reservierung zusätzlicher Seiten durch die logische Addressverwaltung => später
-                    panic!("Out of memory");
-                }
-            }
-        },
-        None => {
-            panic!("Uninitialized heap");
+    if let Some(ref mut heap) = *hpo {
+        let ret = heap.allocate_first_fit(size, align);
+        if let Some(ptr) = ret {
+            ptr
+        } else {
+            // ToDo: Reservierung zusätzlicher Seiten durch die logische Addressverwaltung => später
+            panic!("Out of memory");
         }
+    } else {
+        panic!("Uninitialized heap");
     }
 }
 
 #[no_mangle]
 pub extern fn aihpos_deallocate(ptr: *mut u8, size: usize, align: usize) {
     let hpo = HEAP.get();
-    match *hpo {
-        Some(ref mut heap) => {
-            unsafe { heap.deallocate(ptr, size, align) };
-        },
-        None => {
-            panic!("Uninitialized heap");
-        }
+    if let Some(ref mut heap) = *hpo {
+        unsafe { heap.deallocate(ptr, size, align) };
+    } else {
+        panic!("Uninitialized heap");
     }
 }
 

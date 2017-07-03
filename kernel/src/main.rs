@@ -39,11 +39,13 @@ extern crate kalloc;
 mod panic;
 mod sync;
 mod mem;
+use alloc::boxed::Box;
 use hal::board::{MemReport,BoardReport,report_board_info,report_memory};
 use hal::entry::syscall;
 use hal::cpu::{Cpu,ProcessorMode,MMU};
 use mem::{PdEntryType,PageDirectoryEntry,PdEntry,DomainAccess,MemoryAccessRight,MemType};
 use mem::frames::FrameManager;
+use mem::PageTable;
 pub use mem::heap::{aihpos_allocate,aihpos_deallocate,aihpos_usable_size,aihpos_reallocate_inplace,aihpos_reallocate};
 use collections::vec::Vec;
 
@@ -140,6 +142,8 @@ fn init_paging() {
         pde = PdEntry::new(PdEntryType::Section).base_addr(page << 20).rights(MemoryAccessRight::SysRwUsrNone).mem_type(MemType::NormalUncashed).entry();  // Identitätsmapping
         mmu[page as usize] = pde;
     }
+    let kernel_pt = Box::new(PageTable::new());
+    
     MMU::set_domain_access(0,DomainAccess::Manager);
     mmu.start();
     kprint!("MMU aktiviert.\n");
@@ -161,16 +165,16 @@ fn report() {
     kprint!(", Version {:#0x}, Seriennummer {:04x}.{:04x}\n",board_revision,serial_high,serial_low);
     kprint!("Firmwareversion {:0x}\n",firmware_version);
     kprint!("Speicherlayout:\n");
-    kprint!("0x{:08x}: kernel_start\n",kernel_start as usize; WHITE);
-    kprint!("0x{:08x}: kernel __text_end\n",__text_end as usize; WHITE);
-    kprint!("0x{:08x}: kernel __data_end\n",__data_end as usize; WHITE);
-    kprint!("0x{:08x}: __shared_begin\n",__shared_begin as usize; WHITE);
-    kprint!("0x{:08x}: __shared_end\n",__shared_end as usize; WHITE);
+    kprint!("0x{:08x}: Anfang Kernelcode\n",kernel_start as usize; WHITE);
+    kprint!("0x{:08x}: Ende Kernelcode\n",__text_end as usize; WHITE);
+    kprint!("0x{:08x}: Ende Kerneldaten\n",__data_end as usize; WHITE);
+    kprint!("0x{:08x}: Anfang gemeinsamer Bereich\n",__shared_begin as usize; WHITE);
+    kprint!("0x{:08x}: Ende gemeinsamer Bereich\n",__shared_end as usize; WHITE);
     //kprint!("0x{:08x}: __page_directory\n",__page_directory as usize; WHITE);
-    kprint!("0x{:08x}: begin kernel heap\n",__bss_start as usize; WHITE);
-    kprint!("0x{:08x}: end initial kernel heap\n",__bss_start as usize + INIT_HEAP_SIZE; WHITE);
-    kprint!("0x{:08x}: TOS system\n",determine_svc_stack() as usize; WHITE);
-    kprint!("0x{:08x}: TOS interrupt\n",determine_irq_stack() as usize; WHITE);
+    kprint!("0x{:08x}: Anfang Kernelheap\n",__bss_start as usize; WHITE);
+    kprint!("0x{:08x}: Initiales Ende Kernelheap\n",__bss_start as usize + INIT_HEAP_SIZE; WHITE);
+    kprint!("0x{:08x}: TOS System\n",determine_svc_stack() as usize; WHITE);
+    kprint!("0x{:08x}: TOS Interrupt\n",determine_irq_stack() as usize; WHITE);
 }
 
 fn test() {
