@@ -1,59 +1,6 @@
+///! Z.z. binden wir die einfach die neue Version von linked_list_allocator ein.
+///! Später soll die Interaktion mit dem Pager hinzukommen.
 extern crate linked_list_allocator;
-use core::{ptr, cmp};
-use self::linked_list_allocator::Heap;
-use sync::no_concurrency::NoConcurrency;
+pub use self::linked_list_allocator::LockedHeap;
 
-static HEAP: NoConcurrency<Option<Heap>> = NoConcurrency::new(None);
-
-pub extern fn init_heap(start: usize, size: usize) {
-    unsafe{HEAP.set(Some(Heap::new(start,size)))};
-}
-
-#[no_mangle]
-pub extern fn aihpos_allocate(size: usize, align: usize) -> *mut u8 {
-    let hpo = HEAP.get();
-    if let Some(ref mut heap) = *hpo {
-        let ret = heap.allocate_first_fit(size, align);
-        if let Some(ptr) = ret {
-            ptr
-        } else {
-            // ToDo: Reservierung zusätzlicher Seiten durch die logische Addressverwaltung => später
-            panic!("Out of memory");
-        }
-    } else {
-        panic!("Uninitialized heap");
-    }
-}
-
-#[no_mangle]
-pub extern fn aihpos_deallocate(ptr: *mut u8, size: usize, align: usize) {
-    let hpo = HEAP.get();
-    if let Some(ref mut heap) = *hpo {
-        unsafe { heap.deallocate(ptr, size, align) };
-    } else {
-        panic!("Uninitialized heap");
-    }
-}
-
-#[no_mangle]
-#[allow(unused_variables)]
-pub extern fn aihpos_usable_size(size: usize, align: usize) -> usize {
-   size
-}
-
-#[no_mangle]
-#[allow(unused_variables)]
-pub extern fn aihpos_reallocate_inplace(ptr: *mut u8, size: usize,
-                                        new_size: usize, align: usize) -> usize {
-   size
-}
-
-#[no_mangle]
-pub extern fn aihpos_reallocate(ptr: *mut u8, size: usize, new_size: usize,
-                            align: usize) -> *mut u8 {
-    let new_ptr = aihpos_allocate(new_size, align);
-    unsafe { ptr::copy(ptr, new_ptr, cmp::min(size, new_size)) };
-    aihpos_deallocate(ptr, size, align);
-    new_ptr
-}
 

@@ -53,7 +53,7 @@ impl FrameManager {
 
     pub fn mark_not_available(&mut self, r: Range<u32>) {
         let normalized_r = (r.start & !(PAGE_SIZE -1))..r.end;
-        for addr in normalized_r.step_by(PAGE_SIZE) {
+        for addr in normalized_r.step_by(PAGE_SIZE as usize) {
             assert!(((addr/PAGE_SIZE) % 32)<32);
             self.frames_bit_vector[(addr /(PAGE_SIZE*32)) as usize].set_bit(((addr/PAGE_SIZE) % 32) as u8,true);
         }

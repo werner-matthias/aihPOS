@@ -1,8 +1,9 @@
 #![no_std]
 #![no_main]
 #![feature(
-    //abi_unadjusted,         //
     alloc,                  // Nutzung der Alloc-Crate
+    allocator_api,          // Nutzung der Allocator-API 
+    //abi_unadjusted,         //
     attr_literals,          // Literale in Attributen (nicht nur Strings)
     asm,                    // Assembler in Funktionen...
     associated_type_defaults, // Verknüpfung von Traits mit Typen
@@ -11,13 +12,14 @@
     const_fn,               // const Funktionen (für Constructoren)
     compiler_builtins_lib,  // Nutzung der Compiler-Buildins-Bibliothek (div, mul, ...)
     core_intrinsics,        // Nutzung der Intrinsics der Core-Bibliothek
+    global_allocator,       // eigener globaler Allocator
     i128_type,              // 128-Bit-Typen
+    iterator_step_by,       // Spezifische Schrittweite bei Iterationen
     lang_items,             // Funktionen interne Funktionen ersetzen (panic)
     linkage,                // Angaben zum Linktyp (z.B. Sichtbarkeit)
     naked_functions,        // Funktionen ohne Prolog/Epilog
     plugin,                 // Nutzung von Compiler-Plugins
     repr_align,             // Alignment
-    step_by,                // Spezifische Schrittweite bei Iterationen
     // use_extern_macros,
     used,                   // Verbot, scheinbar toten Code zu eliminieren
 )
@@ -30,8 +32,6 @@ extern crate alloc;
 extern crate bit_field;
 #[macro_use] extern crate collections;
 extern crate compiler_builtins;
-extern crate kalloc;
-
 
 #[macro_use] mod aux_macros;
 #[macro_use] mod debug;
@@ -43,10 +43,10 @@ use alloc::boxed::Box;
 use hal::board::{MemReport,BoardReport,report_board_info,report_memory};
 use hal::entry::syscall;
 use hal::cpu::{Cpu,ProcessorMode,MMU};
-use mem::{PdEntryType,PageDirectoryEntry,PdEntry,DomainAccess,MemoryAccessRight,MemType};
+use mem::{PdEntryType,PageDirectoryEntry,PdEntry,DomainAccess,MemoryAccessRight,MemType,PageTableEntryType,Pte};
 use mem::frames::FrameManager;
 use mem::PageTable;
-pub use mem::heap::{aihpos_allocate,aihpos_deallocate,aihpos_usable_size,aihpos_reallocate_inplace,aihpos_reallocate};
+use mem::heap::LockedHeap;
 use collections::vec::Vec;
 
 import_linker_address!(__text_end);
@@ -59,7 +59,9 @@ import_linker_address!(__bss_start);
 const IRQ_STACK_SIZE: u32 = 2048;
 pub  const INIT_HEAP_SIZE: usize = 25 * 4096; // 25 Seiten = 100 kB
 
-// 
+#[global_allocator]
+static HEAP: LockedHeap = LockedHeap::empty();
+
 extern {
     static mut __page_directory: [PageDirectoryEntry;4096];
 }
@@ -123,9 +125,14 @@ fn init_stacks() {
 }
 
 fn init_heap() {
-    mem::init_heap(__bss_start as usize, INIT_HEAP_SIZE);
+    unsafe{
+        HEAP.lock().init(__bss_start as usize, INIT_HEAP_SIZE);
+    }
 }
 
+///! Eine Coarse Table kann 1 MB (in 256 Blöcken a 4 kB) mappen.
+///! Der komplette Kernel sollte kleiner als 1 MB sein, daher brauchen wir
+///! für ihn lediglich eine Tabelle im Directory.
 fn init_paging() {
     let mut mmu = MMU::new(unsafe{ &mut __page_directory});
     // Standard ist Seitenfehler
@@ -142,7 +149,14 @@ fn init_paging() {
         pde = PdEntry::new(PdEntryType::Section).base_addr(page << 20).rights(MemoryAccessRight::SysRwUsrNone).mem_type(MemType::NormalUncashed).entry();  // Identitätsmapping
         mmu[page as usize] = pde;
     }
+    
     let kernel_pt = Box::new(PageTable::new());
+    //for page in 0..256 {
+    //    kernel_pt[0] = Pte::new_entry(PageTableEntryType::SmallCodePage).base_addr(page)
+    //}
+    let kernel_pt_addr = Box::into_raw(kernel_pt);
+    let pde = PdEntry::new(PdEntryType::CoarsePageTable).base_addr((kernel_pt_addr as u32) << 20).entry();
+    let kernel_pt = unsafe{ Box::from_raw(kernel_pt_addr)};
     
     MMU::set_domain_access(0,DomainAccess::Manager);
     mmu.start();
