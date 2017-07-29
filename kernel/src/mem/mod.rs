@@ -1,3 +1,6 @@
+pub type PhysAddr  = usize;
+pub type LogicAddr = usize;
+
 pub mod paging;
 pub mod pde;
 pub mod pte;

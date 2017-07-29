@@ -42,8 +42,8 @@ pub static execption_table: ExceptionTable = ExceptionTable {
 pub struct ServiceRoutine{
     undef:      fn(*const u32),
     svc:        fn(u32,u32,u32) -> u32,
-    abort:      fn(),
-    data_abort: fn(),
+    abort:      fn(*const u32),
+    data_abort: fn(*const u32),
     irq:        fn(),
     fiq:        fn(),
 }
@@ -90,16 +90,24 @@ pub extern "C" fn dispatch_svc(nr: u32, arg1: u32, arg2: u32){
 
 #[naked]
 pub extern "C" fn dispatch_prefetch_abort() {
-    Cpu::save_context();
-    abort_service_routine();
-    Cpu::restore_context_and_return();
+    //Cpu::save_context();
+    unsafe{
+        asm!("mov lr, r0":::"memory");
+        asm!("blx $0"::"r"(service_routine.abort):"r0","r1","r2","r3","r4","r5","r6","r7","r8","r9","r10","r11","memory":"alignstack","volatile");
+    }
+    // abort_service_routine();
+    //Cpu::restore_context_and_return();
 }
 
 #[naked]
 pub extern "C" fn dispatch_data_abort() {
-    Cpu::save_context();
-    data_abort_service_routine();
-    Cpu::restore_context_and_return();
+    //Cpu::save_context();
+    unsafe {
+        asm!("mov lr, r0":::"memory");
+        asm!("blx $0"::"r"(service_routine.data_abort):"r0","r1","r2","r3","r4","r5","r6","r7","r8","r9","r10","r11","memory":"alignstack","volatile");
+    }
+    //data_abort_service_routine();
+    //Cpu::restore_context_and_return();
 }
 
 #[naked]
@@ -137,20 +145,22 @@ pub fn undefined_service_routine(adr: *const u32) {
 #[no_mangle]
 #[allow(private_no_mangle_fns)]
 #[linkage="weak"] // Verhindert, dass der Optimierer die Funktion eliminiert
-pub fn abort_service_routine() {
+pub fn abort_service_routine(adr: *const u32) {
     // Im Moment wird das Windows-3.X-Verhalten simuliert.
     // Sobald eine Prozessabstraktion existiert, sollte dies angepasst werden.
-    panic!("Allgemeine Schutzverletzung");
+    kprint!("Allgemeine Schutzverletzung @ {:?}\n",adr);
+    panic!("Unbehandelt");
 }
 
 #[inline(never)]
 #[no_mangle]
 #[allow(private_no_mangle_fns)]
 #[linkage="weak"] // Verhindert, dass der Optimierer die Funktion eliminiert
-pub fn data_abort_service_routine() {
+pub fn data_abort_service_routine(adr: *const u32) {
     // Im Moment wird das Windows-3.X-Verhalten simuliert.
     // Sobald eine Prozessabstraktion existiert, sollte dies angepasst werden.
-    panic!("Allgemeine Schutzverletzung bei Datenzugriff");
+    kprint!("Allgemeine Schutzverletzung bei Datenzugriff @ {:?}\n",adr);
+    panic!("Unbehandelt");
 }
 
 // Als Systemruf wird der Softwareinterrupt 42 genutzt. Der erste Parameter ist der Rufselector,

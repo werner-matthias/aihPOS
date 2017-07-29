@@ -1,8 +1,7 @@
 use mem::pte::{PageTableEntry,PageTableEntryType,Pte};
 use core::ops::{Index, IndexMut};
 
-pub type PhysAddr  = usize;
-pub type LogicAddr = usize;
+use mem::{PhysAddr,LogicAddr};
 
 #[repr(C)]
 #[repr(align(1024))]

@@ -2,7 +2,8 @@
 #![no_main]
 #![feature(
     alloc,                  // Nutzung der Alloc-Crate
-    allocator_api,          // Nutzung der Allocator-API 
+    allocator_api,          // Nutzung der Allocator-API
+    allocator_internals,   // ???
     //abi_unadjusted,         //
     attr_literals,          // Literale in Attributen (nicht nur Strings)
     asm,                    // Assembler in Funktionen...
@@ -21,16 +22,17 @@
     plugin,                 // Nutzung von Compiler-Plugins
     repr_align,             // Alignment
     // use_extern_macros,
+    unique,                 // Unique-Pointer
     used,                   // Verbot, scheinbar toten Code zu eliminieren
 )
 ]
 #![plugin(compiler_error)]
 
 /// Benutzte Crates
-//#[macro_use]
-extern crate alloc;
+#[macro_use]
+//extern crate alloc;
 extern crate bit_field;
-#[macro_use] extern crate collections;
+//#[macro_use] extern crate collections;
 extern crate compiler_builtins;
 
 #[macro_use] mod aux_macros;
@@ -39,15 +41,16 @@ extern crate compiler_builtins;
 mod panic;
 mod sync;
 mod mem;
-use alloc::boxed::Box;
+//use alloc::boxed::Box;
 use hal::board::{MemReport,BoardReport,report_board_info,report_memory};
 use hal::entry::syscall;
 use hal::cpu::{Cpu,ProcessorMode,MMU};
 use mem::{PdEntryType,PageDirectoryEntry,PdEntry,DomainAccess,MemoryAccessRight,MemType,PageTableEntryType,Pte};
 use mem::frames::FrameManager;
 use mem::PageTable;
-use mem::heap::LockedHeap;
-use collections::vec::Vec;
+//use mem::heap::AihposHeap;
+//use mem::heap::Heap;
+//use collections::vec::Vec;
 
 import_linker_address!(__text_end);
 import_linker_address!(__data_end);
@@ -59,8 +62,9 @@ import_linker_address!(__bss_start);
 const IRQ_STACK_SIZE: u32 = 2048;
 pub  const INIT_HEAP_SIZE: usize = 25 * 4096; // 25 Seiten = 100 kB
 
-#[global_allocator]
-static HEAP: LockedHeap = LockedHeap::empty();
+//#[global_allocator]
+//static mut HEAP: AihposHeap = AihposHeap{};
+//static mut HEAP: Heap = Heap::empty();
 
 extern {
     static mut __page_directory: [PageDirectoryEntry;4096];
@@ -103,9 +107,13 @@ fn determine_svc_stack() -> u32 {
 }
 
 fn init_mem() {
+    kprint!("Init stacks...");
     init_stacks();
+    kprint!("done.\nInit heap...");
     init_heap();
+    kprint!("done.\nInit pagetable...");
     init_paging();
+    kprint!("done.\n");
 }
 
 fn init_stacks() {
@@ -126,7 +134,7 @@ fn init_stacks() {
 
 fn init_heap() {
     unsafe{
-        HEAP.lock().init(__bss_start as usize, INIT_HEAP_SIZE);
+        //HEAP.init(__bss_start as usize, INIT_HEAP_SIZE);
     }
 }
 
@@ -150,13 +158,13 @@ fn init_paging() {
         mmu[page as usize] = pde;
     }
     
-    let kernel_pt = Box::new(PageTable::new());
+    //let kernel_pt = Box::new(PageTable::new());
     //for page in 0..256 {
     //    kernel_pt[0] = Pte::new_entry(PageTableEntryType::SmallCodePage).base_addr(page)
     //}
-    let kernel_pt_addr = Box::into_raw(kernel_pt);
-    let pde = PdEntry::new(PdEntryType::CoarsePageTable).base_addr((kernel_pt_addr as u32) << 20).entry();
-    let kernel_pt = unsafe{ Box::from_raw(kernel_pt_addr)};
+    //let kernel_pt_addr = Box::into_raw(kernel_pt);
+    //let pde = PdEntry::new(PdEntryType::CoarsePageTable).base_addr((kernel_pt_addr as u32) << 20).entry();
+    //let kernel_pt = unsafe{ Box::from_raw(kernel_pt_addr)};
     
     MMU::set_domain_access(0,DomainAccess::Manager);
     mmu.start();
@@ -208,10 +216,11 @@ fn test() {
         kprint!("Neuer Frame @ {:08x}\n",adr);
     }
     {
+        /*
         let v = vec![1,2,3];
         for i in v {
             kprint!("{} ",i);
-        }
+        }*/
     }
     /*
     // Das folgende sollte eine Schutzverletzung geben
