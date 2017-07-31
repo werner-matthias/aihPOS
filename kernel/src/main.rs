@@ -9,7 +9,7 @@
     asm,                    // Assembler in Funktionen...
     associated_type_defaults, // Verknüpfung von Traits mit Typen
     // concat_idents,
-    collections,            // Nutzung des Collection-Crate
+    //collections,            // Nutzung des Collection-Crate
     const_fn,               // const Funktionen (für Constructoren)
     compiler_builtins_lib,  // Nutzung der Compiler-Buildins-Bibliothek (div, mul, ...)
     core_intrinsics,        // Nutzung der Intrinsics der Core-Bibliothek
@@ -30,7 +30,7 @@
 
 /// Benutzte Crates
 #[macro_use]
-//extern crate alloc;
+extern crate alloc;
 extern crate bit_field;
 //#[macro_use] extern crate collections;
 extern crate compiler_builtins;
@@ -49,7 +49,7 @@ use mem::{PdEntryType,PageDirectoryEntry,PdEntry,DomainAccess,MemoryAccessRight,
 use mem::frames::FrameManager;
 use mem::PageTable;
 //use mem::heap::AihposHeap;
-//use mem::heap::Heap;
+use mem::heap::Heap;
 //use collections::vec::Vec;
 
 import_linker_address!(__text_end);
@@ -62,9 +62,9 @@ import_linker_address!(__bss_start);
 const IRQ_STACK_SIZE: u32 = 2048;
 pub  const INIT_HEAP_SIZE: usize = 25 * 4096; // 25 Seiten = 100 kB
 
-//#[global_allocator]
+#[global_allocator]
 //static mut HEAP: AihposHeap = AihposHeap{};
-//static mut HEAP: Heap = Heap::empty();
+static mut HEAP: Heap = Heap::empty();
 
 extern {
     static mut __page_directory: [PageDirectoryEntry;4096];
