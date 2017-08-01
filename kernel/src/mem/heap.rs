@@ -5,6 +5,7 @@ use core::ptr::Unique;
 use core::ptr;
 use core::cell::Cell;
 use core::cell::UnsafeCell;
+use core::nonzero::NonZero;
 //use core::convert::AsRef;
 
 ///! Der Tag enthält die Größe des nutzbaren Speichers in einem Speicherabschnitt.
@@ -69,8 +70,8 @@ impl BoundaryTag {
 #[derive(Debug,Clone,Copy)]
 struct MemoryRegion {
     tag:   BoundaryTag,
-    next:  Option<usize>,
-    prev:  Option<usize>
+    next:  Option<NonZero<usize>>,
+    prev:  Option<NonZero<usize>>
 }
 
 ///! Das Layout des Speicherbereichs sieht so aus:
@@ -105,8 +106,8 @@ impl MemoryRegion {
         kprint!("  Initialisiere Region @{} mit Size:{}\n",self as *const _ as usize, size;WHITE);
         self.tag = BoundaryTag::new();
         self.tag.init(size,true,false);
-        self.next= next;
-        self.prev= prev;
+        self.set_next(next);
+        self.set_prev(prev);
         kprint!("  Region:{:?}\n",self;WHITE);
     }
 
@@ -122,23 +123,39 @@ impl MemoryRegion {
     }
 
     pub fn min_size() -> usize {
-        mem::size_of::<usize>() * 2
+        mem::size_of::<Option<usize>>() * 2
     }
     
     pub fn set_next(&mut self, next: Option<usize>) {
-        self.next = next;
+        if let Some(val) = next {
+            unsafe{ self.next = Some(NonZero::new(val));}
+        } else {
+            self.next = None;
+        }
     }
 
     pub fn set_prev(&mut self, prev: Option<usize>) {
-        self.prev = prev;
+        if let Some(val) = prev {
+            unsafe{ self.prev = Some(NonZero::new(val));}
+        } else {
+            self.prev = None;
+        }
     }
 
     pub fn next(&self) -> Option<usize> {
-        self.next
+        if let Some(val) = self.next {
+            Some(val.get())
+        } else {
+            None
+        }
     }
 
     pub fn prev(&self) -> Option<usize> {
-        self.prev
+        if let Some(val) = self.prev {
+            Some(val.get())
+        } else {
+            None
+        }
     }
 
 
@@ -151,16 +168,16 @@ impl MemoryRegion {
     }
 
     
-    pub fn end_tag(&self) -> &Cell<BoundaryTag> {
+    pub fn end_tag(&self) -> *const Cell<BoundaryTag> {
         unsafe{
-            let ptr_cell: *const Cell<BoundaryTag>  = (&self.tag as *const BoundaryTag as *const Cell<BoundaryTag>).offset(self.size() as isize +
-                                                                                                                           mem::size_of::<BoundaryTag>() as isize);
-            &(*ptr_cell)
+            let addr = self as *const _ as usize + self.size() +  mem::size_of::<BoundaryTag>();
+            let tag_ptr: *const Cell<BoundaryTag> = addr as *const Cell<BoundaryTag>;
+            tag_ptr
         }
     }
 
     pub fn next_neighbor_memory_region(&self) -> Option<usize> {
-        let et = (*self.end_tag()).clone();
+        let et = unsafe{ (*self.end_tag()).clone()} ;
         if et.into_inner().is_guard() {
             None
         } else {
@@ -179,7 +196,7 @@ impl MemoryRegion {
     pub fn extend(&mut self, ext: usize) {
         let new_size = self.size() + ext;
         self.tag.set_size(new_size);
-        (*self.end_tag()).set(self.tag.clone());
+        unsafe{ (*self.end_tag()).set(self.tag.clone());}
     }
 
     pub fn size(&self) -> usize {
@@ -216,53 +233,68 @@ impl MemoryRegion {
         if self.size() - needed_size > Self::min_size()  {
             // Teile den Bereich
             // Initialisere den neuen Bereich.
+            kprint!(" alloc: nedded: {}, size: {} => Teile Region.\n",needed_size, self.size();WHITE);
             let mut new_mr_ptr: Unique<MemoryRegion>;
+            let new_mr_addr: usize;
             let mut new_mr: &mut MemoryRegion;
             unsafe{
                 new_mr_ptr =  Self::ptr_from_addr(self as *mut _ as  usize + MemoryRegion::outer_size(needed_size));
+                new_mr_addr = new_mr_ptr.as_ptr() as usize;
                 new_mr = new_mr_ptr.as_mut();
             }
-            new_mr.init(self.size() - MemoryRegion::outer_size(needed_size), self.next(),self.prev());
-            // Der End-Guard des neuen Bereiches ist der selbse wie beim zu teilenden
-            let old_guard = (*self.end_tag()).get().is_guard();
+            new_mr.init(self.size() - MemoryRegion::outer_size(needed_size), self.next(),Some(self as *const _ as usize));
+            // Zeige auf neuen Bereich
+            self.set_next(Some(new_mr_addr));
+            // Der End-Guard des neuen Bereiches ist der selbe wie beim zu teilenden Bereich
+            let old_guard = unsafe{(*self.end_tag()).get().is_guard()};
             let mut end_tag = self.tag().clone();
             end_tag.set_guard(old_guard);
-            (*new_mr.end_tag()).set(end_tag);
+            unsafe{(*new_mr.end_tag()).set(end_tag)};
             
             // Reduziere die Größe das aktuellen Bereiches...
             self.mut_tag().set_size(needed_size);
-            self.set_free(false);
             // ... und setze entsprechenden End-Tag. Da nun noch mindestends ein Bereich
             // folgt, darf das Guard-Flag nicht gesetzt sein.
-            end_tag = self.tag().clone();
-            end_tag.set_guard(false);
-            (*self.end_tag()).set(end_tag);
+            let mut new_end_tag : BoundaryTag  = self.tag().clone();
+            new_end_tag.set_guard(false);
+            kprint!(" {:?}\n",self;WHITE);
+            kprint!(" Adresse von self.tag: {}, size_of(BoundaryTag): {}.\n",&self.tag as *const _ as usize, mem::size_of::<BoundaryTag>(); WHITE);
+            kprint!(" Adresse von self.next: {}, size_of(self.next): {}.\n",&self.next as *const _ as usize, mem::size_of_val(&self.next); WHITE);
+            kprint!(" Adresse von self.prev: {}, size_of(self.prev): {}.\n",&self.prev as *const _ as usize, mem::size_of_val(&self.prev); WHITE);
+            unsafe{kprint!(" Adresse von self.end_tag: {}, size_of(BoundaryTag): {}.\n",&(*self.end_tag()) as *const _ as usize, mem::size_of::<BoundaryTag>(); WHITE);}
+            unsafe{(*self.end_tag()).set(new_end_tag);}
+            //let foo = unsafe{(*self.end_tag()).get()};
+            unsafe{kprint!(" alloc: neuer End-Tag mit Größe {} (val: {:?}) @ {}.\n",new_end_tag.size(),new_end_tag,(*self.end_tag()).as_ptr() as usize;WHITE);} 
+            kprint!(" {:?}\n",self;WHITE);
         } else {
             // belege den gesamten Bereich
             if self.size() != needed_size {
                 let mut aux_end_tag = BoundaryTag::new();
-                aux_end_tag.init(needed_size, BT_OCCUPIED, (*self.end_tag()).clone().into_inner().is_guard());
+                unsafe{aux_end_tag.init(needed_size, BT_OCCUPIED, (*self.end_tag()).clone().into_inner().is_guard());}
                 let aux_end_tag_addr: usize = self as *const _ as usize + needed_size + mem::size_of::<BoundaryTag>();
                 unsafe{
                     ptr::write(aux_end_tag_addr as *mut BoundaryTag, aux_end_tag);
                 }
             }
-            // Markiere Bereich als reserviert und klinke ihn aus der
-            // Liste aus
-            self.set_free(false);
-            if let Some(prev) = self.prev() {
-                let prev_ptr: *mut MemoryRegion = prev as  *mut MemoryRegion;
-                unsafe {
-                    (*prev_ptr).set_next(self.next());
-                }
-            } 
-            if let Some(next) = self.next() {
-                let next_ptr: *mut MemoryRegion = next as  *mut MemoryRegion;
-                unsafe {
-                    (*next_ptr).set_prev(self.prev());
-                }
-            } 
         }
+        // Markiere Bereich als reserviert und klinke ihn aus der
+        // Liste aus
+        self.set_free(false);
+        if let Some(prev) = self.prev() {
+            let prev_ptr: *mut MemoryRegion = prev as  *mut MemoryRegion;
+            kprint!(" alloc: vorherige Region in Liste @ {}, erhält {:?}.\n",prev_ptr as usize, self.next();WHITE);
+            unsafe {
+                (*prev_ptr).set_next(self.next());
+            }
+        } 
+        if let Some(next) = self.next() {
+            let next_ptr: *mut MemoryRegion = next as  *mut MemoryRegion;
+            kprint!(" alloc: nächste Region in Liste @ {}, erhält {:?}.\n",next_ptr as usize, self.prev();WHITE);
+            unsafe {
+                (*next_ptr).set_prev(self.prev());
+            }
+        } 
+        kprint!(" alloc: reserviere Adressbereich @ {}.\n",dest_addr as usize;WHITE);
         Ok(dest_addr as *mut u8)
     }
 }
@@ -292,11 +324,12 @@ impl Heap {
         kprint!("Dummy region @{}:\n {:?}\n",&self.first as *const _ as usize, self.first.get());
         
         let mut mr_ptr: Unique<MemoryRegion> = Unique::new(start as *mut MemoryRegion);
-        let first_adr: usize= self.first.get()  as usize;
-        mr_ptr.as_mut().init(size - 2 * mem::size_of::<BoundaryTag>(),None, Some(first_adr));
+        let first_addr: usize = self.first.get()  as usize;
+        assert_eq!(first_addr, self as *const _  as usize);
+        mr_ptr.as_mut().init(size - 2 * mem::size_of::<BoundaryTag>(),None, Some(first_addr));
         mr_ptr.as_mut().mut_tag().set_guard(true);
         mr_ptr.as_ref().clone_end_tag();
-        kprint!("Erste Region @{}: {:?}\n",mr_ptr.as_ptr() as usize, *mr_ptr.as_ref());
+        kprint!("Erste Region @{}: {:?}\n",mr_ptr.as_ptr() as usize, *mr_ptr.as_ref();WHITE);
     }
     
     pub fn allocate_first_fit(&self, layout: Layout) -> Result<*mut u8, AllocErr> {
@@ -309,8 +342,10 @@ impl Heap {
                 let mr: &mut MemoryRegion = unsafe{ mr_ptr.as_mut() };
                 kprint!("mit Größe {}\n",mr.size();WHITE);
                 if mr.is_sufficient(&layout) {
-                    return (mr).allocate(layout)
+                    kprint!(" alloc: passende Region gefunden: {:?}\n",mr;WHITE);
+                    return mr.allocate(layout)
                 } else {
+                    kprint!(" alloc: nichts gefunden, gehe auf {:?}.\n",mr.next();WHITE);
                     mem_reg = mr.next();   
                 }
             } else {
@@ -340,19 +375,21 @@ pub fn align_up(addr: usize, align: usize) -> usize {
 
 unsafe impl<'a> Alloc for &'a Heap {
     unsafe fn alloc(&mut self, layout: Layout) -> Result<*mut u8, AllocErr> {
-        kprint!("Allozierung verlangt, Größe: {:X}, beginne mit Suche\n",layout.size();WHITE);
+        kprint!("Allozierung verlangt, Größe: {}, beginne mit Suche\n",layout.size();WHITE);
         self.allocate_first_fit(layout)
     }
 
     unsafe fn dealloc(&mut self, ptr: *mut u8, layout: Layout) {
-        /// 
+        ///
+        kprint!("Reservierung aufgehoben @ {}, size: {}.\n",ptr as usize, layout.size();WHITE);
         let mut end_tag_ptr = MemoryRegion::ptr_from_addr(align_up(ptr as usize + layout.size(), mem::align_of::<BoundaryTag>()));
         let mut mr_addr: usize = end_tag_ptr.as_ptr() as usize - end_tag_ptr.as_ref().size() - mem::size_of::<BoundaryTag>();
         let mut mr_ptr = MemoryRegion::ptr_from_addr(mr_addr);
         
         mr_ptr.as_mut().set_free(true);
-        mr_ptr.as_mut().set_next((*self.first.get()).next);
+        mr_ptr.as_mut().set_next((*self.first.get()).next());
         mr_ptr.as_mut().set_prev(None);
         (*self.first.get()).set_next(Some(mr_addr));
+        kprint!("Neuer freier Bereich @ {}:\n{:?}",mr_ptr.as_ptr() as usize, *mr_ptr.as_mut();WHITE);
     }
 }

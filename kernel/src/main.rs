@@ -19,6 +19,7 @@
     lang_items,             // Funktionen interne Funktionen ersetzen (panic)
     linkage,                // Angaben zum Linktyp (z.B. Sichtbarkeit)
     naked_functions,        // Funktionen ohne Prolog/Epilog
+    nonzero,                // Werte ohne Null (hier: usize)
     plugin,                 // Nutzung von Compiler-Plugins
     repr_align,             // Alignment
     // use_extern_macros,
@@ -187,16 +188,16 @@ fn report() {
     kprint!(", Version {:#0x}, Seriennummer {:04x}.{:04x}\n",board_revision,serial_high,serial_low);
     kprint!("Firmwareversion {:0x}\n",firmware_version);
     kprint!("Speicherlayout:\n");
-    kprint!("0x{:08x}: Anfang Kernelcode\n",kernel_start as usize; WHITE);
-    kprint!("0x{:08x}: Ende Kernelcode\n",__text_end as usize; WHITE);
-    kprint!("0x{:08x}: Ende Kerneldaten\n",__data_end as usize; WHITE);
-    kprint!("0x{:08x}: Anfang gemeinsamer Bereich\n",__shared_begin as usize; WHITE);
-    kprint!("0x{:08x}: Ende gemeinsamer Bereich\n",__shared_end as usize; WHITE);
+    kprint!("0x{:08x} ({:10}): Anfang Kernelcode\n",kernel_start as usize,kernel_start as usize; WHITE);
+    kprint!("0x{:08x} ({:10}): Ende Kernelcode\n",__text_end as usize,__text_end as usize; WHITE);
+    kprint!("0x{:08x} ({:10}): Ende Kerneldaten\n",__data_end as usize, __data_end as usize; WHITE);
+    kprint!("0x{:08x} ({:10}): Anfang gemeinsamer Bereich\n",__shared_begin as usize, __shared_begin as usize; WHITE);
+    kprint!("0x{:08x} ({:10}): Ende gemeinsamer Bereich\n",__shared_end as usize, __shared_end as usize; WHITE);
     //kprint!("0x{:08x}: __page_directory\n",__page_directory as usize; WHITE);
-    kprint!("0x{:08x}: Anfang Kernelheap\n",__bss_start as usize; WHITE);
-    kprint!("0x{:08x}: Initiales Ende Kernelheap\n",__bss_start as usize + INIT_HEAP_SIZE; WHITE);
-    kprint!("0x{:08x}: TOS System\n",determine_svc_stack() as usize; WHITE);
-    kprint!("0x{:08x}: TOS Interrupt\n",determine_irq_stack() as usize; WHITE);
+    kprint!("0x{:08x} ({:10}): Anfang Kernelheap\n",__bss_start as usize, __bss_start as usize; WHITE);
+    kprint!("0x{:08x} ({:10}): Initiales Ende Kernelheap\n",__bss_start as usize + INIT_HEAP_SIZE, __bss_start as usize + INIT_HEAP_SIZE; WHITE);
+    kprint!("0x{:08x} ({:10}): TOS System\n",determine_svc_stack() as usize, determine_svc_stack() as usize; WHITE);
+    kprint!("0x{:08x} ({:10}): TOS Interrupt\n",determine_irq_stack() as usize, determine_irq_stack() as usize; WHITE);
 }
 
 fn test() {
@@ -222,6 +223,21 @@ fn test() {
         for i in v {
             kprint!("{} ",i);
         }
+        kprint!("\n");
+    }
+    {
+        let v2 = vec![4,5,6,7,8];
+        for i in v2 {
+            kprint!("{} ",i);
+        }
+        kprint!("\n");
+    }
+    {
+        let v3 = vec![9,10,11];
+        for i in v3 {
+            kprint!("{} ",i);
+        }
+        kprint!("\n");
     }
     /*
     // Das folgende sollte eine Schutzverletzung geben
