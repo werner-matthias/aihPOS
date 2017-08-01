@@ -4,7 +4,8 @@ use core::mem;
 use core::ptr::Unique;
 use core::ptr;
 use core::cell::Cell;
-use core::convert::AsRef;
+use core::cell::UnsafeCell;
+//use core::convert::AsRef;
 
 ///! Der Tag enthält die Größe des nutzbaren Speichers in einem Speicherabschnitt.
 ///! Da der nutzbare Speicher von Tags "eingerahmt" wird, muss diese Größe ein
@@ -30,13 +31,11 @@ impl BoundaryTag {
         BoundaryTag { bitfield: 0b01 }
     }
     
-    pub fn init(&self, size: usize, free: bool, guard: bool) ->  BoundaryTag {
+    pub fn init(&mut self, size: usize, free: bool, guard: bool)  {
         assert!(size & 0b011 == 0);
-        let mut bt = self.clone();
-        bt.set_size(size);
-        bt.set_free(free);
-        bt.set_guard(guard);
-        bt
+        self.set_size(size);
+        self.set_free(free);
+        self.set_guard(guard);
     }
 
     pub fn is_free(&self) -> bool {
@@ -52,8 +51,8 @@ impl BoundaryTag {
     }
     
     pub fn set_size(&mut self, size: usize) {
-        assert!(size & 0b011 == 0);
-        (self.bitfield as u32).set_bits(2..32, size as u32 >> 2); 
+        assert_eq!(size & 0b011,0);
+        self.bitfield.set_bits(2..32, size >> 2); 
     }
 
     pub fn is_guard(&self) -> bool {
@@ -67,7 +66,7 @@ impl BoundaryTag {
     
     
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug,Clone,Copy)]
 struct MemoryRegion {
     tag:   BoundaryTag,
     next:  Option<usize>,
@@ -76,13 +75,16 @@ struct MemoryRegion {
 
 ///! Das Layout des Speicherbereichs sieht so aus:
 ///! +--------+----------+---------+       +---------+ 
-///! | Tag    | Next-Ptr | Prev-Ptr   ...  | Tag     |
+///! | Tag    | Next-Ptr | Prev-Ptr   ...  | End-Tag |
 ///! +--------+----------+---------+       +---------+
 ///! ^        ^                    ^
 ///! |        |                    |
 ///! |        Start verwendeter Speicher (wenn belegt)
 ///! |                             |
 ///! +-- struct MemoryRegion ------+
+///!
+///! Der Anfang wird durch die Struct abgebildet, der End-Tag
+///!  ( und ggf. ein Hilfs-Tag) werden indirekt angesprochen
 
 impl MemoryRegion {
 
@@ -93,11 +95,23 @@ impl MemoryRegion {
             prev:   None
         }
     }
+
+    unsafe fn ptr_from_addr(addr: usize) -> Unique<MemoryRegion> {
+        let mut region_prt: Unique<MemoryRegion> = Unique::new(addr as *mut MemoryRegion);
+        region_prt
+    }
     
     pub fn init(&mut self, size: usize, next: Option<usize>, prev: Option<usize>) {
-        self.tag=  BoundaryTag::new().init(size,true,false);
+        kprint!("  Initialisiere Region @{} mit Size:{}\n",self as *const _ as usize, size;WHITE);
+        self.tag = BoundaryTag::new();
+        self.tag.init(size,true,false);
         self.next= next;
         self.prev= prev;
+        kprint!("  Region:{:?}\n",self;WHITE);
+    }
+
+    pub fn outer_size(size: usize) -> usize {
+        size + 2 * mem::size_of::<BoundaryTag>()
     }
 
     pub fn clone_end_tag(&self) {
@@ -150,7 +164,7 @@ impl MemoryRegion {
         if et.into_inner().is_guard() {
             None
         } else {
-            Some(self as *const MemoryRegion as usize +  self.size()   + 2 * mem::size_of::<BoundaryTag>())
+            Some(self as *const MemoryRegion as usize +  Self::outer_size(self.size()))
         }
     }
     
@@ -190,23 +204,45 @@ impl MemoryRegion {
     pub fn set_free(&mut self,free: bool) {
         self.tag.set_free(free);
         self.clone_end_tag();
-        //(*self.end_tag()).get_mut().set_free(free);
     }
 
     
     pub fn allocate(&mut self, layout: Layout) ->  Result<*mut u8, AllocErr>  {
         let dest_addr = align_up(self.addr(),layout.align());
         let front_padding = dest_addr - self.addr();
+
+        let needed_size = align_up(front_padding + layout.size(),mem::align_of::<BoundaryTag>());
         // Lohnt es sich, den Bereich zu teilen?
-        if self.size() - layout.size() - front_padding > Self::min_size()  {
-            // teile
-            Ok(dest_addr as *mut u8)
+        if self.size() - needed_size > Self::min_size()  {
+            // Teile den Bereich
+            // Initialisere den neuen Bereich.
+            let mut new_mr_ptr: Unique<MemoryRegion>;
+            let mut new_mr: &mut MemoryRegion;
+            unsafe{
+                new_mr_ptr =  Self::ptr_from_addr(self as *mut _ as  usize + MemoryRegion::outer_size(needed_size));
+                new_mr = new_mr_ptr.as_mut();
+            }
+            new_mr.init(self.size() - MemoryRegion::outer_size(needed_size), self.next(),self.prev());
+            // Der End-Guard des neuen Bereiches ist der selbse wie beim zu teilenden
+            let old_guard = (*self.end_tag()).get().is_guard();
+            let mut end_tag = self.tag().clone();
+            end_tag.set_guard(old_guard);
+            (*new_mr.end_tag()).set(end_tag);
+            
+            // Reduziere die Größe das aktuellen Bereiches...
+            self.mut_tag().set_size(needed_size);
+            self.set_free(false);
+            // ... und setze entsprechenden End-Tag. Da nun noch mindestends ein Bereich
+            // folgt, darf das Guard-Flag nicht gesetzt sein.
+            end_tag = self.tag().clone();
+            end_tag.set_guard(false);
+            (*self.end_tag()).set(end_tag);
         } else {
             // belege den gesamten Bereich
-            let new_size = align_up(front_padding + layout.size(),mem::align_of::<BoundaryTag>());
-            if self.size() != new_size {
-                let aux_end_tag = BoundaryTag::new().init(new_size, BT_OCCUPIED, (*self.end_tag()).clone().into_inner().is_guard());
-                let aux_end_tag_addr: usize = self as *const _ as usize + new_size + mem::size_of::<BoundaryTag>();
+            if self.size() != needed_size {
+                let mut aux_end_tag = BoundaryTag::new();
+                aux_end_tag.init(needed_size, BT_OCCUPIED, (*self.end_tag()).clone().into_inner().is_guard());
+                let aux_end_tag_addr: usize = self as *const _ as usize + needed_size + mem::size_of::<BoundaryTag>();
                 unsafe{
                     ptr::write(aux_end_tag_addr as *mut BoundaryTag, aux_end_tag);
                 }
@@ -226,13 +262,13 @@ impl MemoryRegion {
                     (*next_ptr).set_prev(self.prev());
                 }
             } 
-            Ok(dest_addr as *mut u8)
         }
+        Ok(dest_addr as *mut u8)
     }
 }
 
 pub struct Heap {
-    first: MemoryRegion,
+    first: UnsafeCell<MemoryRegion>,
     size:  usize
 }
 
@@ -240,39 +276,45 @@ impl Heap {
     
     pub const fn empty() -> Heap {
         Heap {
-            first: MemoryRegion::new(),
+            first: UnsafeCell::new(MemoryRegion::new()),
             size: 0
         }
     }
 
+    ///
     pub unsafe fn init(&mut self, start: usize, size: usize) {
+        kprint!("Initialisiere Heap, Size: {}, @ {}\n",size,start);
         // Belege kommpletten Heap mit einzelnen Bereich
-        let mr_ptr = start as *mut MemoryRegion;
-        let first_adr: usize= &mut self.first as *mut MemoryRegion as usize;
-        (*mr_ptr).init(size - 2 * mem::size_of::<BoundaryTag>(),None, Some(first_adr));
-        (*mr_ptr).clone_end_tag();
-        (*mr_ptr).mut_tag().set_guard(true);
-        (*(*(*mr_ptr).end_tag()).as_ptr()).set_guard(true); // ptr -> &cell -> cell -> ptr -> Wert
-
-        //
         self.size = size;
         let mut dummy_region: MemoryRegion = MemoryRegion::new();
         dummy_region.init(0,Some(start), None);
-        self.first = dummy_region;
+        (*self.first.get()) = dummy_region;
+        kprint!("Dummy region @{}:\n {:?}\n",&self.first as *const _ as usize, self.first.get());
+        
+        let mut mr_ptr: Unique<MemoryRegion> = Unique::new(start as *mut MemoryRegion);
+        let first_adr: usize= self.first.get()  as usize;
+        mr_ptr.as_mut().init(size - 2 * mem::size_of::<BoundaryTag>(),None, Some(first_adr));
+        mr_ptr.as_mut().mut_tag().set_guard(true);
+        mr_ptr.as_ref().clone_end_tag();
+        kprint!("Erste Region @{}: {:?}\n",mr_ptr.as_ptr() as usize, *mr_ptr.as_ref());
     }
     
     pub fn allocate_first_fit(&self, layout: Layout) -> Result<*mut u8, AllocErr> {
-        let mut mem_reg = self.first.next();
+        let start = self.first.get();
+        let mut mem_reg: Option<usize> = unsafe{(*start)}.next();
         loop {
             if let Some(mr_addr) = mem_reg {
-                let mr_ptr: *mut MemoryRegion = mr_addr as  *mut MemoryRegion;
-                let mr: &mut MemoryRegion = unsafe{mr_ptr.as_mut().unwrap()};
+                kprint!(" alloc: Untersuche Bereich ab {} ",mr_addr;WHITE);
+                let mut mr_ptr: Unique<MemoryRegion> = unsafe{ Unique::new(mr_addr as  *mut MemoryRegion) };
+                let mr: &mut MemoryRegion = unsafe{ mr_ptr.as_mut() };
+                kprint!("mit Größe {}\n",mr.size();WHITE);
                 if mr.is_sufficient(&layout) {
                     return (mr).allocate(layout)
                 } else {
                     mem_reg = mr.next();   
                 }
             } else {
+                kprint!(" alloc: Kein Bereich übrig\n";WHITE);
                 return Err(AllocErr::Exhausted{request: layout})
             }
         }
@@ -298,11 +340,19 @@ pub fn align_up(addr: usize, align: usize) -> usize {
 
 unsafe impl<'a> Alloc for &'a Heap {
     unsafe fn alloc(&mut self, layout: Layout) -> Result<*mut u8, AllocErr> {
+        kprint!("Allozierung verlangt, Größe: {:X}, beginne mit Suche\n",layout.size();WHITE);
         self.allocate_first_fit(layout)
     }
 
     unsafe fn dealloc(&mut self, ptr: *mut u8, layout: Layout) {
-        unimplemented!()
+        /// 
+        let mut end_tag_ptr = MemoryRegion::ptr_from_addr(align_up(ptr as usize + layout.size(), mem::align_of::<BoundaryTag>()));
+        let mut mr_addr: usize = end_tag_ptr.as_ptr() as usize - end_tag_ptr.as_ref().size() - mem::size_of::<BoundaryTag>();
+        let mut mr_ptr = MemoryRegion::ptr_from_addr(mr_addr);
+        
+        mr_ptr.as_mut().set_free(true);
+        mr_ptr.as_mut().set_next((*self.first.get()).next);
+        mr_ptr.as_mut().set_prev(None);
+        (*self.first.get()).set_next(Some(mr_addr));
     }
- 
 }

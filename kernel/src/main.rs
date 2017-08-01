@@ -134,7 +134,7 @@ fn init_stacks() {
 
 fn init_heap() {
     unsafe{
-        //HEAP.init(__bss_start as usize, INIT_HEAP_SIZE);
+        HEAP.init(__bss_start as usize, INIT_HEAP_SIZE);
     }
 }
 
@@ -203,10 +203,11 @@ fn test() {
     kprint!("Calling system.\n");
     let ret=syscall!(23,1,2);
     kprint!("Returned from system call: {}.\n",ret);
+    /*
     let mut frame_manager = FrameManager::new();
     frame_manager.mark_not_available(0..0x0002ffff);
     //kprint!("ff: {}\n",frame_manager.first_free);
-    for _ in 0..17 {
+    for _ in 0..1 {
         let adr: u32 = frame_manager.allocate();
         kprint!("Neuer Frame @ {:08x}\n",adr);
     }
@@ -215,12 +216,12 @@ fn test() {
         let adr: u32 = frame_manager.allocate();
         kprint!("Neuer Frame @ {:08x}\n",adr);
     }
+     */
     {
-        /*
         let v = vec![1,2,3];
         for i in v {
             kprint!("{} ",i);
-        }*/
+        }
     }
     /*
     // Das folgende sollte eine Schutzverletzung geben
