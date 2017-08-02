@@ -6,20 +6,18 @@ use core::ptr;
 use core::cell::Cell;
 use core::cell::UnsafeCell;
 use core::nonzero::NonZero;
-//use core::convert::AsRef;
-
-///! Der Tag enthält die Größe des nutzbaren Speichers in einem Speicherabschnitt.
-///! Da der nutzbare Speicher von Tags "eingerahmt" wird, muss diese Größe ein
-///! Alignment eines Tags = Alignment usize = 4 haben, d.h. die beinden niedrigsten
-///! Bits sind immer 0. Daher können diese für andere Informationen genutzt werden:
-///!  -  b0 gibt an, ob der Speicherabschnitt frei oder belegt ist (true = frei)
-///!  -  b1 ist true für Tags, die keine Nachbarn haben, also das erste und das letzte
-///!      im Heap 
-
 
 const BT_OCCUPIED: bool = false;
 const BT_FREE:     bool = true;
 
+/// Der Tag enthält die Größe des nutzbaren Speichers in einem Speicherabschnitt.
+/// Da der nutzbare Speicher von Tags "eingerahmt" wird, muss diese Größe ein
+/// Alignment eines Tags = Alignment usize = 4 haben, d.h. die beinden niedrigsten
+/// Bits sind immer 0. Daher können diese für andere Informationen genutzt werden:
+///  -  b0 gibt an, ob der Speicherabschnitt frei oder belegt ist (true = frei)
+///  -  b1 ist true für Tags, die keine Nachbarn haben, also das erste und das letzte
+///      im Heap. Die Bereiche, die keine Nachbarn besitzen, müssen ihre Enden
+///      "bewachen", daher der Name "guard".
 #[repr(C)]
 #[derive(Debug,Clone,Copy)]
 struct BoundaryTag {
@@ -28,10 +26,12 @@ struct BoundaryTag {
 
 impl BoundaryTag {
 
+    /// Erzeugt ein neues Tag eines freien Speicherbereiches
     pub const fn new() ->  BoundaryTag {
         BoundaryTag { bitfield: 0b01 }
     }
-    
+
+    /// Setzt Größe sowie das Frei- und das Guard-Flag
     pub fn init(&mut self, size: usize, free: bool, guard: bool)  {
         assert!(size & 0b011 == 0);
         self.set_size(size);
@@ -39,27 +39,33 @@ impl BoundaryTag {
         self.set_guard(guard);
     }
 
+    /// Speicherbereich verfügbar?
     pub fn is_free(&self) -> bool {
         (self.bitfield as u32).get_bit(0)
     }
-    
+
+    /// Speicherbereich wird als verfügbar/reserviert markiert
     pub fn set_free(&mut self, free: bool) {
         (self.bitfield as u32).set_bit(0,free);
     }
-    
+
+    /// (Innere) Größe des Speicherbereiches
     pub fn size(&self) -> usize {
         ((self.bitfield as u32) & !0x1) as usize
     }
-    
+
+    /// Setzt (innere) Größe eines Speicherbereiches
     pub fn set_size(&mut self, size: usize) {
         assert_eq!(size & 0b011,0);
         self.bitfield.set_bits(2..32, size >> 2); 
     }
 
+    /// Markiert das Tag einen Rand des Heaps?
     pub fn is_guard(&self) -> bool {
         (self.bitfield as u32).get_bit(1)
     }
-    
+
+    /// Setze Randbereichsmarkierung
     pub fn set_guard(&mut self, guard: bool) {
         (self.bitfield as u32).set_bit(1,guard);
     }
@@ -68,27 +74,27 @@ impl BoundaryTag {
     
 #[repr(C)]
 #[derive(Debug,Clone,Copy)]
+/// Das Layout des Speicherbereichs sieht so aus:
+/// +--------+----------+---------+       +---------+ 
+/// | Tag    | Next-Ptr | Prev-Ptr   ...  | End-Tag |
+/// +--------+----------+---------+       +---------+
+/// ^        ^                    ^
+/// |        |                    |
+/// |        Start verwendeter Speicher (wenn belegt)
+/// |                             |
+/// +-- struct MemoryRegion ------+
+///
+/// Der Anfang wird durch die Struct abgebildet, der End-Tag
+///  ( und ggf. ein Hilfs-Tag) werden indirekt angesprochen
 struct MemoryRegion {
     tag:   BoundaryTag,
     next:  Option<NonZero<usize>>,
     prev:  Option<NonZero<usize>>
 }
 
-///! Das Layout des Speicherbereichs sieht so aus:
-///! +--------+----------+---------+       +---------+ 
-///! | Tag    | Next-Ptr | Prev-Ptr   ...  | End-Tag |
-///! +--------+----------+---------+       +---------+
-///! ^        ^                    ^
-///! |        |                    |
-///! |        Start verwendeter Speicher (wenn belegt)
-///! |                             |
-///! +-- struct MemoryRegion ------+
-///!
-///! Der Anfang wird durch die Struct abgebildet, der End-Tag
-///!  ( und ggf. ein Hilfs-Tag) werden indirekt angesprochen
-
 impl MemoryRegion {
 
+    /// 
     pub const fn new() -> Self {
         MemoryRegion {
             tag:    BoundaryTag::new(),
@@ -185,7 +191,7 @@ impl MemoryRegion {
         }
     }
     
-    pub fn prev_neighbor_memory_region(&self, above: usize) -> Option<usize> {
+    pub fn prev_neighbor_memory_region(&self) -> Option<usize> {
         if self.tag().is_guard() {
             None
         } else {
@@ -297,6 +303,38 @@ impl MemoryRegion {
         kprint!(" alloc: reserviere Adressbereich @ {}.\n",dest_addr as usize;WHITE);
         Ok(dest_addr as *mut u8)
     }
+    
+    pub fn fuse_with_next_neighbor(&mut self) -> bool {
+        let nn_mr = self.next_neighbor_memory_region();
+        if let Some(neighbor_addr) = nn_mr {
+            let mut neighbor_ptr = MemoryRegion::ptr_from_addr(neighbor_addr);
+            let mut neighbor: &mut MemoryRegion = unsafe{ neighbor_ptr.get_mut() };
+            if neighbor.is_free() {
+                let new_size = self.size() + MemoryRegion::outer_size(neighbor.size());
+                self.set_size(new_size);
+                self.set_next(neighbor.next());
+                self.set_prev(neighbor.next());
+                if let Some(prev) = self.prev() {
+                    let prev_ptr: *mut MemoryRegion = prev as  *mut MemoryRegion;
+                    unsafe {
+                        (*prev_ptr).set_next(Some(self as *const _ as usize));
+                    }
+                } 
+                if let Some(next) = self.next() {
+                    let next_ptr: *mut MemoryRegion = next as  *mut MemoryRegion;
+                    unsafe {
+                        (*next_ptr).set_prev(Some(self as *const _ as usize));
+                    }
+                } 
+                true
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
 }
 
 pub struct Heap {
@@ -350,10 +388,12 @@ impl Heap {
                 }
             } else {
                 kprint!(" alloc: Kein Bereich übrig\n";WHITE);
+                // TODO: Callback o.ä.
                 return Err(AllocErr::Exhausted{request: layout})
             }
         }
     }
+
 
 }
 
@@ -374,22 +414,27 @@ pub fn align_up(addr: usize, align: usize) -> usize {
 }
 
 unsafe impl<'a> Alloc for &'a Heap {
+    
     unsafe fn alloc(&mut self, layout: Layout) -> Result<*mut u8, AllocErr> {
         kprint!("Allozierung verlangt, Größe: {}, beginne mit Suche\n",layout.size();WHITE);
         self.allocate_first_fit(layout)
     }
 
     unsafe fn dealloc(&mut self, ptr: *mut u8, layout: Layout) {
-        ///
+        //
         kprint!("Reservierung aufgehoben @ {}, size: {}.\n",ptr as usize, layout.size();WHITE);
         let mut end_tag_ptr = MemoryRegion::ptr_from_addr(align_up(ptr as usize + layout.size(), mem::align_of::<BoundaryTag>()));
         let mut mr_addr: usize = end_tag_ptr.as_ptr() as usize - end_tag_ptr.as_ref().size() - mem::size_of::<BoundaryTag>();
         let mut mr_ptr = MemoryRegion::ptr_from_addr(mr_addr);
-        
+        let mr: &mut MemoryRegion = mr_ptr.as_mut();
         mr_ptr.as_mut().set_free(true);
-        mr_ptr.as_mut().set_next((*self.first.get()).next());
-        mr_ptr.as_mut().set_prev(None);
-        (*self.first.get()).set_next(Some(mr_addr));
-        kprint!("Neuer freier Bereich @ {}:\n{:?}",mr_ptr.as_ptr() as usize, *mr_ptr.as_mut();WHITE);
+        // Prüft, ob Bereiche zusammen gelegt werden können.
+        
+        if !self.fuse_with_next_neighbor() & !fuse_with_prev_neighbor() { 
+            mr_ptr.as_mut().set_next((*self.first.get()).next());
+            mr_ptr.as_mut().set_prev(None);
+            (*self.first.get()).set_next(Some(mr_addr));
+            kprint!("Neuer freier Bereich @ {}:\n{:?}",mr_ptr.as_ptr() as usize, *mr_ptr.as_mut();WHITE);
+        }
     }
 }
