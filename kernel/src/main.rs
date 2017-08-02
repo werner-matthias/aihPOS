@@ -225,6 +225,7 @@ fn test() {
         }
         kprint!("\n");
     }
+    /*
     {
         let v2 = vec![4,5,6,7,8];
         for i in v2 {
@@ -239,6 +240,7 @@ fn test() {
         }
         kprint!("\n");
     }
+*/
     /*
     // Das folgende sollte eine Schutzverletzung geben
     unsafe{
