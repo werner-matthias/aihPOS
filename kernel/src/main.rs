@@ -42,7 +42,7 @@ extern crate compiler_builtins;
 mod panic;
 mod sync;
 mod mem;
-//use alloc::boxed::Box;
+use alloc::boxed::Box;
 use hal::board::{MemReport,BoardReport,report_board_info,report_memory};
 use hal::entry::syscall;
 use hal::cpu::{Cpu,ProcessorMode,MMU};
@@ -219,28 +219,12 @@ fn test() {
     }
      */
     {
-        let v = vec![1,2,3];
-        for i in v {
-            kprint!("{} ",i);
-        }
-        kprint!("\n");
+        let v1 = Box::new(0);
+        let v2 = Box::new((23,42));
+        let v3 = Box::new(1); 
+        kprint!("v1 = {}, v2 = {:?}, v3 = {}.\n",*v1,*v2,*v3);
+        drop(v1);
     }
-    /*
-    {
-        let v2 = vec![4,5,6,7,8];
-        for i in v2 {
-            kprint!("{} ",i);
-        }
-        kprint!("\n");
-    }
-    {
-        let v3 = vec![9,10,11];
-        for i in v3 {
-            kprint!("{} ",i);
-        }
-        kprint!("\n");
-    }
-*/
     /*
     // Das folgende sollte eine Schutzverletzung geben
     unsafe{
