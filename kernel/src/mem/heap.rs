@@ -1,6 +1,3 @@
-/**
-
- **/
 use alloc::allocator::{Alloc,Layout,AllocErr};
 use bit_field::BitField;
 use core::{mem,ptr,cmp};
@@ -105,8 +102,7 @@ impl BoundaryTag for EndBoundaryTag {
         *bt_ptr.as_ptr() = *self
     }
 
-}
-
+} 
 
 #[repr(C)]
 #[derive(Debug,Clone,Copy)]
@@ -126,7 +122,7 @@ impl StartBoundaryTag {
             next:     None,
         }
     }
-
+    /*
     /// Setzt Größe sowie das Frei- und das Guard-Flag
     pub fn init(&mut self, size: usize, free: bool, guard: bool)  {
         assert!(size & 0b011 == 0);
@@ -134,7 +130,7 @@ impl StartBoundaryTag {
         self.set_free(free);
         self.set_guard(guard);
     }
-
+     */
  
     /// Adresse des nächsten Elements in der Liste
     pub fn next(&self) -> HeapAddress {
@@ -245,7 +241,7 @@ impl MemoryRegion {
     pub unsafe fn new_from_memory(addr: usize) -> Self {
         // Garantiere Alignment
         assert_eq!(addr & 0b011,0);
-        let mut bt_ptr: Unique<StartBoundaryTag> = Unique::new(addr as *mut StartBoundaryTag);
+        let bt_ptr: Unique<StartBoundaryTag> = Unique::new(addr as *mut StartBoundaryTag);
         let mut mr = MemoryRegion::new();
         mr.addr = Some(addr);
         mr.size = bt_ptr.as_ref().size();
@@ -263,7 +259,7 @@ impl MemoryRegion {
             mr.end_addr = mr.end_tag_addr();
             let end_addr = mr.end_addr.unwrap();
             assert_eq!(end_addr & 0b011,0);
-            let mut end_bt_ptr: Unique<EndBoundaryTag> = Unique::new(end_addr as *mut EndBoundaryTag);
+            let end_bt_ptr: Unique<EndBoundaryTag> = Unique::new(end_addr as *mut EndBoundaryTag);
             assert_eq!(mr.size, end_bt_ptr.as_ref().size());
             assert_eq!(mr.free, end_bt_ptr.as_ref().is_free());
             mr.upper_guard = end_bt_ptr.as_ref().is_guard();
@@ -349,28 +345,6 @@ impl MemoryRegion {
     pub fn set_prev(&mut self, prev: HeapAddress) {
         self.prev = prev;
     }
-
-    /// Nachfolgender Speicherbereich in der Liste
-    pub fn next_region(&self) -> Option<MemoryRegion> {
-        if let Some(addr) = self.next {
-            unsafe{
-                Some(MemoryRegion::new_from_memory(addr))
-            }
-        } else {
-            None
-        }
-    }
-
-    /// Vorhergehender Speicherbereich in der Liste
-    pub fn prev_region(&self) -> Option<MemoryRegion> {
-        if let Some(addr) = self.prev {
-            unsafe{
-                Some(MemoryRegion::new_from_memory(addr))
-            }
-        } else {
-            None
-        }
-    }
     
     /// Minimale Größe für eine Speicherreservierung
     pub fn min_size() -> usize {
@@ -380,8 +354,8 @@ impl MemoryRegion {
     /// Gibt an, ob der Speicherbereich für eine gegebnen Speicheranfrage
     /// hinreichend groß ist
     pub fn is_sufficient(&self, layout: &Layout) -> bool {
-        let addr = self.client_addr();
-        if let Some(addr) = self.addr {
+        let c_addr = self.client_addr();
+        if let Some(addr) = c_addr {
             let dest_addr = align_up(addr,(*layout).align());
             dest_addr - addr + (*layout).size() <= self.size
         } else {
@@ -448,7 +422,7 @@ impl MemoryRegion {
                 let mut next = MemoryRegion::new_from_memory(next_addr);
                 next.set_prev(new_mr.addr);
                 next.write_to_memory();
-            }
+            } 
             new_mr.write_to_memory();
          } else {
             // Belege den gesamten Bereich
@@ -458,9 +432,7 @@ impl MemoryRegion {
                 aux_end_tag.set_free(false);
                 aux_end_tag.set_guard(self.upper_guard);
                 let aux_end_tag_addr: usize = self.addr.unwrap() + needed_size + mem::size_of::<EndBoundaryTag>();
-                unsafe{
-                    ptr::write(aux_end_tag_addr as *mut EndBoundaryTag, aux_end_tag);
-                }
+                ptr::write(aux_end_tag_addr as *mut EndBoundaryTag, aux_end_tag);
             }
             // Entferne Bereich aus der Liste
             self.free = false;
@@ -478,7 +450,7 @@ impl MemoryRegion {
         // Markiere Bereich als reserviert und aktualisiere den Speicher
         self.free = false;
         self.write_to_memory();
-        Ok(dest_addr as *mut u8)
+        Ok(dest_addr as *mut u8) 
     }
 
     /// Verschmelze Bereich mit Nachbarn
@@ -493,7 +465,7 @@ impl MemoryRegion {
             p_neighbor = p_neighbor_opt.unwrap();
             coalesce.0 = true;
         }
-        let mut n_neighbor_opt = self.next_neighbor();
+        let n_neighbor_opt = self.next_neighbor();
         if n_neighbor_opt.is_some() && n_neighbor_opt.unwrap().free {
             n_neighbor = n_neighbor_opt.unwrap();
             coalesce.1 = true;
@@ -631,7 +603,7 @@ impl Heap {
         }
     }
 
-    [#test]
+    #[test]
     pub fn debug_list(&self) {
         let start = &self.first as *const _;
         let mut nr = 0;
@@ -679,7 +651,7 @@ unsafe impl<'a> Alloc for &'a Heap {
     unsafe fn dealloc(&mut self, ptr: *mut u8, layout: Layout) {
         let end_tag_addr = align_up(ptr as usize + cmp::max(layout.size(),MemoryRegion::min_size()),
                                     mem::align_of::<EndBoundaryTag>());
-        let mut end_tag = EndBoundaryTag::new_from_memory(end_tag_addr);
+        let end_tag = EndBoundaryTag::new_from_memory(end_tag_addr);
         let mut mr = MemoryRegion::new_from_memory(end_tag_addr - end_tag.size() - mem::size_of::<EndBoundaryTag>());
         mr.free=true;
         // Prüft, ob Bereiche zusammen gelegt werden können.
@@ -691,11 +663,9 @@ unsafe impl<'a> Alloc for &'a Heap {
             mr.set_next(head.next());
             // Bisheriges TOL-Element rückt hinter neues Element
             if let Some(next_addr) = mr.next {
-                let mut next = unsafe{ MemoryRegion::new_from_memory(next_addr) };
+                let mut next = MemoryRegion::new_from_memory(next_addr);
                 next.set_prev(mr.addr);
-                unsafe{
-                    next.write_to_memory();
-                }
+                next.write_to_memory();
             }
             // Listenkopf zeigt auf einzugliedernden Bereich
             head.set_next(Some(mr.addr.unwrap()));
