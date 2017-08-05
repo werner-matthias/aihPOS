@@ -1,5 +1,5 @@
 use alloc::allocator::{Layout,AllocErr};
-use core::{mem,ptr,cmp};
+use core::{mem,cmp};
 use core::ptr::Unique;
 use mem::heap::boundary_tag::{BoundaryTag,StartBoundaryTag,EndBoundaryTag,HeapAddress};
     
@@ -227,56 +227,33 @@ impl MemoryRegion {
         let front_padding = dest_addr - self.client_addr().unwrap();
         let needed_size = cmp::max(align_up(front_padding + layout.size(),mem::align_of::<EndBoundaryTag>()),
                                    Self::min_size());
+        // Vorgänger und Nachfolger in der Liste (so vorhanden)
+        let mut prev = self.prev.map_or(None,| a | Some(MemoryRegion::new_from_memory(a)) );
+        let mut next = self.next.map_or(None,| a | Some(MemoryRegion::new_from_memory(a)) );
         // Lohnt es sich, den Bereich zu teilen?
-        if self.size - needed_size > Self::min_size()  {
-            // Teile den Bereich
+        if self.size - needed_size > Self::min_size()  { // Teile den Bereich
             // Initialisere den neuen Bereich.
             let old_size = self.size;
             self.set_size(needed_size);
             let mut new_mr = MemoryRegion::new();
+            // Da der neue Bereich hinten abgetrennt wird, gibt es stets einen Vorgänger
             new_mr.init(Some(self.end_addr.unwrap() + mem::size_of::<EndBoundaryTag>()),
                         old_size - self.size - 2 * mem::size_of::<EndBoundaryTag>(),
-                        self.next,
-                        self.prev,
-                        false,
-                        self.upper_guard);
+                        self.next, self.prev, false, self.upper_guard);
             assert_eq!(old_size + 2 * mem::size_of::<EndBoundaryTag>(), self.size + new_mr.size + 4 * mem::size_of::<EndBoundaryTag>());
             self.upper_guard = false;
-            // Ersetze Bereich in der Liste mit abgeteiltem Bereich
-            if let Some(prev_addr) = self.prev {
-                let mut prev = MemoryRegion::new_from_memory(prev_addr);
-                prev.set_next_addr(new_mr.addr);
-                prev.write_to_memory();
-            }
-            if let Some(next_addr) = self.next {
-                let mut next = MemoryRegion::new_from_memory(next_addr);
-                next.set_prev_addr(new_mr.addr);
-                next.write_to_memory();
-            } 
+            // Setze Liste auf abgetrennten Bereich um
+            prev.map_or((),| mut mr | mr.set_next_addr(new_mr.addr));
+            next.map_or((),| mut mr | mr.set_prev_addr(new_mr.addr));
             new_mr.write_to_memory();
-         } else {
-            // Belege den gesamten Bereich
-            if self.size != needed_size {
-                let mut aux_end_tag = EndBoundaryTag::new();
-                aux_end_tag.set_size(needed_size);
-                aux_end_tag.set_free(false);
-                aux_end_tag.set_guard(self.upper_guard);
-                let aux_end_tag_addr: usize = self.addr.unwrap() + needed_size + mem::size_of::<EndBoundaryTag>();
-                ptr::write(aux_end_tag_addr as *mut EndBoundaryTag, aux_end_tag);
-            }
+         } else { // Belege den gesamten Bereich
             // Entferne Bereich aus der Liste
             self.free = false;
-            if let Some(prev_addr) = self.prev {
-                let mut prev = MemoryRegion::new_from_memory(prev_addr);
-                prev.set_next_addr(self.next);
-                prev.write_to_memory();
-            }
-            if let Some(next_addr) = self.next {
-                let mut next = MemoryRegion::new_from_memory(next_addr);
-                next.set_prev_addr(self.prev);
-                next.write_to_memory();
-            }
+            prev.map_or((),| mut mr | mr.set_next_addr(self.next));
+            next.map_or((), | mut mr | mr.set_prev_addr(self.prev));
         }
+        prev.map_or((),| mut mr | mr.write_to_memory());
+        next.map_or((), | mut mr | mr.write_to_memory());
         // Markiere Bereich als reserviert und aktualisiere den Speicher
         self.free = false;
         self.write_to_memory();
