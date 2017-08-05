@@ -2,9 +2,9 @@ use bit_field::BitField;
 use core::ptr::Unique;
 use core::nonzero::NonZero;
 
-pub type HeapAddress = Option<usize>;
+pub(super) type HeapAddress = Option<usize>;
  
-pub trait BoundaryTag {
+pub(super) trait BoundaryTag {
     /// Mutable Zugriff zu Tag-Daten 
     fn mut_bitfield(&mut self) -> &mut usize;
     
@@ -47,7 +47,7 @@ pub trait BoundaryTag {
 
 #[repr(C)]
 #[derive(Debug,Clone,Copy)]
-pub struct EndBoundaryTag {
+pub(super) struct EndBoundaryTag {
     bitfield: usize,
 }
 
@@ -103,7 +103,7 @@ impl BoundaryTag for EndBoundaryTag {
 
 #[repr(C)]
 #[derive(Debug,Clone,Copy)]
-pub struct StartBoundaryTag {
+pub(super) struct StartBoundaryTag {
     bitfield: usize,
     prev:     Option<NonZero<usize>>,
     next:     Option<NonZero<usize>>,

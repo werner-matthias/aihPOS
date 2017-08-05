@@ -1,8 +1,6 @@
-use alloc::allocator::{Alloc,Layout,AllocErr};
+use alloc::allocator::{Layout,AllocErr};
 use core::{mem,ptr,cmp};
 use core::ptr::Unique;
-use core::cell::Cell;
-
 use mem::heap::boundary_tag::{BoundaryTag,StartBoundaryTag,EndBoundaryTag,HeapAddress};
     
 #[repr(C)]
@@ -22,7 +20,7 @@ use mem::heap::boundary_tag::{BoundaryTag,StartBoundaryTag,EndBoundaryTag,HeapAd
 ///            |                    
 ///          Beginn verwendeter Speicher (wenn belegt)
 ///
-pub struct MemoryRegion {
+pub(super) struct MemoryRegion {
     addr:         HeapAddress,    // Startadresse des Speicherbereichs (nicht des verwendeten Speichers)
     size:         usize,            // Größe des verwendbaren Speichers
     end_addr:     HeapAddress,    // Adresse des End-Tags
@@ -149,12 +147,12 @@ impl MemoryRegion {
     }
 
     /// Adresse des nächsten Elements in der Liste
-    pub fn next(&self) -> HeapAddress {
+    pub fn next_addr(&self) -> HeapAddress {
         self.next
     }
 
     /// Adresse des vorherigen Elements in der Liste
-    pub fn prev(&self) -> HeapAddress {
+    pub fn prev_addr(&self) -> HeapAddress {
         self.prev
     }
 
@@ -169,12 +167,12 @@ impl MemoryRegion {
     }
     
     /// Setzt Adresse des nächsten Elements in der Liste
-    pub fn set_next(&mut self, next: HeapAddress) {
+    pub fn set_next_addr(&mut self, next: HeapAddress) {
         self.next = next;
     }
 
     /// Setzt Adresse des vorherigen Elements in der Liste
-    pub fn set_prev(&mut self, prev: HeapAddress) {
+    pub fn set_prev_addr(&mut self, prev: HeapAddress) {
         self.prev = prev;
     }
     
@@ -247,12 +245,12 @@ impl MemoryRegion {
             // Ersetze Bereich in der Liste mit abgeteiltem Bereich
             if let Some(prev_addr) = self.prev {
                 let mut prev = MemoryRegion::new_from_memory(prev_addr);
-                prev.set_next(new_mr.addr);
+                prev.set_next_addr(new_mr.addr);
                 prev.write_to_memory();
             }
             if let Some(next_addr) = self.next {
                 let mut next = MemoryRegion::new_from_memory(next_addr);
-                next.set_prev(new_mr.addr);
+                next.set_prev_addr(new_mr.addr);
                 next.write_to_memory();
             } 
             new_mr.write_to_memory();
@@ -270,12 +268,12 @@ impl MemoryRegion {
             self.free = false;
             if let Some(prev_addr) = self.prev {
                 let mut prev = MemoryRegion::new_from_memory(prev_addr);
-                prev.set_next(self.next);
+                prev.set_next_addr(self.next);
                 prev.write_to_memory();
             }
             if let Some(next_addr) = self.next {
                 let mut next = MemoryRegion::new_from_memory(next_addr);
-                next.set_prev(self.prev);
+                next.set_prev_addr(self.prev);
                 next.write_to_memory();
             }
         }
@@ -310,8 +308,8 @@ impl MemoryRegion {
             (false,true) => { 
                 let new_size = self.size + n_neighbor.size + 2 * mem::size_of::<EndBoundaryTag>();
                 self.size = new_size;
-                self.next = n_neighbor.next();
-                self.prev = n_neighbor.prev();
+                self.next = n_neighbor.next_addr();
+                self.prev = n_neighbor.prev_addr();
                 self.upper_guard = n_neighbor.upper_guard;
                 if let Some(prev_addr) = self.prev {
                     let mut nn_prev = unsafe{ MemoryRegion::new_from_memory(prev_addr) };
@@ -369,140 +367,19 @@ impl MemoryRegion {
                     }
                 }
                 true
-            }
+            } 
         }
     }
 }
 
-pub struct Heap {
-    first: Cell<StartBoundaryTag>,
-    size:  usize
-}
+impl Iterator for MemoryRegion {
+    type Item = MemoryRegion;
 
-impl Heap {
-    
-    pub const fn empty() -> Heap {
-        Heap {
-            first: Cell::new(StartBoundaryTag::new()),
-            size: 0
-        }
-    }
-
-    /// Initalisiert den Heap
-    /// # Safety
-    /// Es muss sichergestellt werden, dass der Heap-Bereich nicht anderweitig benutzt wird
-    pub unsafe fn init(&mut self, start: usize, size: usize) {
-        self.size = size;
-        // "first" ist eine Dummy-StartBoundaryTag-Struct, die direkt in der Heap-Struct
-        // angesiedelt ist und zu keinem Speicherbereich gehört. Sie dient als Listenkopf.
-        let mut dummy_tag = StartBoundaryTag::new();
-        dummy_tag.set_size(0);
-        dummy_tag.set_prev(None);
-        dummy_tag.set_next(Some(start));
-        self.first.set(dummy_tag);
-        let mut mr = MemoryRegion::new();
-        // Belege kommpletten Heap mit einzelnen Bereich
-        mr.init(Some(start),
-                size - 2 * mem::size_of::<EndBoundaryTag>(),
-                None,
-                Some(self.first.as_ptr() as *const _ as usize),
-                true,
-                true);
-        mr.write_to_memory();
-        //self.debug_list();
-    }
-   
-    pub fn allocate_first_fit(&self, layout: Layout) -> Result<*mut u8, AllocErr> {
-        let start = self.first.get();
-        let mut mem_reg: HeapAddress = start.next();
-        self.first.replace(start);
-        loop {
-            if let Some(mr_addr) = mem_reg {
-                let mut mr = unsafe{ MemoryRegion::new_from_memory(mr_addr) };
-                if mr.is_sufficient(&layout) {
-                    //self.debug_list();
-                    let res: Result<*mut u8, AllocErr> = unsafe{ mr.allocate(layout)};
-                    //self.debug_list();
-                    return res
-                } else {
-                    mem_reg = mr.next();   
-                }
-            } else {
-                //self.debug_list();
-                // TODO: Callback o.ä.
-               return Err(AllocErr::Exhausted{request: layout})
-            }
-        }
-    }
-
-    #[test]
-    pub fn debug_list(&self) {
-        let start = &self.first as *const _;
-        let mut nr = 0;
-        let mut mem_reg: HeapAddress = Some(start as usize);
-        loop {
-            if let Some(mr_addr) = mem_reg {
-                let mr: MemoryRegion = unsafe{ MemoryRegion::new_from_memory(mr_addr) };
-                kprint!(" Region #{} @ {} :",nr,mr_addr;YELLOW);
-                kprint!("(size:{},", mr.size;YELLOW);
-                if mr.free {
-                    kprint!("f";YELLOW);
-                } else {
-                    kprint!("o";YELLOW);
-                }
-                if mr.lower_guard {
-                    kprint!("<";YELLOW);
-                } else {
-                    kprint!("_";YELLOW);
-                }
-                if mr.upper_guard {
-                    kprint!(">";YELLOW);
-                } else {
-                    kprint!("_";YELLOW);
-                }
-                kprint!(") prev={:?} next={:?}\n",mr.prev,mr.next;YELLOW);
-                mem_reg = mr.next();
-            } else {
-                kprint!("  EOL\n";YELLOW);
-                return
-            }
-            nr += 1;
-            if nr > 8 {
-                break;
-            }
-        }
-    }
-}
-
-unsafe impl<'a> Alloc for &'a Heap {
-    
-    unsafe fn alloc(&mut self, layout: Layout) -> Result<*mut u8, AllocErr> {
-        self.allocate_first_fit(layout)
-    }
-
-    unsafe fn dealloc(&mut self, ptr: *mut u8, layout: Layout) {
-        let end_tag_addr = align_up(ptr as usize + cmp::max(layout.size(),MemoryRegion::min_size()),
-                                    mem::align_of::<EndBoundaryTag>());
-        let end_tag = EndBoundaryTag::new_from_memory(end_tag_addr);
-        let mut mr = MemoryRegion::new_from_memory(end_tag_addr - end_tag.size() - mem::size_of::<EndBoundaryTag>());
-        mr.free=true;
-        // Prüft, ob Bereiche zusammen gelegt werden können.
-        if !mr.coalesce_with_neighbors()  {
-            // Keine physischen Nachbarn gefunden, Speicherbereich rückt an Listenanfang
-            // TODO: Eingliederung nach Größe?
-            let mut head: StartBoundaryTag = self.first.get();
-            mr.set_prev(Some(&self.first as *const _ as usize));
-            mr.set_next(head.next());
-            // Bisheriges TOL-Element rückt hinter neues Element
-            if let Some(next_addr) = mr.next {
-                let mut next = MemoryRegion::new_from_memory(next_addr);
-                next.set_prev(mr.addr);
-                next.write_to_memory();
-            }
-            // Listenkopf zeigt auf einzugliedernden Bereich
-            head.set_next(Some(mr.addr.unwrap()));
-            self.first.set(head);
-            mr.write_to_memory();
+    fn next(&mut self) -> Option<MemoryRegion> {
+        if let Some(addr) = self.next {
+            unsafe{ Some(MemoryRegion::new_from_memory(addr))}
+        } else {
+            None
         }
     }
 }
