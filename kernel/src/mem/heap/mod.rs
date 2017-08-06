@@ -4,7 +4,7 @@ use core::cell::Cell;
 
 mod boundary_tag;
 mod memory_region;
-use self::boundary_tag::{BoundaryTag,StartBoundaryTag,EndBoundaryTag};
+use self::boundary_tag::{BoundaryTag,StartBoundaryTag,EndBoundaryTag,HeapAddress};
 use self::memory_region::MemoryRegion;
 
 pub struct Heap {
@@ -43,24 +43,12 @@ impl Heap {
                 true);
         mr.write_to_memory();
     }
-   
-    pub fn allocate_first_fit(&self, layout: Layout) -> Result<*mut u8, AllocErr> {
-        let start = unsafe{ MemoryRegion::new_from_memory(self.first.as_ptr() as usize)};
-        for mut mr in start {
-            if mr.is_sufficient(&layout) {
-                let allocation = unsafe{ mr.allocate(layout)};
-                return allocation;
-            }
-        }
-        Err(AllocErr::Exhausted{request: layout})
-    }
-
+    
     /*
     pub fn debug_list(&self) {
         let start = &self.first as *const _;
         let mut nr = 0;
         let mut mem_reg: HeapAddress = Some(start as usize);
-        kprint!("\nHeap:\n";YELLOW);
         loop {
             if let Some(mr_addr) = mem_reg {
                 let mr: MemoryRegion = unsafe{ MemoryRegion::new_from_memory(mr_addr) };
@@ -83,7 +71,13 @@ impl Heap {
 unsafe impl<'a> Alloc for &'a Heap {
     
     unsafe fn alloc(&mut self, layout: Layout) -> Result<*mut u8, AllocErr> {
-        self.allocate_first_fit(layout)
+        let start = MemoryRegion::new_from_memory(self.first.as_ptr() as usize);
+        for mut mr in start {
+            if mr.is_sufficient(&layout) {
+                return mr.allocate(layout);
+            }
+        }
+        Err(AllocErr::Exhausted{request: layout})
     }
 
     unsafe fn dealloc(&mut self, ptr: *mut u8, layout: Layout) {
@@ -95,7 +89,6 @@ unsafe impl<'a> Alloc for &'a Heap {
         // Prüft, ob Bereiche zusammen gelegt werden können.
         if !mr.coalesce_with_neighbors()  {
             // Keine physischen Nachbarn gefunden, Speicherbereich rückt an Listenanfang
-            // TODO: Eingliederung nach Größe?
             let mut head: StartBoundaryTag = self.first.get();
             mr.set_prev_addr(Some(&self.first as *const _ as usize));
             mr.set_next_addr(head.next());
