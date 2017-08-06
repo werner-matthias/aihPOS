@@ -219,7 +219,7 @@ impl MemoryRegion {
 
     /// Belegt den Speicherbereich
     /// Ggf. wird der Speicherbereich geteilt
-    ///
+    /// 
     /// #Safety
     /// Es muss sichergestellt sein, dass eine korrekte doppeltverkettete Liste existiert.
     pub unsafe fn allocate(&mut self, layout: Layout) ->  Result<*mut u8, AllocErr>  {
@@ -228,32 +228,43 @@ impl MemoryRegion {
         let needed_size = cmp::max(align_up(front_padding + layout.size(),mem::align_of::<EndBoundaryTag>()),
                                    Self::min_size());
         // Vorgänger und Nachfolger in der Liste (so vorhanden)
-        let mut prev = self.prev.map_or(None,| a | Some(MemoryRegion::new_from_memory(a)) );
-        let mut next = self.next.map_or(None,| a | Some(MemoryRegion::new_from_memory(a)) );
+        let prev = self.prev.map_or(None,| a | Some(MemoryRegion::new_from_memory(a)) );
+        let next = self.next.map_or(None,| a | Some(MemoryRegion::new_from_memory(a)) );
         // Lohnt es sich, den Bereich zu teilen?
-        if self.size - needed_size > Self::min_size()  { // Teile den Bereich
-            // Initialisere den neuen Bereich.
+        if self.size - needed_size > Self::min_size()  { 
+            // Teile den Bereich, initialisere einen neuen Bereich
             let old_size = self.size;
             self.set_size(needed_size);
             let mut new_mr = MemoryRegion::new();
-            // Da der neue Bereich hinten abgetrennt wird, gibt es stets einen Vorgänger
             new_mr.init(Some(self.end_addr.unwrap() + mem::size_of::<EndBoundaryTag>()),
                         old_size - self.size - 2 * mem::size_of::<EndBoundaryTag>(),
-                        self.next, self.prev, false, self.upper_guard);
+                        self.next, self.prev,
+                        false,   // Da der neue Bereich hinten abgetrennt wird, gibt es stets einen Vorgänger
+                        self.upper_guard);
             assert_eq!(old_size + 2 * mem::size_of::<EndBoundaryTag>(), self.size + new_mr.size + 4 * mem::size_of::<EndBoundaryTag>());
             self.upper_guard = false;
-            // Setze Liste auf abgetrennten Bereich um
-            prev.map_or((),| mut mr | mr.set_next_addr(new_mr.addr));
-            next.map_or((),| mut mr | mr.set_prev_addr(new_mr.addr));
+            // Ersetze Listenelement mit abgetrennten Bereich
+            prev.map_or((),| mut mr | {
+                mr.set_next_addr(new_mr.addr);
+                mr.write_to_memory();
+            });
+            next.map_or((),| mut mr | {
+                mr.set_prev_addr(new_mr.addr);
+                mr.write_to_memory();
+            });
             new_mr.write_to_memory();
-         } else { // Belege den gesamten Bereich
-            // Entferne Bereich aus der Liste
+        } else {
+            // Belege den gesamten Bereich => entferne Bereich aus der Liste
             self.free = false;
-            prev.map_or((),| mut mr | mr.set_next_addr(self.next));
-            next.map_or((), | mut mr | mr.set_prev_addr(self.prev));
+            prev.map_or((),| mut mr | {
+                mr.set_next_addr(self.next);
+                mr.write_to_memory();
+            });
+            next.map_or((), | mut mr | {
+                mr.set_prev_addr(self.prev);
+                mr.write_to_memory();
+            });
         }
-        prev.map_or((),| mut mr | mr.write_to_memory());
-        next.map_or((), | mut mr | mr.write_to_memory());
         // Markiere Bereich als reserviert und aktualisiere den Speicher
         self.free = false;
         self.write_to_memory();
