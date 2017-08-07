@@ -50,7 +50,7 @@ use mem::{PdEntryType,PageDirectoryEntry,PdEntry,DomainAccess,MemoryAccessRight,
 use mem::frames::FrameManager;
 use mem::PageTable;
 //use mem::heap::AihposHeap;
-use mem::heap::Heap;
+use mem::heap::BoundaryTagAllocator;
 //use collections::vec::Vec;
 
 import_linker_address!(__text_end);
@@ -64,8 +64,7 @@ const IRQ_STACK_SIZE: u32 = 2048;
 pub  const INIT_HEAP_SIZE: usize = 25 * 4096; // 25 Seiten = 100 kB
 
 #[global_allocator]
-//static mut HEAP: AihposHeap = AihposHeap{};
-static mut HEAP: Heap = Heap::empty();
+static mut HEAP: BoundaryTagAllocator = BoundaryTagAllocator::empty();
 
 extern {
     static mut __page_directory: [PageDirectoryEntry;4096];
@@ -135,7 +134,7 @@ fn init_stacks() {
 
 fn init_heap() {
     unsafe{
-        HEAP.init(__bss_start as usize, INIT_HEAP_SIZE);
+        BoundaryTagAllocator.init(__bss_start as usize, INIT_HEAP_SIZE);
     }
 }
 

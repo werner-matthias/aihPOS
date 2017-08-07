@@ -12,10 +12,10 @@ pub struct Heap {
     size:  usize
 }
 
-impl Heap {
+impl BoundaryTagAllocator {
     
     pub const fn empty() -> Heap {
-        Heap {
+        BoundaryTagAllocator {
             first: Cell::new(StartBoundaryTag::new()),
             size: 0
         }
@@ -68,7 +68,7 @@ impl Heap {
      */
 }
  
-unsafe impl<'a> Alloc for &'a Heap {
+unsafe impl<'a> Alloc for &'a BoundaryTagAllocator {
     
     unsafe fn alloc(&mut self, layout: Layout) -> Result<*mut u8, AllocErr> {
         let start = MemoryRegion::new_from_memory(self.first.as_ptr() as usize);
