@@ -7,14 +7,14 @@ mod memory_region;
 use self::boundary_tag::{BoundaryTag,StartBoundaryTag,EndBoundaryTag,HeapAddress};
 use self::memory_region::MemoryRegion;
 
-pub struct Heap {
+pub struct BoundaryTagAllocator {
     first: Cell<StartBoundaryTag>,
     size:  usize
 }
 
 impl BoundaryTagAllocator {
     
-    pub const fn empty() -> Heap {
+    pub const fn empty() -> BoundaryTagAllocator {
         BoundaryTagAllocator {
             first: Cell::new(StartBoundaryTag::new()),
             size: 0

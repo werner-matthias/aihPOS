@@ -3,7 +3,7 @@
 #![feature(
     alloc,                  // Nutzung der Alloc-Crate
     allocator_api,          // Nutzung der Allocator-API
-    allocator_internals,   // ???
+    //allocator_internals,   // ???
     //abi_unadjusted,         //
     attr_literals,          // Literale in Attributen (nicht nur Strings)
     asm,                    // Assembler in Funktionen...
@@ -134,7 +134,7 @@ fn init_stacks() {
 
 fn init_heap() {
     unsafe{
-        BoundaryTagAllocator.init(__bss_start as usize, INIT_HEAP_SIZE);
+        HEAP.init(__bss_start as usize, INIT_HEAP_SIZE);
     }
 }
 

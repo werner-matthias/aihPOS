@@ -13,5 +13,5 @@ pub use self::page_table::PageTable;
 
 pub mod frames;
 pub mod heap;
-pub use mem::heap::Heap;
+pub use mem::heap::BoundaryTagAllocator;
 
