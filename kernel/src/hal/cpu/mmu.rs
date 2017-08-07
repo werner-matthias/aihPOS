@@ -3,26 +3,21 @@ use hal::cpu::cache::Cache;
 use hal::cpu::tlb::Tlb;
 use hal::cpu::Cpu;
 use bit_field::BitField;
-use mem::{DomainAccess,PageDirectoryEntry};
+use mem::paging::{DomainAccess,PageDirectoryEntry,PageDirectory};
 
 pub struct MMU {
-    pub page_directory: &'static mut [PageDirectoryEntry]
+    pub page_directory: &'static PageDirectory
 }
 
 impl MMU {
-    pub fn new(dir: &'static mut [PageDirectoryEntry;4096]) -> MMU {
-        MMU{
-            page_directory:  dir
-        }
-    }
     
-    pub fn set_page_dir(addr: u32){
+    pub fn set_page_dir(addr: usize){
         unsafe{
             asm!("mcr p15, 0, $0, c2, c0, 0"::"r"(addr):"memory":"volatile");
         }
     }
     
-    pub fn start(&self){
+    pub fn start(){
         // Aus dem Technischen Manual ARM1176JZF-S , Abs. 6.4.1 (S. 6-9):
         // To enable the MMU in one world you must:
         //  1. Program all relevant CP15 registers.
@@ -33,7 +28,7 @@ impl MMU {
         //     is enabled.
         //
         let mut reg: u32;
-        MMU::set_page_dir(self.page_directory.as_ptr() as u32);
+        //MMU::set_page_dir(self.page_directory.as_ptr() as u32);
         Cache::clean();
         Cache::disable_instruction();
         Cache::invalidate_instruction();
@@ -55,7 +50,7 @@ impl MMU {
     }
     
 
-    pub fn stop(&self){
+    pub fn stop(){
         // Aus dem Technischen Manual ARM1176JZF-S , Abs. 6.4.2 (S. 6-9): 
         // To disable the MMU in one world proceed as follows:
         //  1. Clear bit 2 to 0 in the CP15 Control Register c1 to disable the Data Cache.
@@ -89,7 +84,8 @@ impl MMU {
         }
     }
 }
-    
+
+/*
 impl Index<usize> for MMU {
     type Output = PageDirectoryEntry;
 
@@ -103,4 +99,4 @@ impl IndexMut<usize> for MMU {
         &mut self.page_directory[index]
     }
     
-}
+}*/

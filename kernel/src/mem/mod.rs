@@ -1,17 +1,14 @@
-pub type PhysAddr  = usize;
-pub type LogicAddr = usize;
+use core::ops::Range;
+
+pub type PhysicalAddress = usize;
+pub type LogicalAddress  = usize;
+pub type PhysicalAddressRange = Range<PhysicalAddress>;
+pub type LogicalAddressRange  = Range<LogicalAddress>;
 
 pub mod paging;
-pub mod pde;
-pub mod pte;
-pub mod page_table;
+pub use self::paging::{DomainAccess,PageDirectoryEntry};
+//pub use self::paging::{DomainAccess,MemoryAccessRight,MemType,PageDirectoryEntry,PageDirectoryEntryType,PdEntry,PageTableEntry,PageTableEntryType,Pte,PageTable};
 
-pub use self::paging::{DomainAccess,MemoryAccessRight,MemType};
-pub use self::pde::{PageDirectoryEntry,PdEntryType,PdEntry};
-pub use self::pte::{PageTableEntry,PageTableEntryType,Pte};
-pub use self::page_table::PageTable;
-
-pub mod frames;
 pub mod heap;
 pub use mem::heap::BoundaryTagAllocator;
 

@@ -2,6 +2,7 @@ mod mailbox;
 mod propertytags;
 pub use self::propertytags::{Tag,PropertyTagBuffer,BUFFER_SIZE};
 pub use hal::board::mailbox::{mailbox, Channel};
+use mem::PhysicalAddress;
 
 pub enum BoardReport {
     FirmwareVersion,
@@ -37,7 +38,7 @@ pub enum MemReport {
     VcSize,
 }
 
-pub fn report_memory(kind: MemReport) -> u32 {
+pub fn report_memory(kind: MemReport) -> PhysicalAddress {
     let mut prob_tag_buf = PropertyTagBuffer::new();
     prob_tag_buf.init();
     let tag = match kind {
@@ -51,8 +52,8 @@ pub fn report_memory(kind: MemReport) -> u32 {
     let array = prob_tag_buf.get_answer(tag);
     match array {
         Some(a) => match kind {
-            MemReport::ArmStart | MemReport::VcStart => a[0],
-            MemReport::ArmSize  | MemReport::VcSize  => a[1]
+            MemReport::ArmStart | MemReport::VcStart => a[0] as PhysicalAddress,
+            MemReport::ArmSize  | MemReport::VcSize  => a[1] as PhysicalAddress
         },
         None => 0
     }

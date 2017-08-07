@@ -46,12 +46,9 @@ use alloc::boxed::Box;
 use hal::board::{MemReport,BoardReport,report_board_info,report_memory};
 use hal::entry::syscall;
 use hal::cpu::{Cpu,ProcessorMode,MMU};
-use mem::{PdEntryType,PageDirectoryEntry,PdEntry,DomainAccess,MemoryAccessRight,MemType,PageTableEntryType,Pte};
-use mem::frames::FrameManager;
-use mem::PageTable;
-//use mem::heap::AihposHeap;
+use mem::PhysicalAddress;
+use mem::paging::{PageDirectory,PageDirectoryEntry,PdEntry,PageDirectoryEntryType,MemoryAccessRight,MemType,PageTable,DomainAccess};
 use mem::heap::BoundaryTagAllocator;
-//use collections::vec::Vec;
 
 import_linker_address!(__text_end);
 import_linker_address!(__data_end);
@@ -60,15 +57,16 @@ import_linker_address!(__shared_end);
 import_linker_address!(__kernel_stack);
 import_linker_address!(__bss_start);
 
-const IRQ_STACK_SIZE: u32 = 2048;
+const IRQ_STACK_SIZE: usize = 2048;
 pub  const INIT_HEAP_SIZE: usize = 25 * 4096; // 25 Seiten = 100 kB
 
 #[global_allocator]
 static mut HEAP: BoundaryTagAllocator = BoundaryTagAllocator::empty();
-
-extern {
+static mut PAGE_DIR: PageDirectory = PageDirectory::new();
+/*extern {
     static mut __page_directory: [PageDirectoryEntry;4096];
 }
+*/
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 #[no_mangle]      // Name wird für den Export nicht verändert
@@ -77,7 +75,7 @@ const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 pub extern fn kernel_start() {
     // Zum Start existiert noch kein Stack. Daher setzen wir einen temporären Stack, der nach dem Textsegment liegt.
     // Das Symbol ist in "layout.ld" definiert.
-    Cpu::set_stack(__kernel_stack as u32);
+    Cpu::set_stack(__kernel_stack as PhysicalAddress);
     // Nun kann die Größe des Speichers und damit die Adresse für den "echten" Stacks bestimmt werden
     Cpu::set_stack(determine_svc_stack());
     kernel_init();
@@ -95,13 +93,13 @@ fn kernel_init() -> ! {
     unreachable!();
 }
 
-fn determine_irq_stack() -> u32 {
+fn determine_irq_stack() -> PhysicalAddress {
     let addr = (report_memory(MemReport::ArmSize) - 3) & 0xFFFFFFFC;
     addr
 }
 
 #[inline(never)]
-fn determine_svc_stack() -> u32 {
+fn determine_svc_stack() -> PhysicalAddress {
     let addr = ((report_memory(MemReport::ArmSize) - 3) & 0xFFFFFFFC) - IRQ_STACK_SIZE;
     addr
 }
@@ -142,23 +140,32 @@ fn init_heap() {
 ///! Der komplette Kernel sollte kleiner als 1 MB sein, daher brauchen wir
 ///! für ihn lediglich eine Tabelle im Directory.
 fn init_paging() {
-    let mut mmu = MMU::new(unsafe{ &mut __page_directory});
+    // Das erste MB wird jetzt auf sich selbst gemappt
+    unsafe{
+        PAGE_DIR[0] = PageDirectoryEntry::new(PageDirectoryEntryType::Section)
+            .base_addr(0)
+            .rights(MemoryAccessRight::SysRwUsrNone)
+            .mem_type(MemType::NormalUncashed)
+            .entry();  // Identitätsmapping;
+        MMU::set_page_dir(&PAGE_DIR as *const _ as usize);
+    }
     // Standard ist Seitenfehler
+    /*
     for page in 0..4096{ 
         let pde: PageDirectoryEntry;
         pde = PdEntry::new(PdEntryType::Fault).entry();
-        mmu[page as usize] = pde;
+        PAGE_DIR[page as usize] = pde;
     }
-    // Das erste MB wird jetzt auf sich selbst gemappt
-    mmu[0] = PdEntry::new(PdEntryType::Section).base_addr(0).rights(MemoryAccessRight::SysRwUsrNone).mem_type(MemType::NormalUncashed).entry();  // Identitätsmapping;
+     */
     // Den Stack und alles drüber (eigentlich nur die HW) brauchen wir auch:
+    /*
     for page in 447..4096 {
         let pde: PageDirectoryEntry;
         pde = PdEntry::new(PdEntryType::Section).base_addr(page << 20).rights(MemoryAccessRight::SysRwUsrNone).mem_type(MemType::NormalUncashed).entry();  // Identitätsmapping
-        mmu[page as usize] = pde;
+        PAGE_DIR[page as usize] = pde;
     }
-    
-    //let kernel_pt = Box::new(PageTable::new());
+     */
+    let kernel_pt = Box::new(PageTable::new());
     //for page in 0..256 {
     //    kernel_pt[0] = Pte::new_entry(PageTableEntryType::SmallCodePage).base_addr(page)
     //}
@@ -167,7 +174,7 @@ fn init_paging() {
     //let kernel_pt = unsafe{ Box::from_raw(kernel_pt_addr)};
     
     MMU::set_domain_access(0,DomainAccess::Manager);
-    mmu.start();
+    MMU::start();
     kprint!("MMU aktiviert.\n");
 }
 

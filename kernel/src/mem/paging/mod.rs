@@ -1,6 +1,7 @@
-#[allow(dead_code)] 
+const MEM_SIZE:     usize = 512*1024*1024;
+const PAGE_SIZE:    usize = 4*1024;
 
-
+//mod addresses;
 // Der MMU-Code geht von folgender Konfiguration aus:
 //  - keine Rückwärtskompatibilität zu ARMv5.
 //  - TEX-Remapping aus (muss wahrscheinlich für spätere Unterstützung von virtuellen Speicher geändert werden)
@@ -46,3 +47,18 @@ pub enum DomainAccess {
     Client,
     Manager
 }
+
+use super::{LogicalAddress,PhysicalAddress,LogicalAddressRange,PhysicalAddressRange};
+mod pte;
+mod pde;
+pub use self::pde::{PdEntry,PageDirectoryEntry,PageDirectoryEntryType};
+pub use self::pte::{Pte,PageTableEntry,PageTableEntryType};
+
+mod page_table;
+pub use self::page_table::PageTable;
+
+mod frames;
+pub use self::frames::FrameManager;
+
+mod page_directory;
+pub use self::page_directory::PageDirectory;

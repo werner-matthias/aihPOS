@@ -5,6 +5,7 @@ mod tlb;
 mod mmu;
 
 pub use self::mmu::MMU;
+use mem::PhysicalAddress;
 
 // Siehe ARM Architectur Reference Manual A2-3
 pub enum ProcessorMode {
@@ -36,7 +37,7 @@ impl Cpu {
     }
 
     #[inline(always)]
-    pub fn set_stack(adr: u32) {
+    pub fn set_stack(adr: PhysicalAddress) {
         unsafe{
             asm!("mov sp, $0"::"r"(adr)::"volatile");
         }

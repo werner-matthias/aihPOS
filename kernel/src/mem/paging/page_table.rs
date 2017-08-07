@@ -1,7 +1,6 @@
-use mem::pte::{PageTableEntry,PageTableEntryType,Pte};
 use core::ops::{Index, IndexMut};
-
-use mem::{PhysAddr,LogicAddr};
+use super::{PageTableEntry,PageTableEntryType,Pte};
+use super::{LogicalAddress,PhysicalAddress};
 
 #[repr(C)]
 #[repr(align(1024))]
@@ -22,7 +21,7 @@ impl PageTable {
         }
     }
 
-    pub fn map(&mut self, paddr: PhysAddr, laddr: LogicAddr) {
+    pub fn map(&mut self, paddr: PhysicalAddress, laddr: LogicalAddress) {
         
     }
     
