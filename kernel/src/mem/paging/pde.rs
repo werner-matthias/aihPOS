@@ -7,6 +7,7 @@ pub type PageDirectoryEntry = u32;
 #[derive(PartialEq,Clone,Copy)]
 pub enum PageDirectoryEntryType {
     Fault           = 0,
+    AltFault        = 0b11,
     CoarsePageTable = 0b01,
     Section         = 0b10,
     Supersection    = 0x40002
@@ -27,7 +28,7 @@ pub trait PdEntry {
     
     fn process_specific(&mut self) ->  &mut PageDirectoryEntry;
     
-    fn never_execute(&mut self) ->  &mut PageDirectoryEntry;
+    fn never_execute(&mut self, ne: bool) ->  &mut PageDirectoryEntry;
     
     fn entry(&self) -> PageDirectoryEntry;
 }
@@ -100,9 +101,9 @@ impl PdEntry for PageDirectoryEntry {
         self
     }
 
-    fn never_execute(&mut self) ->  &mut PageDirectoryEntry {
+    fn never_execute(&mut self, ne: bool) ->  &mut PageDirectoryEntry {
         if *self & 0x3 == 0b10 {
-            self.set_bit(4,true);
+            self.set_bit(4,ne);
         }
         self
     }
