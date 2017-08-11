@@ -1,3 +1,4 @@
+#![warn(missing_docs)]
 use bit_field::BitField;
 use mem::paging::{MemType,MemoryAccessRight};
 use core::fmt;
@@ -15,23 +16,41 @@ pub enum PageDirectoryEntryType {
 }
 
 pub trait PdEntry {
+    /// Erzeugt einen neuen Eintrag für das Seitenverzeichnis (_Page Directory_)
     fn new(kind: PageDirectoryEntryType) -> PageDirectoryEntry;
+
+    /// Gibt die Art des Eintrags
+    fn kind(self) -> PageDirectoryEntryType;
     
+    /// Setzt die Basisadresse
     fn base_addr(mut self, a: usize) -> PageDirectoryEntry;
         
+    /// Legt die Art des Speichers (Caching) fest
+    ///  - Vorgabe: `StronglyOrdered`  (_stikt geordnet_), siehe ARM DDI 6-15
     fn mem_type(mut self, t: MemType) -> PageDirectoryEntry;
     
+    /// Setzt die Zugriffsrechte
     fn rights(mut self, r: MemoryAccessRight) -> PageDirectoryEntry;
-    
+
+    /// Legt fest, zu welcher Domain die Seitentabelle oder Section gehört
+    ///   - Für Supersections wird die Domain ignoriert
+    ///   - Vorgabe: 0
     fn domain(mut self, d: u32) -> PageDirectoryEntry;
 
-    fn shared(mut self) ->  PageDirectoryEntry;
-    
-    fn process_specific(mut self) ->  PageDirectoryEntry;
-    
-    fn never_execute(mut self, ne: bool) ->  PageDirectoryEntry;
-    
-    fn entry(self) -> PageDirectoryEntry;
+    /// Legt die Section oder Supersection als gemeinsam (_shared_) fest
+    ///  - Vorgabe: `false` (nicht gemeinsam)
+    fn shared(mut self, s: bool) ->  PageDirectoryEntry;
+
+    /// Legt fest, ob eine (Super-)Section global (`false`) oder prozessspezifisch
+    /// ist. Bei prozessspezifischen (Super-)Section wird die ASID aus dem
+    /// ContextID-Register (CP15c13) genutzt.
+    ///  - Vorgabe: `false` (global)
+    ///  - Anmerkung: aihPOS nutzt *keine* prozessspezifischen Abschnitte
+    fn process_specific(mut self, ps: bool) ->  PageDirectoryEntry;
+
+    /// Legt fest, ob Speicherinhalt als Code ausgeführt werden darf
+    ///  - Vorgabe: `false` (ausführbar)
+    fn no_execute(mut self, ne: bool) ->  PageDirectoryEntry;
 }
 
 impl PdEntry for PageDirectoryEntry {
@@ -40,77 +59,89 @@ impl PdEntry for PageDirectoryEntry {
             kind as PageDirectoryEntry
     }
 
+    fn kind(self) -> PageDirectoryEntryType {
+        let pd_type = self.get_bits(18..19) << 2 + self.get_bits(0..2);
+        match pd_type {
+            0b001 | 0b101 => PageDirectoryEntryType::CoarsePageTable,
+            0b010         => PageDirectoryEntryType::Section,
+            0b110         => PageDirectoryEntryType::Supersection,
+            _             => PageDirectoryEntryType::Fault
+        }
+    }
+    
     fn base_addr(mut self, a: usize) -> PageDirectoryEntry {
-        match (self & 0x3) as usize {
-            v if v == PageDirectoryEntryType::CoarsePageTable as usize => {
-                self.set_bits(10..32, a as u32 >> 10);
-            },
-            v if v == PageDirectoryEntryType::Section as usize  => {
-                if self.get_bit(18) { // Supersection
-                    self.set_bits(24..32, a as u32 >> 24);
-                } else {                   // Section
-                    self.set_bits(20..32, a as u32 >> 20);
-                }
-            },
-            _ => {}
-        };
+        match self.kind() {
+            PageDirectoryEntryType::CoarsePageTable => { self.set_bits(10..32, (a as u32).get_bits(10..32)); } ,
+            PageDirectoryEntryType::Section         => { self.set_bits(20..32, (a as u32).get_bits(20..32)); },
+            PageDirectoryEntryType::Supersection    => { self.set_bits(24..32, (a as u32).get_bits(24..32)); },
+            _                                       => {}
+        }
         self
     }
 
     fn mem_type(mut self, t: MemType) -> PageDirectoryEntry {
-        if self & 0x2 == 0 {
-            return self
+        match self.kind() {
+            PageDirectoryEntryType::Section | PageDirectoryEntryType::Supersection
+                => {
+                    let ti = t as u32;
+                    self.set_bits(12..15,ti.get_bits(2..5));
+                    self.set_bits(2..4,ti.get_bits(0..2));
+                },
+            _   => {}
         }
-        let ti = t as u32;
-        self.set_bits(12..15,ti.get_bits(2..5));
-        self.set_bits(2..4,ti.get_bits(0..2));
         self
     }
     
     fn rights(mut self, r: MemoryAccessRight) -> PageDirectoryEntry {
-        if self & 0x2 == 0 {
-            return self
+        match self.kind() {
+            PageDirectoryEntryType::Section | PageDirectoryEntryType::Supersection
+                => {
+                    let ri = r as u32;
+                    self.set_bit(15,ri.get_bit(2));
+                    self.set_bits(10..12,ri.get_bits(0..2));
+                },
+            _   => {}
         }
-        let ri = r as u32;
-        self.set_bit(15,ri.get_bit(2));
-        self.set_bits(10..12,ri.get_bits(0..2));
         self
     }
     
     fn domain(mut self, d: u32) -> PageDirectoryEntry {
-        if self & 0x3 != 0 {
-            // ARM1176JZF-S: bei Supersections werden diese Bits ignoriert
-            // Dies gilt nicht allgemein für ARMv6: sie können Teil der erweiterten Basisadresse sein.
-            // Beim einem Port muss ggf. überprüft werden, dass keine Supersection vorliegt.
-            self.set_bits(5..9,d);  
+        match self.kind() {
+            PageDirectoryEntryType::CoarsePageTable | PageDirectoryEntryType::Section
+                => { self.set_bits(5..9,d); },
+            _   => {}
+            
         }
         self
     }
 
-    fn shared(mut self) ->  PageDirectoryEntry {
-        if self & 0x3 == 0b10 {
-            self.set_bit(16,true);
+    fn shared(mut self, s: bool) ->  PageDirectoryEntry {
+        match self.kind() {
+            PageDirectoryEntryType::Section | PageDirectoryEntryType::Supersection
+                => { self.set_bit(16,s); },
+            _   => {}
         }
         self
     }
 
-    fn process_specific(mut self) ->  PageDirectoryEntry {
-        if self & 0x3 == 0b10 {
-            self.set_bit(17,true);
+    fn process_specific(mut self, ps: bool) ->  PageDirectoryEntry {
+        match self.kind() {
+            PageDirectoryEntryType::Section | PageDirectoryEntryType::Supersection
+                => { self.set_bit(17,true); },
+            _   => {}
         }
         self
     }
 
-    fn never_execute(mut self, ne: bool) ->  PageDirectoryEntry {
-        if self & 0x3 == 0b10 {
-            self.set_bit(4,ne);
+    fn no_execute(mut self, ne: bool) ->  PageDirectoryEntry {
+        match self.kind() {
+            PageDirectoryEntryType::Section | PageDirectoryEntryType::Supersection
+                => { self.set_bit(4,ne); },
+            _   => {}
         }
         self
     }
 
-    fn entry(self) -> PageDirectoryEntry {
-        self.clone()
-    }
 }
 
 // Wrapper for Debug
