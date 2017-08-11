@@ -14,10 +14,11 @@ SECTIONS
      .data : ALIGN(4096)
     {
       __data_start = .;
-	*(.data);
+	*(.data)
+	*(.data._ZN*)
 	*(.rodata*)
+      __data_end = .;
     }
-    __data_end = .;
     /* Zum Start wird das bss-Segment für den provisorischen Stack genutzt */
     .bss : ALIGN(4096)
     {
