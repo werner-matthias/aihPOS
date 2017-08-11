@@ -35,6 +35,7 @@ impl BoundaryTagAllocator {
         self.first.set(dummy_tag);
         let mut mr = MemoryRegion::new();
         // Belege kommpletten Heap mit einzelnen Bereich
+        //kprint!(" alloc: init heap\n";YELLOW);
         mr.init(Some(start),
                 size - 2 * mem::size_of::<EndBoundaryTag>(),
                 None,
@@ -42,9 +43,9 @@ impl BoundaryTagAllocator {
                 true,
                 true);
         mr.write_to_memory();
+        //self.debug_list();
     }
     
-    /*
     pub fn debug_list(&self) {
         let start = &self.first as *const _;
         let mut nr = 0;
@@ -65,16 +66,19 @@ impl BoundaryTagAllocator {
             }
         }
     }
-     */
 }
  
 unsafe impl<'a> Alloc for &'a BoundaryTagAllocator {
     
     unsafe fn alloc(&mut self, layout: Layout) -> Result<*mut u8, AllocErr> {
+        //self.debug_list();
         let start = MemoryRegion::new_from_memory(self.first.as_ptr() as usize);
         for mut mr in start {
             if mr.is_sufficient(&layout) {
-                return mr.allocate(layout);
+                let ret = mr.allocate(layout);
+                //self.debug_list();
+                return ret;
+
             }
         }
         Err(AllocErr::Exhausted{request: layout})
@@ -103,6 +107,7 @@ unsafe impl<'a> Alloc for &'a BoundaryTagAllocator {
             self.first.set(head);
             mr.write_to_memory();
         }
+        //self.debug_list();
     }
 }
 

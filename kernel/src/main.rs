@@ -15,6 +15,7 @@
     core_intrinsics,        // Nutzung der Intrinsics der Core-Bibliothek
     global_allocator,       // eigener globaler Allocator
     i128_type,              // 128-Bit-Typen
+    inclusive_range_syntax, // Inklusiver Bereich mit "..."   
     iterator_step_by,       // Spezifische Schrittweite bei Iterationen
     lang_items,             // Funktionen interne Funktionen ersetzen (panic)
     linkage,                // Angaben zum Linktyp (z.B. Sichtbarkeit)
@@ -32,41 +33,44 @@
 /// Benutzte Crates
 #[macro_use]
 extern crate alloc;
+#[macro_use]
+//extern crate lazy_static;
 extern crate bit_field;
 //#[macro_use] extern crate collections;
 extern crate compiler_builtins;
 
 #[macro_use] mod aux_macros;
 #[macro_use] mod debug;
-#[macro_use] mod hal;
 mod panic;
+
 mod sync;
-mod mem;
 use alloc::boxed::Box;
+
+#[macro_use] mod hal;
 use hal::board::{MemReport,BoardReport,report_board_info,report_memory};
 use hal::entry::syscall;
 use hal::cpu::{Cpu,ProcessorMode,MMU};
+use core::mem::size_of;
+mod mem;
 use mem::PhysicalAddress;
-use mem::paging::{PageDirectory,PageDirectoryEntry,PdEntry,PageDirectoryEntryType,MemoryAccessRight,MemType,PageTable,DomainAccess};
+use mem::paging::{Frame,FrameMethods};
+use mem::paging::{PageDirectory,PageDirectoryEntry,PdEntry,PageDirectoryEntryType,MemoryAccessRight,MemType,PageTable,DomainAccess,PAGES_PER_SECTION};
+use mem::paging::pde::Deb;
 use mem::heap::BoundaryTagAllocator;
 
-import_linker_address!(__text_end);
-import_linker_address!(__data_end);
-import_linker_address!(__shared_begin);
-import_linker_address!(__shared_end);
-import_linker_address!(__kernel_stack);
-import_linker_address!(__bss_start);
+import_linker_symbol!(__text_end);
+import_linker_symbol!(__data_start);
+import_linker_symbol!(__data_end);
+import_linker_symbol!(__bss_start);
+import_linker_symbol!(__kernel_stack);
 
 const IRQ_STACK_SIZE: usize = 2048;
 pub  const INIT_HEAP_SIZE: usize = 25 * 4096; // 25 Seiten = 100 kB
 
 #[global_allocator]
 static mut HEAP: BoundaryTagAllocator = BoundaryTagAllocator::empty();
-static mut PAGE_DIR: PageDirectory = PageDirectory::new();
-/*extern {
-    static mut __page_directory: [PageDirectoryEntry;4096];
-}
-*/
+static PAGE_DIR: PageDirectory = PageDirectory::new();
+
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 #[no_mangle]      // Name wird für den Export nicht verändert
@@ -140,23 +144,67 @@ fn init_heap() {
 ///! Der komplette Kernel sollte kleiner als 1 MB sein, daher brauchen wir
 ///! für ihn lediglich eine Tabelle im Directory.
 fn init_paging() {
-    // Das erste MB wird jetzt auf sich selbst gemappt
-    unsafe{
-        PAGE_DIR[0] = PageDirectoryEntry::new(PageDirectoryEntryType::Section)
-            .base_addr(0)
+    MMU::set_page_dir(&PAGE_DIR as *const _ as usize);
+    // Standard ist Seitenfehler
+    for section in 0..4096 {
+        PAGE_DIR.set(section,PageDirectoryEntry::new(PageDirectoryEntryType::Fault));
+    }
+    kprint!("marked whole memory as fault.\n");
+    // Der Kernel-Bereich wird auf sich selbst gemappt
+    // Code 
+    for section in Frame::from_addr(0).section()...Frame::from_addr(__text_end as usize).section() {
+        let pde = PageDirectoryEntry::new(PageDirectoryEntryType::Section)
+            .base_addr(Frame::from_nr(section * PAGES_PER_SECTION).start)
             .rights(MemoryAccessRight::SysRwUsrNone)
             .mem_type(MemType::NormalUncashed)
-            .entry();  // Identitätsmapping;
-        MMU::set_page_dir(&PAGE_DIR as *const _ as usize);
+            .entry();
+        let dpde = Deb::ug(pde);
+        kprint!("identity mapping of section {} with base addr {} ({}):\n{:?}\n",section,
+                Frame::from_nr(section * PAGES_PER_SECTION).start,
+                pde,
+                dpde);
+        PAGE_DIR.set(section,pde);
     }
-    // Standard ist Seitenfehler
     /*
-    for page in 0..4096{ 
-        let pde: PageDirectoryEntry;
-        pde = PdEntry::new(PdEntryType::Fault).entry();
-        PAGE_DIR[page as usize] = pde;
+    // Kernel-Daten 
+    for section in Frame::from_addr(__data_start as usize).section()...Frame::from_addr(__data_end as usize).section() {
+        PAGE_DIR.set(section,
+                     PageDirectoryEntry::new(PageDirectoryEntryType::Section)
+                     .base_addr(Frame::from_nr(section * PAGES_PER_SECTION).start)
+                     .rights(MemoryAccessRight::SysRwUsrNone)
+                     .mem_type(MemType::NormalWT)
+                     .never_execute(true)
+                     .entry()
+        );
+        kprint!("identity mapping of secion {}.\n",section);
     }
-     */
+    // Kernel-Heap
+    for section in Frame::from_addr(__bss_start as usize).section()...Frame::from_addr(__bss_start as usize + INIT_HEAP_SIZE).section() {
+        PAGE_DIR.set(section,
+                     PageDirectoryEntry::new(PageDirectoryEntryType::Section)
+                     .base_addr(Frame::from_nr(section * PAGES_PER_SECTION).start)
+                     .rights(MemoryAccessRight::SysRwUsrNone)
+                     .mem_type(MemType::NormalWT)
+                     .never_execute(true)
+                     .entry()
+        );
+        kprint!("identity mapping of secion {}.\n",section);
+    }*/
+    // Stacks
+    for section in Frame::from_addr(determine_irq_stack() - 65556).section()..4096 {
+        let pde = PageDirectoryEntry::new(PageDirectoryEntryType::Section)
+                     .base_addr(Frame::from_nr(section * PAGES_PER_SECTION).start)
+                     .rights(MemoryAccessRight::SysRwUsrNone)
+                     .mem_type(MemType::NormalUncashed)
+                     //.never_execute(true)
+                     .entry();
+        /*let dpde = Deb::ug(pde);
+        kprint!("identity mapping of section {} with base addr {} ({}):\n{:?}\n",section,
+                Frame::from_nr(section * PAGES_PER_SECTION).start,
+                pde,
+                dpde);*/
+        PAGE_DIR.set(section,pde);
+    }
     // Den Stack und alles drüber (eigentlich nur die HW) brauchen wir auch:
     /*
     for page in 447..4096 {
@@ -165,7 +213,7 @@ fn init_paging() {
         PAGE_DIR[page as usize] = pde;
     }
      */
-    let kernel_pt = Box::new(PageTable::new());
+    //let kernel_pt = Box::new(PageTable::new());
     //for page in 0..256 {
     //    kernel_pt[0] = Pte::new_entry(PageTableEntryType::SmallCodePage).base_addr(page)
     //}
@@ -177,7 +225,7 @@ fn init_paging() {
     MMU::start();
     kprint!("MMU aktiviert.\n");
 }
-
+ 
 fn report() {
     kprint!("aihPOS"; RED);
     kprint!(" Version {}\n",VERSION; RED);
@@ -196,10 +244,10 @@ fn report() {
     kprint!("Speicherlayout:\n");
     kprint!("0x{:08x} ({:10}): Anfang Kernelcode\n",kernel_start as usize,kernel_start as usize; WHITE);
     kprint!("0x{:08x} ({:10}): Ende Kernelcode\n",__text_end as usize,__text_end as usize; WHITE);
-    kprint!("0x{:08x} ({:10}): Ende Kerneldaten\n",__data_end as usize, __data_end as usize; WHITE);
-    kprint!("0x{:08x} ({:10}): Anfang gemeinsamer Bereich\n",__shared_begin as usize, __shared_begin as usize; WHITE);
-    kprint!("0x{:08x} ({:10}): Ende gemeinsamer Bereich\n",__shared_end as usize, __shared_end as usize; WHITE);
-    //kprint!("0x{:08x}: __page_directory\n",__page_directory as usize; WHITE);
+    kprint!("0x{:08x} ({:10}): Anfang Kerneldaten\n",__data_start as usize, __data_start as usize; WHITE);
+    kprint!("0x{:08x} ({:10}): Anfang Pagedirectory\n",&PAGE_DIR as *const _ as usize, &PAGE_DIR as *const _ as usize; WHITE);
+    kprint!("0x{:08x} ({:10}): Ende Pagedirectory\n",&PAGE_DIR as *const _ as usize + size_of::<PageDirectory>(), &PAGE_DIR as *const _ as usize + size_of::<PageDirectory>(); WHITE);
+    kprint!("0x{:08x} ({:10}): Ende Kerneldaten\n",__data_end as usize,__data_end as usize; WHITE);
     kprint!("0x{:08x} ({:10}): Anfang Kernelheap\n",__bss_start as usize, __bss_start as usize; WHITE);
     kprint!("0x{:08x} ({:10}): Initiales Ende Kernelheap\n",__bss_start as usize + INIT_HEAP_SIZE, __bss_start as usize + INIT_HEAP_SIZE; WHITE);
     kprint!("0x{:08x} ({:10}): TOS System\n",determine_svc_stack() as usize, determine_svc_stack() as usize; WHITE);
@@ -231,14 +279,12 @@ fn test() {
         kprint!("v1 = {}, v2 = {:?}, v3 = {}.\n",*v1,*v2,*v3);
         drop(v1);
     }
-    /*
     // Das folgende sollte eine Schutzverletzung geben
     unsafe{
         let pt: *mut u32 = 0x1000000 as *mut u32;
         *pt = 42;
     }
     kprint!("Ich lebe noch.");
-     */
     debug::blink(debug::BS_HI);
 }
 

@@ -56,6 +56,7 @@ impl MemoryRegion {
     
     pub unsafe fn new_from_memory(addr: usize) -> Self {
         // Garantiere Alignment
+        //kprint!(" alloc: MR @ {}\n",addr;YELLOW);
         assert_eq!(addr & 0b011,0);
         let bt_ptr: Unique<StartBoundaryTag> = Unique::new(addr as *mut StartBoundaryTag);
         let mut mr = MemoryRegion::new();
@@ -76,9 +77,10 @@ impl MemoryRegion {
             let end_addr = mr.end_addr.unwrap();
             assert_eq!(end_addr & 0b011,0);
             let end_bt_ptr: Unique<EndBoundaryTag> = Unique::new(end_addr as *mut EndBoundaryTag);
+            mr.upper_guard = end_bt_ptr.as_ref().is_guard();
+            //kprint!(" alloc: read {:?}\n",mr; YELLOW);
             assert_eq!(mr.size, end_bt_ptr.as_ref().size());
             assert_eq!(mr.free, end_bt_ptr.as_ref().is_free());
-            mr.upper_guard = end_bt_ptr.as_ref().is_guard();
         } else {
             mr.end_addr = None;
         }

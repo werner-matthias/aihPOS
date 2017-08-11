@@ -24,6 +24,7 @@ impl PageTable {
     pub fn map(&mut self, paddr: PhysicalAddress, laddr: LogicalAddress) {
         
     }
+
     
 }
 
