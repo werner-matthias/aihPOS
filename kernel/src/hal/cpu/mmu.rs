@@ -1,13 +1,10 @@
-use core::ops::{Index, IndexMut};
 use hal::cpu::cache::Cache;
 use hal::cpu::tlb::Tlb;
 use hal::cpu::Cpu;
 use bit_field::BitField;
 use mem::paging::{DomainAccess,PageDirectoryEntry,PageDirectory};
 
-pub struct MMU {
-    pub page_directory: &'static PageDirectory
-}
+pub struct MMU {}
 
 impl MMU {
     
@@ -84,19 +81,3 @@ impl MMU {
         }
     }
 }
-
-/*
-impl Index<usize> for MMU {
-    type Output = PageDirectoryEntry;
-
-    fn index(&self, index: usize) -> &PageDirectoryEntry {
-        &self.page_directory[index]
-    }
-}
-
-impl IndexMut<usize> for MMU {
-    fn index_mut(&mut self, index: usize) -> &mut PageDirectoryEntry {
-        &mut self.page_directory[index]
-    }
-    
-}*/
