@@ -1,4 +1,6 @@
+/*
 use core::ops::{Index, IndexMut};
+
 use super::{PageTableEntry,PageTableEntryType,Pte};
 use super::{LogicalAddress,PhysicalAddress};
 
@@ -41,3 +43,4 @@ impl IndexMut<usize> for PageTable {
         &mut self.table[index]
     }
 }
+*/

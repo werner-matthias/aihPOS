@@ -6,9 +6,9 @@ pub type PhysicalAddressRange = Range<PhysicalAddress>;
 pub type LogicalAddressRange  = Range<LogicalAddress>;
 
 pub mod paging;
-pub use self::paging::{DomainAccess,PageDirectoryEntry};
+//pub use self::paging::{DomainAccess,DirectoryEntry};
 //pub use self::paging::{DomainAccess,MemoryAccessRight,MemType,PageDirectoryEntry,PageDirectoryEntryType,PdEntry,PageTableEntry,PageTableEntryType,Pte,PageTable};
 
 pub mod heap;
-pub use mem::heap::BoundaryTagAllocator;
+pub use self::heap::BoundaryTagAllocator;
 

@@ -49,13 +49,12 @@ pub enum DomainAccess {
 }
 
 use super::{LogicalAddress,PhysicalAddress,LogicalAddressRange,PhysicalAddressRange};
-mod pte;
-pub mod pde;
-pub use self::pde::{PdEntry,PageDirectoryEntry,PageDirectoryEntryType};
-pub use self::pte::{Pte,PageTableEntry,PageTableEntryType};
+pub mod builder;
+pub use self::builder::{DirectoryEntry,TableEntry};
+//pub use self::builder::{Pte,PageTableEntry,PageTableEntryType};
 
 mod page_table;
-pub use self::page_table::PageTable;
+//pub use self::page_table::PageTable;
 
 mod frames;
 pub use self::frames::{Frame,FrameMethods,FrameManager};

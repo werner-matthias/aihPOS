@@ -2,7 +2,7 @@ use hal::cpu::cache::Cache;
 use hal::cpu::tlb::Tlb;
 use hal::cpu::Cpu;
 use bit_field::BitField;
-use mem::paging::{DomainAccess,PageDirectoryEntry,PageDirectory};
+use memory::paging::{DomainAccess,DirectoryEntry,PageDirectory};
 
 pub struct MMU {}
 

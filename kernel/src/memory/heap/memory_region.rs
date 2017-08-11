@@ -1,7 +1,7 @@
 use alloc::allocator::{Layout,AllocErr};
 use core::{mem,cmp};
 use core::ptr::Unique;
-use mem::heap::boundary_tag::{BoundaryTag,StartBoundaryTag,EndBoundaryTag,HeapAddress};
+use super::boundary_tag::{BoundaryTag,StartBoundaryTag,EndBoundaryTag,HeapAddress};
     
 #[repr(C)]
 #[derive(Debug,Clone,Copy)]

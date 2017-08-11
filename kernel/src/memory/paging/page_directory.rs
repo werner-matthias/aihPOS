@@ -1,6 +1,6 @@
 use core::ops::{Index, IndexMut};
 use core::cell::UnsafeCell;
-use super::pde::{PageDirectoryEntry,PageDirectoryEntryType,PdEntry};
+use super::builder::{PageDirectoryEntry,DirectoryEntry};
 //use super::{PageDirectoryEntry,PageDirectoryEntryType,Pde};
 use super::{LogicalAddress,PhysicalAddress};
 
@@ -14,7 +14,7 @@ pub struct PageDirectory {
 impl PageDirectory {
     pub const fn new() ->  PageDirectory {
         PageDirectory {
-            dir: UnsafeCell::new([PageDirectoryEntryType::AltFault as PageDirectoryEntry;4096])
+            dir: UnsafeCell::new([DirectoryEntry::AltFault as PageDirectoryEntry;4096])
         }
     }
 

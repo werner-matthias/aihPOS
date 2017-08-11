@@ -2,7 +2,7 @@ mod mailbox;
 mod propertytags;
 pub use self::propertytags::{Tag,PropertyTagBuffer,BUFFER_SIZE};
 pub use hal::board::mailbox::{mailbox, Channel};
-use mem::PhysicalAddress;
+use memory::PhysicalAddress;
 
 pub enum BoardReport {
     FirmwareVersion,

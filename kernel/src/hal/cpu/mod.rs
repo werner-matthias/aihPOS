@@ -5,7 +5,7 @@ mod tlb;
 mod mmu;
 
 pub use self::mmu::MMU;
-use mem::PhysicalAddress;
+use memory::PhysicalAddress;
 
 // Siehe ARM Architectur Reference Manual A2-3
 pub enum ProcessorMode {
