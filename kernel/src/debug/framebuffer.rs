@@ -30,13 +30,17 @@ pub struct Framebuffer<'a> {
 
 impl<'a> Framebuffer<'a> {
 
+    /// Legt einen neuen Framebuffer an und setzt die Parameter.
+    /// Die Voreinstellung des Bootloaders wird ignoriert.
+    ///  *Todo*:  Gegebenenfalls sollten die Einstellungen abgefragt und verwendet werden. Allerdings erfordert dies mindestens
+    ///   bei der Farbtiefe größere Änderungen.
     pub fn new() ->  Framebuffer<'a> {
-        /* Die Voreinstellung des Bootloaders wird ignoriert.
-           Gegebenenfalls sollten die Einstellungen abgefragt und verwendet werden. Allerdings erfordert dies mindestens
-        bei der Farbtiefe größere Änderungen. */
+        // Mit der GPU wird über die Mailbox kommuniziert.
+        // Es wird das Property-Tag-Interface genutzt, nicht das Framebuffer-Interface.
         let mut prob_tag_buf: PropertyTagBuffer = PropertyTagBuffer::new();
         prob_tag_buf.init();
         prob_tag_buf.add_tag_with_param(Tag::SetPhysicalDisplaySize,Some(&[FB_WIDTH,FB_HEIGHT]));
+        // Der Framebuffer ist doppelt so "hoch" wie der Ausgabebereich, so dass gescrollt werden kann
         prob_tag_buf.add_tag_with_param(Tag::SetVirtualDisplaySize,Some(&[FB_WIDTH,2*FB_HEIGHT]));
         prob_tag_buf.add_tag_with_param(Tag::SetDepth,Some(&[FB_COLOR_DEP]));
         prob_tag_buf.add_tag_with_param(Tag::AllocateFrameBuffer,Some(&[16]));
@@ -44,6 +48,7 @@ impl<'a> Framebuffer<'a> {
         let mb = mailbox(0);
         mb.write(Channel::ATags, &prob_tag_buf.data as *const [u32; BUFFER_SIZE] as u32);
         mb.read(Channel::ATags);
+        // Die Antwort enthält die Speicheradresse des Framebuffers
         let ret = prob_tag_buf.get_answer(Tag::AllocateFrameBuffer);
         let mut adr: &'a mut[u32];
         let size: usize;
@@ -53,6 +58,8 @@ impl<'a> Framebuffer<'a> {
                 adr  = unsafe{ slice::from_raw_parts_mut(a[0] as *mut u32, size)};
             }
             _   => {
+                // Wenn etwas schiefgelaufen ist, haben wir keine Konsole zur Fehlerausgabe.
+                // Daher wird die LED genutzt
                 blink::blink(blink::BS_SOS);
                 unreachable!();
             }
@@ -85,13 +92,14 @@ impl<'a> Framebuffer<'a> {
         };
         fb
     }
-    
+
+    /// Zeichnet einen einzelnen Pixel in der gegeben Farbe an die
+    /// gegebene Position
     fn draw_pixel(&mut self, color: u32, x: u32, y: u32) {
         self.screen[(y*self.width + x) as usize] =  color;
     }
-    
 
-    #[allow(dead_code)]
+    /*#[allow(dead_code)]
     pub fn set_background_color(&mut self, color: u32) {
         self.bg_color = color;
     }
@@ -99,8 +107,9 @@ impl<'a> Framebuffer<'a> {
     #[allow(dead_code)]
     pub fn get_background_color(&self) -> u32 {
         self.bg_color
-    }
-    
+    }*/
+
+    /// Schreibt den komplette Framebuffer mit der Hintergrundfarbe
     pub fn clear(&mut self) {
         let color: u128 = ((self.bg_color as u128) << 96) | ((self.bg_color as u128) << 64) | ((self.bg_color as u128) << 32) | (self.bg_color as u128 );
         let fourpix: &mut [u128] =unsafe{ &mut *(self.screen as *mut [u32] as *mut [u128]) };
@@ -118,13 +127,17 @@ impl<'a> Framebuffer<'a> {
         mb.write(Channel::ATags, &prob_tag_buf.data as *const [u32; BUFFER_SIZE] as u32);
         mb.read(Channel::ATags);
     }
-
+    /// Gibt alle Zeichen einer Zeichenkette aus
     pub fn print(&mut self, s: &str) {
         for c in s.chars() {
                 self.putchar(c as u8);
         }
     }
 
+    /// Ein einzelnes Zeichen wird in den Framebuffer ausgegeben und die Schreibposition angepasst.
+    ///   * Bei Newline (`\n`) wird eine neue Zeile begonnen.
+    ///   * Bei Tab (`\t`) werden 4 Leerzeichen erzeugt
+    ///   * Bei Bewegung der Schreibposition hinter die letzte (vollständigen) Zeile wird ein Scrollen ausgelöst.
     pub fn putchar(&mut self, c: u8) {
         if (self.row+1) * SystemFont::glyph_height() - self.y_offset > self.height {
             self.scroll();
@@ -166,6 +179,7 @@ impl<'a> Framebuffer<'a> {
         }
     }
 
+    /// Scrolle Ausgabe um eine Zeile
     pub fn scroll(&mut self) {
         // kopiere letzte Zeile
         if self.y_offset > SystemFont::glyph_height() {
@@ -203,15 +217,19 @@ impl<'a> Framebuffer<'a> {
         mb.read(Channel::ATags);
     }
 
+    /// Getter für aktuelle Farbe
     pub fn get_color(&self) -> u32 {
         self.fg_color
     }
-    
+
+    /// Setter für aktuelle Farbe
     pub fn set_color(&mut self, color: u32) {
         self.fg_color = color;
     }
 }
 
+/// Implementation des Write-Traits, damit die üblichen Rust-Formatierungen
+/// genutzt werden können
 impl<'a> fmt::Write for Framebuffer<'a> { 
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.print(s);
