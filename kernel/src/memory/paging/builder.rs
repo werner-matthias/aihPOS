@@ -1,7 +1,7 @@
 #![warn(missing_docs)]
 use bit_field::BitField;
 use super::{MemType,MemoryAccessRight};
-//use core::fmt;
+use core::fmt;
 use core::marker::{PhantomData,Sized};
 
 pub type PageDirectoryEntry = u32;
@@ -38,7 +38,7 @@ pub trait EntryBuilder<T> {
     fn kind(&self) -> T;
     
     /// Setzt die Basisadresse
-    fn base_addr(mut self, a: usize) -> MemoryBuilder<T>;
+    fn base_addr(self, a: usize) -> MemoryBuilder<T>;
         
     /// Legt die Art des Speichers (Caching) fest
     ///  - Vorgabe: `StronglyOrdered`  (_stikt geordnet_), siehe ARM DDI 6-15
@@ -77,7 +77,7 @@ impl EntryBuilder<DirectoryEntry> for MemoryBuilder<DirectoryEntry> {
     }
 
     fn kind(&self) -> DirectoryEntry {
-        let pd_type = self.0.get_bits(18..19) << 2 + self.0.get_bits(0..2);
+        let pd_type = (self.0.get_bits(18..19) << 2) + self.0.get_bits(0..2);
         match pd_type {
             0b001 | 0b101 => DirectoryEntry::CoarsePageTable,
             0b010         => DirectoryEntry::Section,
@@ -88,10 +88,10 @@ impl EntryBuilder<DirectoryEntry> for MemoryBuilder<DirectoryEntry> {
     
     fn base_addr(mut self, a: usize) ->  MemoryBuilder<DirectoryEntry> {
         match self.kind() {
-            DirectoryEntry::CoarsePageTable => { self.0.set_bits(10..32, (a as u32).get_bits(10..32)); } ,
-            DirectoryEntry::Section         => { self.0.set_bits(20..32, (a as u32).get_bits(20..32)); },
-            DirectoryEntry::Supersection    => { self.0.set_bits(24..32, (a as u32).get_bits(24..32)); },
-            _                               => {}
+            DirectoryEntry::CoarsePageTable => { self.0.set_bits(10..32, a.get_bits(10..32) as u32); } ,
+            DirectoryEntry::Section         => { self.0.set_bits(20..32, a.get_bits(20..32) as u32); },
+            DirectoryEntry::Supersection    => { self.0.set_bits(24..32, a.get_bits(24..32) as u32); },
+            _                               => { assert!(false); }
         }
         self
     }
@@ -104,7 +104,7 @@ impl EntryBuilder<DirectoryEntry> for MemoryBuilder<DirectoryEntry> {
                     self.0.set_bits(12..15,ti.get_bits(2..5));
                     self.0.set_bits(2..4,ti.get_bits(0..2));
                 },
-            _   => {}
+            _   => { assert!(false); }
         }
         self
     }
@@ -117,7 +117,7 @@ impl EntryBuilder<DirectoryEntry> for MemoryBuilder<DirectoryEntry> {
                     self.0.set_bit(15,ri.get_bit(2));
                     self.0.set_bits(10..12,ri.get_bits(0..2));
                 },
-            _   => {}
+            _   => { assert!(false); }
         }
         self
     }
@@ -126,7 +126,7 @@ impl EntryBuilder<DirectoryEntry> for MemoryBuilder<DirectoryEntry> {
         match self.kind() {
             DirectoryEntry::CoarsePageTable | DirectoryEntry::Section
                 => { self.0.set_bits(5..9,d); },
-            _   => {}
+            _   => { assert!(false); }
             
         }
         self
@@ -136,7 +136,7 @@ impl EntryBuilder<DirectoryEntry> for MemoryBuilder<DirectoryEntry> {
         match self.kind() {
             DirectoryEntry::Section | DirectoryEntry::Supersection
                 => { self.0.set_bit(16,s); },
-            _   => {}
+            _   => { assert!(false); }
         }
         self
     }
@@ -145,7 +145,7 @@ impl EntryBuilder<DirectoryEntry> for MemoryBuilder<DirectoryEntry> {
         match self.kind() {
             DirectoryEntry::Section | DirectoryEntry::Supersection
                 => { self.0.set_bit(17,true); },
-            _   => {}
+            _   => { assert!(false); }
         }
         self
     }
@@ -154,13 +154,13 @@ impl EntryBuilder<DirectoryEntry> for MemoryBuilder<DirectoryEntry> {
         match self.kind() {
             DirectoryEntry::Section | DirectoryEntry::Supersection
                 => { self.0.set_bit(4,ne); },
-            _   => {}
+            _   => { assert!(false); }
         }
         self
     }
 
     fn entry(self) -> PageDirectoryEntry {
-        self.0
+        self.0.clone()
     }
 }
 
@@ -252,12 +252,12 @@ impl EntryBuilder<TableEntry> for MemoryBuilder<TableEntry> {
     }
 
     fn entry(self) -> PageTableEntry {
-        self.0
+        self.0.clone()
     }
 
 }
 
-/*
+
 // Wrapper for Debug
 pub struct Deb(u32);
 
@@ -353,4 +353,4 @@ impl fmt::Debug for Deb {
         write!(f,"]]")
     }
 }
-*/
+
