@@ -2,7 +2,7 @@
 use bit_field::BitField;
 use super::{MemType,MemoryAccessRight};
 use core::fmt;
-use core::marker::{PhantomData,Sized};
+use core::marker::{PhantomData};
 
 pub type PageDirectoryEntry = u32;
 pub type PageTableEntry     = u32;
@@ -24,14 +24,19 @@ pub enum TableEntry {
     SmallPage   = 0x2,
 }
 
+/// `MemoryBuilder` ist eine Builder-Struct für zur Erstellung von Einträgen
+///  in das Seitenverzeichnis oder in Seitentabellen
 pub struct MemoryBuilder<T>(u32,PhantomData<T>);
 
 impl<DirectoryEntry>  MemoryBuilder<DirectoryEntry>{}
 impl<TableEntry>      MemoryBuilder<TableEntry>{}
 
+/// Einträge in das Seitenverzeichnis (_page directory_) und die Seitentabellen
+/// (_page table_) haben ähnliche Funktionalität. Daher haben sie einen Trait als
+/// gemeinsames Interface.
 pub trait EntryBuilder<T> {
     
-    /// Erzeugt einen neuen Eintrag für das Seitenverzeichnis (_Page Directory_)
+    /// Erzeugt einen neuen Eintrag 
     fn new_entry(kind: T) -> MemoryBuilder<T>;
 
     /// Gibt die Art des Eintrags
@@ -41,35 +46,38 @@ pub trait EntryBuilder<T> {
     fn base_addr(self, a: usize) -> MemoryBuilder<T>;
         
     /// Legt die Art des Speichers (Caching) fest
-    ///  - Vorgabe: `StronglyOrdered`  (_stikt geordnet_), siehe ARM DDI 6-15
+    ///  * Vorgabe: `StronglyOrdered`  (_stikt geordnet_), siehe ARM DDI 6-15
     fn mem_type(mut self, t: MemType) -> MemoryBuilder<T>;
     
     /// Setzt die Zugriffsrechte
+    ///  * Vorgabe: Kein Zugriff
     fn rights(mut self, r: MemoryAccessRight) -> MemoryBuilder<T>;
 
     /// Legt fest, zu welcher Domain der Speicherbereich gehört
-    ///   - Für Supersections und Seiten wird die Domain ignoriert
-    ///   - Vorgabe: 0
+    ///   * Für Supersections und Seiten wird die Domain ignoriert
+    ///   * Vorgabe: 0
     fn domain(mut self, d: u32) -> MemoryBuilder<T>;
 
     /// Legt Speicherbereich als gemeinsam (_shared_) fest
-    ///  - Vorgabe: `false` (nicht gemeinsam)
+    ///  * Vorgabe: `false` (nicht gemeinsam)
     fn shared(mut self, s: bool) ->  MemoryBuilder<T>;
 
     /// Legt fest, ob ein Speicherbereich global (`false`) oder prozessspezifisch
     /// ist. Bei prozessspezifischen Speicherbereichen wird die ASID aus dem
     /// ContextID-Register (CP15c13) genutzt.
-    ///  - Vorgabe: `false` (global)
-    ///  - Anmerkung: aihPOS nutzt *keine* prozessspezifischen Speicherbereich
+    ///  * Vorgabe: `false` (global)
+    ///  * Anmerkung: aihPOS nutzt *keine* prozessspezifischen Speicherbereich
     fn process_specific(mut self, ps: bool) ->  MemoryBuilder<T>;
 
     /// Legt fest, ob Speicherinhalt als Code ausgeführt werden darf
     ///  - Vorgabe: `false` (ausführbar)
     fn no_execute(mut self, ne: bool) ->  MemoryBuilder<T>;
 
+    /// Gibt den Eintrag zurück
     fn entry(self) -> u32;
 }
 
+/// Implementation für Einträge in das Seitenverzeichnis
 impl EntryBuilder<DirectoryEntry> for MemoryBuilder<DirectoryEntry> {
  
     fn new_entry(kind: DirectoryEntry) -> MemoryBuilder<DirectoryEntry> {
@@ -164,6 +172,7 @@ impl EntryBuilder<DirectoryEntry> for MemoryBuilder<DirectoryEntry> {
     }
 }
 
+/// Implementation für Einträge in Seitentabellen
 impl EntryBuilder<TableEntry> for MemoryBuilder<TableEntry> {
     
     fn new_entry(kind: TableEntry) -> MemoryBuilder<TableEntry> {
@@ -257,7 +266,7 @@ impl EntryBuilder<TableEntry> for MemoryBuilder<TableEntry> {
 
 }
 
-
+/*
 // Wrapper for Debug
 pub struct Deb(u32);
 
@@ -353,4 +362,4 @@ impl fmt::Debug for Deb {
         write!(f,"]]")
     }
 }
-
+*/
