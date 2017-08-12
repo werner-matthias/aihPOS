@@ -1,4 +1,4 @@
-use bit_field::{BitArray,BitField};
+use bit_field::{BitArray};
 use core::cmp::min;
 use core::usize;
 use core::ops::Range;

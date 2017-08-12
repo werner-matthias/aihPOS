@@ -47,37 +47,38 @@ pub trait EntryBuilder<T> {
         
     /// Legt die Art des Speichers (Caching) fest
     ///  * Vorgabe: `StronglyOrdered`  (_stikt geordnet_), siehe ARM DDI 6-15
-    fn mem_type(mut self, t: MemType) -> MemoryBuilder<T>;
+    fn mem_type(self, t: MemType) -> MemoryBuilder<T>;
     
     /// Setzt die Zugriffsrechte
     ///  * Vorgabe: Kein Zugriff
-    fn rights(mut self, r: MemoryAccessRight) -> MemoryBuilder<T>;
+    fn rights(self, r: MemoryAccessRight) -> MemoryBuilder<T>;
 
     /// Legt fest, zu welcher Domain der Speicherbereich gehört
     ///   * Für Supersections und Seiten wird die Domain ignoriert
     ///   * Vorgabe: 0
-    fn domain(mut self, d: u32) -> MemoryBuilder<T>;
+    fn domain(self, d: u32) -> MemoryBuilder<T>;
 
     /// Legt Speicherbereich als gemeinsam (_shared_) fest
     ///  * Vorgabe: `false` (nicht gemeinsam)
-    fn shared(mut self, s: bool) ->  MemoryBuilder<T>;
+    fn shared(self, s: bool) ->  MemoryBuilder<T>;
 
     /// Legt fest, ob ein Speicherbereich global (`false`) oder prozessspezifisch
     /// ist. Bei prozessspezifischen Speicherbereichen wird die ASID aus dem
     /// ContextID-Register (CP15c13) genutzt.
     ///  * Vorgabe: `false` (global)
     ///  * Anmerkung: aihPOS nutzt *keine* prozessspezifischen Speicherbereich
-    fn process_specific(mut self, ps: bool) ->  MemoryBuilder<T>;
+    fn process_specific(self, ps: bool) ->  MemoryBuilder<T>;
 
     /// Legt fest, ob Speicherinhalt als Code ausgeführt werden darf
     ///  - Vorgabe: `false` (ausführbar)
-    fn no_execute(mut self, ne: bool) ->  MemoryBuilder<T>;
+    fn no_execute(self, ne: bool) ->  MemoryBuilder<T>;
 
     /// Gibt den Eintrag zurück
     fn entry(self) -> u32;
 }
 
 /// Implementation für Einträge in das Seitenverzeichnis
+///   * vgl. ARM DDI 6-39
 impl EntryBuilder<DirectoryEntry> for MemoryBuilder<DirectoryEntry> {
  
     fn new_entry(kind: DirectoryEntry) -> MemoryBuilder<DirectoryEntry> {
@@ -152,7 +153,7 @@ impl EntryBuilder<DirectoryEntry> for MemoryBuilder<DirectoryEntry> {
     fn process_specific(mut self, ps: bool) ->   MemoryBuilder<DirectoryEntry> {
         match self.kind() {
             DirectoryEntry::Section | DirectoryEntry::Supersection
-                => { self.0.set_bit(17,true); },
+                => { self.0.set_bit(17,ps); },
             _   => { assert!(false); }
         }
         self
@@ -173,6 +174,7 @@ impl EntryBuilder<DirectoryEntry> for MemoryBuilder<DirectoryEntry> {
 }
 
 /// Implementation für Einträge in Seitentabellen
+///   * vgl. ARM DDI 6-40
 impl EntryBuilder<TableEntry> for MemoryBuilder<TableEntry> {
     
     fn new_entry(kind: TableEntry) -> MemoryBuilder<TableEntry> {
@@ -227,7 +229,8 @@ impl EntryBuilder<TableEntry> for MemoryBuilder<TableEntry> {
         self
     }
 
-    fn domain(mut self, d: u32) -> MemoryBuilder<TableEntry> {
+    #[allow(unused_variables)]
+    fn domain(self, d: u32) -> MemoryBuilder<TableEntry> {
         self
     }
 
@@ -243,7 +246,7 @@ impl EntryBuilder<TableEntry> for MemoryBuilder<TableEntry> {
     fn process_specific(mut self, ps: bool) ->  MemoryBuilder<TableEntry> {
         match self.kind() {
             TableEntry::LargePage | TableEntry::SmallPage
-                => { self.0.set_bit(11,true); },
+                => { self.0.set_bit(11,ps); },
             _   => {}
         }
         self
