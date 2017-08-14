@@ -99,16 +99,6 @@ impl<'a> Framebuffer<'a> {
         self.screen[(y*self.width + x) as usize] =  color;
     }
 
-    /*#[allow(dead_code)]
-    pub fn set_background_color(&mut self, color: u32) {
-        self.bg_color = color;
-    }
-
-    #[allow(dead_code)]
-    pub fn get_background_color(&self) -> u32 {
-        self.bg_color
-    }*/
-
     /// Schreibt den komplette Framebuffer mit der Hintergrundfarbe
     pub fn clear(&mut self) {
         let color: u128 = ((self.bg_color as u128) << 96) | ((self.bg_color as u128) << 64) | ((self.bg_color as u128) << 32) | (self.bg_color as u128 );
