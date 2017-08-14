@@ -1,7 +1,6 @@
-/*
 use core::ops::{Index, IndexMut};
 
-use super::{PageTableEntry,PageTableEntryType,Pte};
+use super::builder::{PageTableEntry,TableEntry,MemoryBuilder,EntryBuilder};
 use super::{LogicalAddress,PhysicalAddress};
 
 #[repr(C)]
@@ -11,7 +10,7 @@ pub struct PageTable {
 }
 
 impl PageTable {
-    pub fn new() ->  PageTable {
+    pub const fn new() ->  PageTable {
         PageTable {
             table: [0;256]
         }
@@ -19,7 +18,7 @@ impl PageTable {
     
     pub fn invalidate(&mut self) {
         for ndx in 0..256 {
-            self.table[ndx] = Pte::new_entry(PageTableEntryType::Fault).entry();
+            self.table[ndx] = MemoryBuilder::new_entry(TableEntry::Fault).entry();
         }
     }
 
@@ -27,7 +26,10 @@ impl PageTable {
         
     }
 
-    
+
+    pub fn addr(&self) -> usize {
+        self as *const _ as usize
+    }
 }
 
 impl Index<usize> for PageTable {
@@ -43,4 +45,3 @@ impl IndexMut<usize> for PageTable {
         &mut self.table[index]
     }
 }
-*/

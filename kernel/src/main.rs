@@ -1,39 +1,40 @@
+#![allow(non_snake_case)]
 #![no_std]
 #![no_main]
 #![feature(
-    alloc,                  // Nutzung der Alloc-Crate
-    allocator_api,          // Nutzung der Allocator-API
-    //allocator_internals,   // ???
+    alloc,                    // Nutzung der Alloc-Crate
+    allocator_api,            // Nutzung der Allocator-API
+    //allocator_internals,    // ???
     //abi_unadjusted,         //
-    attr_literals,          // Literale in Attributen (nicht nur Strings)
-    asm,                    // Assembler in Funktionen...
+    attr_literals,            // Literale in Attributen (nicht nur Strings)
+    asm,                      // Assembler in Funktionen...
     associated_type_defaults, // Verknüpfung von Traits mit Typen
     // concat_idents,
     //collections,            // Nutzung des Collection-Crate
-    const_fn,               // const Funktionen (für Constructoren)
-    compiler_builtins_lib,  // Nutzung der Compiler-Buildins-Bibliothek (div, mul, ...)
-    core_intrinsics,        // Nutzung der Intrinsics der Core-Bibliothek
-    global_allocator,       // eigener globaler Allocator
-    i128_type,              // 128-Bit-Typen
-    inclusive_range_syntax, // Inklusiver Bereich mit "..."   
-    iterator_step_by,       // Spezifische Schrittweite bei Iterationen
-    lang_items,             // Funktionen interne Funktionen ersetzen (panic)
-    linkage,                // Angaben zum Linktyp (z.B. Sichtbarkeit)
-    naked_functions,        // Funktionen ohne Prolog/Epilog
-    nonzero,                // Werte ohne Null (hier: usize)
-    plugin,                 // Nutzung von Compiler-Plugins
-    repr_align,             // Alignment
+    const_fn,                 // const Funktionen (für Constructoren)
+    compiler_builtins_lib,    // Nutzung der Compiler-Buildins-Bibliothek (div, mul, ...)
+    core_intrinsics,          // Nutzung der Intrinsics der Core-Bibliothek
+    global_allocator,         // eigener globaler Allocator
+    i128_type,                // 128-Bit-Typen
+    inclusive_range_syntax,   // Inklusiver Bereich mit "..."   
+    iterator_step_by,         // Spezifische Schrittweite bei Iterationen
+    lang_items,               // Funktionen interne Funktionen ersetzen (panic)
+    linkage,                  // Angaben zum Linktyp (z.B. Sichtbarkeit)
+    naked_functions,          // Funktionen ohne Prolog/Epilog
+    nonzero,                  // Werte ohne Null (hier: usize)
+    plugin,                   // Nutzung von Compiler-Plugins
+    repr_align,               // Alignment
     // use_extern_macros,
-    unique,                 // Unique-Pointer
-    used,                   // Verbot, scheinbar toten Code zu eliminieren
+    unique,                   // Unique-Pointer
+    used,                     // Erlaubt das Verbot, scheinbar toten Code zu eliminieren
 )
 ]
 #![plugin(compiler_error)]
 
 /// Benutzte Crates
-#[macro_use]
+//#[macro_use]
 extern crate alloc;
-#[macro_use]
+//#[macro_use]
 //extern crate lazy_static;
 extern crate bit_field;
 //#[macro_use] extern crate collections;
@@ -42,8 +43,8 @@ extern crate compiler_builtins;
 #[macro_use] mod aux_macros;
 #[macro_use] mod debug;
 mod panic;
-
 mod sync;
+mod data;
 use alloc::boxed::Box;
 
 #[macro_use] mod hal;
@@ -51,12 +52,15 @@ use hal::board::{MemReport,BoardReport,report_board_info,report_memory};
 use hal::entry::syscall;
 use hal::cpu::{Cpu,ProcessorMode,MMU};
 use core::mem::size_of;
-mod mem;
-use mem::PhysicalAddress;
-use mem::paging::{Frame,FrameMethods};
-use mem::paging::{PageDirectory,PageDirectoryEntry,PdEntry,PageDirectoryEntryType,MemoryAccessRight,MemType,PageTable,DomainAccess,PAGES_PER_SECTION};
-use mem::paging::pde::Deb;
-use mem::heap::BoundaryTagAllocator;
+use sync::no_concurrency::NoConcurrency;
+use data::kernel::KernelData;
+mod memory;
+use memory::PhysicalAddress;
+use memory::paging::{Frame,FrameMethods,PageDirectory};
+use memory::paging::{MemoryAccessRight,MemType,DomainAccess,PAGES_PER_SECTION};
+use memory::paging::builder::{MemoryBuilder,DirectoryEntry,TableEntry,EntryBuilder};
+//use memory::paging::builder::Deb;
+use memory::HEAP;
 
 import_linker_symbol!(__text_end);
 import_linker_symbol!(__data_start);
@@ -67,15 +71,17 @@ import_linker_symbol!(__kernel_stack);
 const IRQ_STACK_SIZE: usize = 2048;
 pub  const INIT_HEAP_SIZE: usize = 25 * 4096; // 25 Seiten = 100 kB
 
-#[global_allocator]
-static mut HEAP: BoundaryTagAllocator = BoundaryTagAllocator::empty();
-static PAGE_DIR: PageDirectory = PageDirectory::new();
-
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+static PAGE_DIR: NoConcurrency<PageDirectory> = NoConcurrency::new(PageDirectory::new());
+static KERNEL_DATA: NoConcurrency<KernelData> = NoConcurrency::new(KernelData::new());
 
 #[no_mangle]      // Name wird für den Export nicht verändert
 #[naked]          // Kein Prolog, da dieser den Stack nutzen würde, den wir noch nicht gesetzt haben
 #[allow(unreachable_code)]
+/// `kernel_start()` ist die Einsprungsstelle in den aihPOS-Code.
+/// Der erste Eintrag in der Sprungtabelle hält die Adresse von `kernel_start`, so dass aihPOS sowohl
+/// nach dem Einschalten (old_kernel in "config.txt" gesetzt) als auch nach einer Neustart-Ausnahme
+/// hier startet.
 pub extern fn kernel_start() {
     // Zum Start existiert noch kein Stack. Daher setzen wir einen temporären Stack, der nach dem Textsegment liegt.
     // Das Symbol ist in "layout.ld" definiert.
@@ -89,9 +95,15 @@ pub extern fn kernel_start() {
 #[inline(never)] // Verbietet dem Optimizer, kernel_init() und darin aufgerufene Funktionen mit kernel_start()
                  // zu verschmelzen. Dies würde wegen #[naked]/keinen Stack schief gehen
 #[allow(unreachable_code)]
-fn kernel_init() -> ! {
+/// Erledigt alle Initialisierungen:
+/// * Setzen der Stacks für Ausnahmemodi
+/// * Anlegen des Heaps
+/// * Einrichten Paging
+/// * Interrups
+pub(self) fn kernel_init() -> ! {
     report();
     init_mem();
+    
     test();
     loop {}
     unreachable!();
@@ -118,9 +130,10 @@ fn init_mem() {
     kprint!("done.\n");
 }
 
+/// Es werden die Stacks für alle Ausname-Modi gesetzt.
+/// Irq, Fiq, Abort und Undef teilen sich einen Stack, der System-Mode nutzt
+/// den User-Mode-Stack und muss nicht gesetzt werden.
 fn init_stacks() {
-    // Stack für die anderen Ausnahme-Modi.  Irq, Fiq, Abort und Undef teilen sich einen Stack, der System-Mode nutzt
-    // den User-Mode-Stack und muss nicht gesetzt werden.
     let adr = determine_irq_stack();
     Cpu::set_mode(ProcessorMode::Irq);
     Cpu::set_stack(adr);
@@ -140,70 +153,58 @@ fn init_heap() {
     }
 }
 
-///! Eine Coarse Table kann 1 MB (in 256 Blöcken a 4 kB) mappen.
-///! Der komplette Kernel sollte kleiner als 1 MB sein, daher brauchen wir
-///! für ihn lediglich eine Tabelle im Directory.
 fn init_paging() {
     MMU::set_page_dir(&PAGE_DIR as *const _ as usize);
+    let page_directory = PAGE_DIR.get();
     // Standard ist Seitenfehler
     for section in 0..4096 {
-        PAGE_DIR.set(section,PageDirectoryEntry::new(PageDirectoryEntryType::Fault));
+        page_directory[section] = MemoryBuilder::<DirectoryEntry>::new_entry(DirectoryEntry::Fault).entry();
     }
-    kprint!("marked whole memory as fault.\n");
     // Der Kernel-Bereich wird auf sich selbst gemappt
+    let mut kpage_table = &mut KERNEL_DATA.get().get_kpages();
+    kpage_table.invalidate();
+    page_directory[0] = MemoryBuilder::<DirectoryEntry>::new_entry(DirectoryEntry::CoarsePageTable)
+        .base_addr(kpage_table.addr())
+        .domain(0)
+        .entry();
     // Code 
-    for section in Frame::from_addr(0).section()...Frame::from_addr(__text_end as usize).section() {
-        let pde = PageDirectoryEntry::new(PageDirectoryEntryType::Section)
+    for page in  Frame::from_addr(0).rel()  ...Frame::from_addr(__text_end as usize).rel() {
+        kpage_table[page] = MemoryBuilder::<TableEntry>::new_entry(TableEntry::SmallPage)
+            .base_addr(Frame::from_nr(page).start)
+            .rights(MemoryAccessRight::SysRoUsrNone)
+            .mem_type(MemType::NormalUncashed)
+            .domain(0)
+            .entry();
+    }
+    // Kernel-Daten + BSS
+    for page in  Frame::from_addr(__data_start as usize).rel()
+        ...Frame::from_addr(__bss_start as usize + INIT_HEAP_SIZE).rel() {
+        kpage_table[page] = MemoryBuilder::<TableEntry>::new_entry(TableEntry::SmallPage)
+            .base_addr(Frame::from_nr(page).start)
+            .rights(MemoryAccessRight::SysRwUsrNone)
+            .mem_type(MemType::NormalUncashed)
+            .no_execute(true)
+            .domain(0)
+            .entry();
+    }
+    // Stacks
+    
+    for section in Frame::from_addr(determine_irq_stack() - 65556).section()..4096 {
+        let pde = MemoryBuilder::<DirectoryEntry>::new_entry(DirectoryEntry::Section)
             .base_addr(Frame::from_nr(section * PAGES_PER_SECTION).start)
             .rights(MemoryAccessRight::SysRwUsrNone)
             .mem_type(MemType::NormalUncashed)
+            .no_execute(true)
             .entry();
+        /*
         let dpde = Deb::ug(pde);
-        kprint!("identity mapping of section {} with base addr {} ({}):\n{:?}\n",section,
+        kprint!("identity mapping of section {} with base addr {} ({}) \n{:?}\n",
+                section,
                 Frame::from_nr(section * PAGES_PER_SECTION).start,
                 pde,
                 dpde);
-        PAGE_DIR.set(section,pde);
-    }
-    /*
-    // Kernel-Daten 
-    for section in Frame::from_addr(__data_start as usize).section()...Frame::from_addr(__data_end as usize).section() {
-        PAGE_DIR.set(section,
-                     PageDirectoryEntry::new(PageDirectoryEntryType::Section)
-                     .base_addr(Frame::from_nr(section * PAGES_PER_SECTION).start)
-                     .rights(MemoryAccessRight::SysRwUsrNone)
-                     .mem_type(MemType::NormalWT)
-                     .never_execute(true)
-                     .entry()
-        );
-        kprint!("identity mapping of secion {}.\n",section);
-    }
-    // Kernel-Heap
-    for section in Frame::from_addr(__bss_start as usize).section()...Frame::from_addr(__bss_start as usize + INIT_HEAP_SIZE).section() {
-        PAGE_DIR.set(section,
-                     PageDirectoryEntry::new(PageDirectoryEntryType::Section)
-                     .base_addr(Frame::from_nr(section * PAGES_PER_SECTION).start)
-                     .rights(MemoryAccessRight::SysRwUsrNone)
-                     .mem_type(MemType::NormalWT)
-                     .never_execute(true)
-                     .entry()
-        );
-        kprint!("identity mapping of secion {}.\n",section);
-    }*/
-    // Stacks
-    for section in Frame::from_addr(determine_irq_stack() - 65556).section()..4096 {
-        let pde = PageDirectoryEntry::new(PageDirectoryEntryType::Section)
-                     .base_addr(Frame::from_nr(section * PAGES_PER_SECTION).start)
-                     .rights(MemoryAccessRight::SysRwUsrNone)
-                     .mem_type(MemType::NormalUncashed)
-                     //.never_execute(true)
-                     .entry();
-        /*let dpde = Deb::ug(pde);
-        kprint!("identity mapping of section {} with base addr {} ({}):\n{:?}\n",section,
-                Frame::from_nr(section * PAGES_PER_SECTION).start,
-                pde,
-                dpde);*/
-        PAGE_DIR.set(section,pde);
+         */
+        PAGE_DIR.get().set(section,pde);
     }
     // Den Stack und alles drüber (eigentlich nur die HW) brauchen wir auch:
     /*
@@ -222,6 +223,7 @@ fn init_paging() {
     //let kernel_pt = unsafe{ Box::from_raw(kernel_pt_addr)};
     
     MMU::set_domain_access(0,DomainAccess::Manager);
+    kprint!("Vorbereitungen für MMU-Aktivierung abgeschlossen.\n");
     MMU::start();
     kprint!("MMU aktiviert.\n");
 }

@@ -10,7 +10,7 @@ const BITVECTOR_SIZE: usize = (MEM_SIZE/(PAGE_SIZE* mem::size_of::<usize>()*8)) 
 pub type Frame = PhysicalAddressRange;
 
 pub trait FrameMethods {
-    /// Frame aus Framenummer
+    /// Frame aus (absoluter) Framenummer
     fn from_nr(nr: usize) -> Frame;
 
     /// Frame mit einer gegebenen Startadresse
@@ -71,10 +71,19 @@ impl FrameMethods for Frame {
 
 }
 
+
+pub enum FrameError {
+    OutOfBound,
+    Exhausted,
+    NotFree,
+    NotReserved,
+}
+
 pub struct FrameManager {
     frames_bit_vector: [usize; BITVECTOR_SIZE],
     first_free:        usize
 }
+
 
 impl FrameManager {
 
@@ -84,29 +93,48 @@ impl FrameManager {
             first_free:        0
         }
     }
-    
-    pub fn allocate(&mut self) -> Frame {
-        if self.first_free >=  self.frames_bit_vector.bit_length() {
-            panic!("no frames available");
+
+    pub fn reserve(&mut self, frm: Frame) -> Result<Frame,FrameError> {
+        if self.frames_bit_vector.get_bit(frm.abs()) {
+            Err(FrameError::NotFree)
+        } else {
+            self.frames_bit_vector.set_bit(frm.abs(),true);
+            Ok(frm)
         }
-        assert_eq!(self.frames_bit_vector.get_bit(self.first_free),false);
-        let ret = self.first_free;
-        self.frames_bit_vector.set_bit(self.first_free,true);
-        let mut ndx = self.first_free+1;
+    }
+
+    pub fn find_next_free(&self, start: usize) -> usize {
+        let mut ndx = start;
         while (self.frames_bit_vector.get_bit(ndx)) && (ndx < self.frames_bit_vector.bit_length()) {
             ndx += 1;
         }
-        self.first_free = ndx;
-        Frame::from_start(ret)
+        ndx
+    }
+    
+    pub fn allocate(&mut self) -> Result<Frame,FrameError> {
+        if self.first_free >=  self.frames_bit_vector.bit_length() {
+            Err(FrameError::Exhausted)
+        } else {
+            assert_eq!(self.frames_bit_vector.get_bit(self.first_free),false);
+            let nr = self.first_free;
+            self.first_free = self.find_next_free(nr);
+            self.reserve(Frame::from_nr(nr))
+        }
     }
 
-    pub fn release(&mut self, frm: Frame) {
-        assert!(frm.abs()  < self.frames_bit_vector.bit_length() as usize);
-        self.frames_bit_vector.set_bit(frm.abs(),false);
-        self.first_free = min(self.first_free, frm.abs());
+    pub fn release(&mut self, frm: Frame) -> Result<(),FrameError> {
+        if frm.abs() >= self.frames_bit_vector.bit_length() {
+            Err(FrameError::OutOfBound)
+        } else if !self.frames_bit_vector.get_bit(frm.abs()) {
+            Err(FrameError::NotReserved)
+        } else {
+            self.frames_bit_vector.set_bit(frm.abs(),false);
+            self.first_free = min(self.first_free, frm.abs());
+            Ok(())
+        }
     }
 
-    pub fn mark_not_available(&mut self, r: PhysicalAddressRange) {
+    pub fn reserve_range(&mut self, r: PhysicalAddressRange) {
         for addr in r.step_by(PAGE_SIZE as usize) {
             let frm = Frame::from_addr(addr);
             self.frames_bit_vector.set_bit(frm.abs(),true);

@@ -40,21 +40,62 @@ pub enum MemoryAccessRight {
     SysRoUsrRw      = 0b110
 }
 
-/// Jeder Speicherbereich ist einen von 32 Domains zugordnet.
+/// Jeder Speicherbereich ist einen von (max.) 32 Domains zugordnet.
+///  * Code kann dann unter einer oder mehreren Domainen ausgeführt werden
+///  * 
+#[allow(dead_code)] 
+pub enum Domains {
+    Standard = 0,
+    Sharing,
+    Console,
+    HWClock,
+}
+
 #[allow(dead_code)] 
 pub enum DomainAccess {
     None    = 0b00,   // jeder Zugriff auf entsprechenden Domain-Speicher führt zu einem Zugriffs-Fehler
     Client  = 0b01,   // Zugriffe werden entsprechend der Rechte überprüft
-    Manager = 0b11    // keine Rechteüberprüfung, ZUgriff gewährt
+    Manager = 0b11    // keine Rechteüberprüfung, Zugriff gewährt
+}
+use super::{LogicalAddress,PhysicalAddress,LogicalAddressRange,PhysicalAddressRange};
+
+pub enum PagingError{
+    NotPresent,
+    NotFree,
+    NotReserved,
 }
 
-use super::{LogicalAddress,PhysicalAddress,LogicalAddressRange,PhysicalAddressRange};
+struct PagingManager{
+    page_directory: &'static mut PageDirectory
+}
+
+impl PagingManager{
+
+    pub fn new() -> PagingManager {
+        unimplemented!();
+    }
+
+    pub fn map(la: LogicalAddressRange, pa: PhysicalAddress) {
+        unimplemented!();
+    }
+
+    pub fn install_page_table(table: PageTable, section: usize) {
+        unimplemented!();
+    }
+
+    /*
+    pub fn reserve_frame(frm: usize) -> Result<> {
+        unimplemented!();
+    }*/
+    
+}
+
+
 pub mod builder;
 pub use self::builder::{DirectoryEntry,TableEntry};
-//pub use self::builder::{Pte,PageTableEntry,PageTableEntryType};
 
 mod page_table;
-//pub use self::page_table::PageTable;
+pub use self::page_table::PageTable;
 
 mod frames;
 pub use self::frames::{Frame,FrameMethods,FrameManager};
