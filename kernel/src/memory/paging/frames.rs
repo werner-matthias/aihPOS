@@ -87,7 +87,7 @@ pub struct FrameManager {
 
 impl FrameManager {
 
-    pub fn new() -> FrameManager{
+    pub const fn new() -> FrameManager{
         FrameManager{
             frames_bit_vector: [0; BITVECTOR_SIZE],
             first_free:        0
