@@ -79,7 +79,7 @@ impl EndBoundaryTag {
     /// Es muss sichergestellt werden, dass tatsächlich ein Tag an der Adresse liegt
     pub unsafe fn new_from_memory(addr: usize) -> EndBoundaryTag {
         assert_eq!(addr & 0b011,0);
-        let bt_ptr: Unique<EndBoundaryTag> = Unique::new(addr as *mut EndBoundaryTag);
+        let bt_ptr: Unique<EndBoundaryTag> = Unique::new_unchecked(addr as *mut EndBoundaryTag);
         *bt_ptr.as_ptr()
     }
 }
@@ -95,7 +95,7 @@ impl BoundaryTag for EndBoundaryTag {
 
     unsafe fn write(&self, addr: usize) {
         assert_eq!(addr & 0b011,0);
-        let bt_ptr: Unique<EndBoundaryTag> = Unique::new(addr as *mut EndBoundaryTag);
+        let bt_ptr: Unique<EndBoundaryTag> = Unique::new_unchecked(addr as *mut EndBoundaryTag);
         *bt_ptr.as_ptr() = *self
     }
 
@@ -132,7 +132,7 @@ impl StartBoundaryTag {
     /// Setzt Adresse des nächsten Elements in der Liste
     pub fn set_next(&mut self, next: HeapAddress) {
         if let Some(val) = next {
-            unsafe{ self.next = Some(NonZero::new(val));}
+            unsafe{ self.next = Some(NonZero::new_unchecked(val));}
         } else {
             self.next = None;
         }
@@ -141,7 +141,7 @@ impl StartBoundaryTag {
     /// Setzt Adresse des vorherigen Elements in der Liste
     pub fn set_prev(&mut self, prev: HeapAddress) {
         if let Some(val) = prev {
-            unsafe{ self.prev = Some(NonZero::new(val));}
+            unsafe{ self.prev = Some(NonZero::new_unchecked(val));}
         } else {
             self.prev = None;
         }
@@ -169,7 +169,7 @@ impl BoundaryTag for StartBoundaryTag {
 
     unsafe fn write(&self, addr: usize) {
         assert_eq!(addr & 0b011,0);
-        let bt_ptr: Unique<StartBoundaryTag> = Unique::new(addr as *mut StartBoundaryTag);
+        let bt_ptr: Unique<StartBoundaryTag> = Unique::new_unchecked(addr as *mut StartBoundaryTag);
         *bt_ptr.as_ptr() = *self
     }
 }
