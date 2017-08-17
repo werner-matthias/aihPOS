@@ -1,5 +1,6 @@
 use core::{fmt,cmp,slice};
-pub use core::fmt::Write;
+//use core::fmt::Write;
+//use core::ops::{DerefMut, Deref};
 use hal::board::{mailbox, Channel,Tag,PropertyTagBuffer,BUFFER_SIZE};
 use debug::font::{Font,SystemFont};
 use debug::blink;
@@ -50,7 +51,7 @@ impl<'a> Framebuffer<'a> {
         mb.read(Channel::ATags);
         // Die Antwort enthält die Speicheradresse des Framebuffers
         let ret = prob_tag_buf.get_answer(Tag::AllocateFrameBuffer);
-        let mut adr: &'a mut[u32];
+        let adr: &'a mut[u32];
         let size: usize;
         match ret {
             Some(a) => {
@@ -215,6 +216,11 @@ impl<'a> Framebuffer<'a> {
     /// Setter für aktuelle Farbe
     pub fn set_color(&mut self, color: u32) {
         self.fg_color = color;
+    }
+
+    /// Information
+    pub fn info_addr(&self) -> usize {
+        self.screen.first().unwrap() as *const _ as usize
     }
 }
 
