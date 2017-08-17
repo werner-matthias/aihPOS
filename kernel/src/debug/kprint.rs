@@ -68,9 +68,16 @@ pub fn kprint_clear() {
     }
 }
 
+
 //#[macro_export]
 macro_rules! kprint {
     ($($a: expr),*) => { ::debug::fkprint(format_args!($($a),*)); };
     ($($a: expr),* ; $c: ident) => { ::debug::fkprintc(format_args!($($a),*),::debug::kprint::$c); };
     ($($a: expr),* ; $c: expr) => { ::debug::fkprintc(format_args!($($a),*),$c); }
+}
+
+#[cfg(feature="debug")]
+pub fn deb_info() {
+    let addr =  _KPRINT_FB.get().as_ref().unwrap().info_addr();
+    kprint!("0x{:08x} ({:10}): Framebuffer\n",addr,addr;WHITE);
 }
