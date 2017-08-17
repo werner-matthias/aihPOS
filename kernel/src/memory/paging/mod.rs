@@ -1,4 +1,7 @@
+use core::usize;
+
 pub const MEM_SIZE:          usize = 512*1024*1024;
+//pub const MAX_ADDR:          usize = usize::MAX;
 pub const PAGE_SIZE:         usize = 4*1024;
 pub const SECTION_SIZE:      usize = 1024 * 1024;
 pub const PAGES_PER_SECTION: usize = SECTION_SIZE / PAGE_SIZE; // 256
@@ -57,38 +60,7 @@ pub enum DomainAccess {
     Client  = 0b01,   // Zugriffe werden entsprechend der Rechte überprüft
     Manager = 0b11    // keine Rechteüberprüfung, Zugriff gewährt
 }
-use super::{LogicalAddress,PhysicalAddress,LogicalAddressRange,PhysicalAddressRange};
-
-pub enum PagingError{
-    NotPresent,
-    NotFree,
-    NotReserved,
-}
-
-struct PagingManager{
-    page_directory: &'static mut PageDirectory
-}
-
-impl PagingManager{
-
-    pub fn new() -> PagingManager {
-        unimplemented!();
-    }
-
-    pub fn map(la: LogicalAddressRange, pa: PhysicalAddress) {
-        unimplemented!();
-    }
-
-    pub fn install_page_table(table: PageTable, section: usize) {
-        unimplemented!();
-    }
-
-    /*
-    pub fn reserve_frame(frm: usize) -> Result<> {
-        unimplemented!();
-    }*/
-    
-}
+use super::{Address,AddressRange};
 
 
 pub mod builder;
@@ -98,7 +70,10 @@ mod page_table;
 pub use self::page_table::PageTable;
 
 mod frames;
-pub use self::frames::{Frame,FrameMethods,FrameManager};
+pub use self::frames::{Frame};
+
+mod frame_manager;
+pub use self::frame_manager::{FrameManager,FrameError};
 
 mod page_directory;
 pub use self::page_directory::PageDirectory;

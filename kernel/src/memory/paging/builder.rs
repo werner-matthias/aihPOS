@@ -1,7 +1,7 @@
 #![warn(missing_docs)]
 use bit_field::BitField;
 use super::{MemType,MemoryAccessRight};
-use core::fmt;
+//use core::fmt;
 use core::marker::{PhantomData};
 
 pub type PageDirectoryEntry = u32;

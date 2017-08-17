@@ -1,7 +1,7 @@
 use core::ops::{Index, IndexMut};
 
 use super::builder::{PageTableEntry,TableEntry,MemoryBuilder,EntryBuilder};
-use super::{LogicalAddress,PhysicalAddress};
+//use super::Address;
 
 #[repr(C)]
 #[repr(align(1024))]
@@ -22,9 +22,10 @@ impl PageTable {
         }
     }
 
-    pub fn map(&mut self, paddr: PhysicalAddress, laddr: LogicalAddress) {
+    /*
+    pub fn map(&mut self, paddr: Address, laddr: Address) {
         
-    }
+    }*/
 
 
     pub fn addr(&self) -> usize {

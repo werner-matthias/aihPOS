@@ -71,14 +71,15 @@ impl BoundaryTagAllocator {
 unsafe impl<'a> Alloc for &'a BoundaryTagAllocator {
     
     unsafe fn alloc(&mut self, layout: Layout) -> Result<*mut u8, AllocErr> {
-        //self.debug_list();
+        kprint!(" alloc: try to alloc {} byte with alignment {}\n",layout.size(),layout.align());
+        self.debug_list();
         let start = MemoryRegion::new_from_memory(self.first.as_ptr() as usize);
         for mut mr in start {
             if mr.is_sufficient(&layout) {
                 let ret = mr.allocate(layout);
-                //self.debug_list();
+                self.debug_list();
+                //loop{}
                 return ret;
-
             }
         }
         Err(AllocErr::Exhausted{request: layout})
