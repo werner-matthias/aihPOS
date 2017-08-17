@@ -58,7 +58,7 @@ impl MemoryRegion {
         // Garantiere Alignment
         //kprint!(" alloc: MR @ {}\n",addr;YELLOW);
         assert_eq!(addr & 0b011,0);
-        let bt_ptr: Unique<StartBoundaryTag> = Unique::new(addr as *mut StartBoundaryTag);
+        let bt_ptr: Unique<StartBoundaryTag> = Unique::new_unchecked(addr as *mut StartBoundaryTag);
         let mut mr = MemoryRegion::new();
         mr.addr = Some(addr);
         mr.size = bt_ptr.as_ref().size();
@@ -76,7 +76,7 @@ impl MemoryRegion {
             mr.end_addr = mr.end_tag_addr();
             let end_addr = mr.end_addr.unwrap();
             assert_eq!(end_addr & 0b011,0);
-            let end_bt_ptr: Unique<EndBoundaryTag> = Unique::new(end_addr as *mut EndBoundaryTag);
+            let end_bt_ptr: Unique<EndBoundaryTag> = Unique::new_unchecked(end_addr as *mut EndBoundaryTag);
             mr.upper_guard = end_bt_ptr.as_ref().is_guard();
             //kprint!(" alloc: read {:?}\n",mr; YELLOW);
             assert_eq!(mr.size, end_bt_ptr.as_ref().size());
