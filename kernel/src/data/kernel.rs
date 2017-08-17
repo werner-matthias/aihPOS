@@ -1,38 +1,46 @@
-use memory::paging::PageTable;
+use memory::paging::{PageTable, FrameManager};
+use sync::no_concurrency::NoConcurrency;
 
 type PidType = usize;
 
-const KERNEL_PID : PidType = 0;
+pub const KERNEL_PID: PidType = 0;
 
 pub struct KernelData {
-    pid:  PidType,
+    pid: PidType,
     kpages: PageTable,
-    spages: PageTable
+    spages: PageTable,
 }
 
 impl KernelData {
-
     pub const fn new() -> KernelData {
         KernelData {
             pid: KERNEL_PID,
             kpages: PageTable::new(),
-            spages: PageTable::new()
+            spages: PageTable::new(),
         }
     }
-    
-    pub fn get_pid(&self) -> PidType {
-        self.pid
+}
+
+static KERNEL_DATA: NoConcurrency<KernelData> = NoConcurrency::new(KernelData::new());
+
+impl KernelData {
+    pub fn get_pid() -> PidType {
+        KERNEL_DATA.get().pid
     }
 
-    pub fn set_pid(&mut self, pid: PidType) {
-        self.pid = pid
+    pub fn set_pid(pid: PidType) {
+        KERNEL_DATA.get().pid = pid
     }
 
-    pub fn get_kpages<'a>(&'a mut self) -> &'a mut PageTable {
-        &mut self.kpages
+    pub fn kpages<'a>() -> &'a mut PageTable {
+        &mut KERNEL_DATA.get().kpages
     }
 
-    pub fn get_spages<'a>(&'a mut self) -> &'a mut PageTable {
-        &mut self.spages
+    pub fn spages<'a>() -> &'a mut PageTable {
+        &mut KERNEL_DATA.get().spages
+    }
+
+    pub fn frame_allocator<'a>() -> &'a mut FrameManager {
+        FrameManager::get()
     }
 }
