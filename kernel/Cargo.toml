@@ -4,6 +4,12 @@ version = "0.0.3"
 authors = ["Matthias Werner <mwerner@informatik.tu-chemnitz.de>"]
 publish = false
 
+[features]
+default = ["smallpages","debug"]
+largepages = []
+smallpages = []
+debug = []
+
 [dependencies]
 bit_field = "0.8.0"
 compiler_builtins = { git = "https://github.com/rust-lang-nursery/compiler-builtins", features = ["mem"] }
