@@ -172,7 +172,7 @@ pub fn data_abort_service_routine(adr: *const u32) {
 #[allow(unused_variables)]
 pub fn syscall(nr: u32, arg1: u32, arg2: u32) -> u32 {
     #[allow(unused_assignments)]
-    let mut ret: u32=nr;
+    let mut ret: u32 = nr;
     unsafe{
         // Die Parameter (nach ARM Calling Konvention in den Registern r0-r2) werden durchgereicht.
         // Sicherheitshalber werden diese Register dem Compiler als "vermint" gemeldet.
