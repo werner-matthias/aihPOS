@@ -7,9 +7,9 @@ pub const LIGHTRED: u32 =  0x00ff0000;
 #[allow(dead_code)]
 pub const RED: u32 =       0x007f0000;
 #[allow(dead_code)]
-pub const DARKGREEN: u32 = 0x00007f00;
+pub const GREEN: u32 =     0x00007f00;
 #[allow(dead_code)]
-pub const GREEN: u32 =     0x0000ff00;
+pub const LIGHGREEN: u32 = 0x0000ff00;
 #[allow(dead_code)]
 pub const BLUE: u32 =      0x000000ff;
 #[allow(dead_code)]
