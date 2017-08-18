@@ -3,21 +3,37 @@ use sync::no_concurrency::NoConcurrency;
 use debug::framebuffer::Framebuffer;
 
 #[allow(dead_code)]
-pub const RED: u32 =    0x00ff0000;
+pub const LIGHTRED: u32 =  0x00ff0000;
 #[allow(dead_code)]
-pub const GREEN: u32 =  0x0000ff00;
+pub const RED: u32 =       0x007f0000;
 #[allow(dead_code)]
-pub const BLUE: u32 =   0x000000ff;
+pub const DARKGREEN: u32 = 0x00007f00;
 #[allow(dead_code)]
-pub const YELLOW: u32 = 0x00ffff00;    
+pub const GREEN: u32 =     0x0000ff00;
 #[allow(dead_code)]
-pub const MAGENTA:u32 = 0x00ff00ff;    
+pub const BLUE: u32 =      0x000000ff;
 #[allow(dead_code)]
-pub const CYAN:u32 =    0x0000ffff;    
+pub const DARKBLUE: u32 =  0x0000007f;
 #[allow(dead_code)]
-pub const WHITE:u32 =   0x00ffffff;    
+pub const YELLOW: u32 =    0x00ffff00;    
 #[allow(dead_code)]
-pub const BLACK:u32 =   0x00000000;
+pub const BROWN: u32 =     0x007f7f00;    
+#[allow(dead_code)]
+pub const MAGENTA:u32 =    0x00ff00ff;    
+#[allow(dead_code)]
+pub const PURPLE:u32 =     0x007f007f;    
+#[allow(dead_code)]
+pub const CYAN:u32 =       0x0000ffff;    
+#[allow(dead_code)]
+pub const DARKCYAN:u32 =   0x00007f7f;    
+#[allow(dead_code)]
+pub const WHITE:u32 =      0x00ffffff;    
+#[allow(dead_code)]
+pub const LIGHTGRAY:u32 =  0x00bfbfbf;    
+#[allow(dead_code)]
+pub const GRAY:u32 =       0x007f7f7f;    
+#[allow(dead_code)]
+pub const BLACK:u32 =      0x00000000;
 
 static _KPRINT_FB: NoConcurrency<Option<Framebuffer<'static>>> = NoConcurrency::new(None);
 
