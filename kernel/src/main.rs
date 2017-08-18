@@ -33,12 +33,8 @@
 #![plugin(compiler_error)]
 
 /// Benutzte Crates
-//#[macro_use]
 extern crate alloc;
-//#[macro_use]
-//extern crate lazy_static;
 extern crate bit_field;
-//#[macro_use] extern crate collections;
 extern crate compiler_builtins;
 
 #[macro_use] mod aux_macros;
@@ -105,12 +101,12 @@ pub(self) fn kernel_init() -> ! {
     KernelData::set_pid(KERNEL_PID);
     report();
     init_mem();
-    
     test();
     loop {}
     unreachable!();
 }
 
+#[inline(never)]
 fn determine_irq_stack() -> Address {
     let addr = (report_memory(MemReport::ArmSize) - 3) & 0xFFFFFFFC;
     addr
@@ -122,6 +118,7 @@ fn determine_svc_stack() -> Address {
     addr
 }
 
+#[inline(never)]
 fn init_mem() {
     kprint!("Init stacks...");
     init_stacks();
@@ -135,6 +132,7 @@ fn init_mem() {
 /// Es werden die Stacks für alle Ausname-Modi gesetzt.
 /// Irq, Fiq, Abort und Undef teilen sich einen Stack, der System-Mode nutzt
 /// den User-Mode-Stack und muss nicht gesetzt werden.
+#[inline(never)]
 fn init_stacks() {
     let adr = determine_irq_stack();
     Cpu::set_mode(ProcessorMode::Irq);
@@ -228,8 +226,8 @@ fn init_paging() {
 }
  
 fn report() {
-    kprint!("aihPOS"; DARKCYAN);
-    kprint!(" Version {}\n",VERSION; DARKCYAN);
+    kprint!("aihPOS"; BLUE);
+    kprint!(" Version {}\n",VERSION; BLUE);
     let  (firmware_version, board_model, board_revision,serial) = (report_board_info(BoardReport::FirmwareVersion),
                                                                    report_board_info(BoardReport::BoardModel),
                                                                    report_board_info(BoardReport::BoardRevision),
