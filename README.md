@@ -18,7 +18,7 @@ Put `cargo-kernel` in your path. Then run
 cargo kernel --target=arm-none-eabihf 
 ```
 
-:::
+::: warning
 Currently, the optimizer seems to break the code. Don't use
 `--release` option.
 :::
