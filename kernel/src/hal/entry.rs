@@ -2,7 +2,7 @@
 use hal::cpu::Cpu;
 use ::kernel_start;
 
-// Das ist die Sprungtabelle für Ausnahmen (Interrupts, Syscalls, etc.).
+/// Sprungtabelle für Ausnahmen (Interrupts, Syscalls, etc.).
 #[repr(C)]
 pub struct ExceptionTable {
     jmp: [u32; 8],
@@ -32,7 +32,8 @@ pub static execption_table: ExceptionTable = ExceptionTable {
         dispatch_undefined,      // Unbekannter Befehl
         dispatch_svc,            // Systemruf 
         dispatch_prefetch_abort, // Befehl soll von ungültiger Adresse gelesen werden 
-        dispatch_data_abort,     // Speicherzugriff mit ungültiger Adresse, z.B. nichtexistent oder unaligned, oder fehlende Zugriffsrechte etc.
+        dispatch_data_abort,     // Speicherzugriff mit ungültiger Adresse, z.B. nichtexistent oder
+                                 //  unaligned, oder fehlende Zugriffsrechte etc.
         kernel_start,            // Reserivert, sollte nie auftreten; falls doch => restart
         dispatch_interrupt,      // Interrupt
         dispatch_fast_interrupt, // Schneller Interrupt
@@ -76,14 +77,17 @@ pub extern "C" fn dispatch_undefined() {
 #[naked]
 #[inline(never)]
 #[allow(unused_variables)]
-// Achtung, diese Funktion wird nur bei einem Opt-Level >= 1 korrekt übersetzt. Da #[naked] im unoptimierten Fall buggy^H^H^H^H^H
-// unerwartete Ergebnisse erzeugt (vgl. https://stackoverflow.com/questions/42238878/why-are-there-extra-asm-instructions-in-a-naked-rust-function),
+// Achtung, diese Funktion wird nur bei einem Opt-Level >= 1 korrekt übersetzt. Da #[naked] im
+// unoptimierten Fall buggy^H^H^H^H unerwartete Ergebnisse erzeugt (vgl.https://stackoverflow.com/
+// questions/42238878/why-are-there-extra-asm-instructions-in-a-naked-rust-function),
 // würde r0 bei Opt-Level=0 überschrieben oder der Stack korrumpiert werden.
 pub extern "C" fn dispatch_svc(nr: u32, arg1: u32, arg2: u32){
     unsafe{
-        // r0 braucht (zunächst) nicht gerettet zu werden; das wird bei der Rückgabe sowieso überschrieben
+        // r0 braucht (zunächst) nicht gerettet zu werden; das wird bei der Rückgabe
+        // sowieso überschrieben
         asm!("stmfd sp!, {r1-r11, lr}":::"memory");
-        asm!("blx $0"::"r"(service_routine.svc):"r0","r1","r2","r3","r4","r5","r6","r7","r8","r9","r10","r11","memory":"alignstack","volatile");
+        asm!("blx $0"::"r"(service_routine.svc):"r0","r1","r2","r3","r4","r5",
+             "r6","r7","r8","r9","r10","r11","memory":"alignstack","volatile");
         asm!("ldmfd sp!, {r1-r11, pc}^":::"memory");
     };
 }
@@ -93,7 +97,8 @@ pub extern "C" fn dispatch_prefetch_abort() {
     //Cpu::save_context();
     unsafe{
         asm!("mov lr, r0":::"memory");
-        asm!("blx $0"::"r"(service_routine.abort):"r0","r1","r2","r3","r4","r5","r6","r7","r8","r9","r10","r11","memory":"alignstack","volatile");
+        asm!("blx $0"::"r"(service_routine.abort):"r0","r1","r2","r3","r4","r5",
+             "r6","r7","r8","r9","r10","r11","memory":"alignstack","volatile");
     }
     // abort_service_routine();
     //Cpu::restore_context_and_return();
@@ -104,7 +109,8 @@ pub extern "C" fn dispatch_data_abort() {
     //Cpu::save_context();
     unsafe {
         asm!("mov lr, r0":::"memory");
-        asm!("blx $0"::"r"(service_routine.data_abort):"r0","r1","r2","r3","r4","r5","r6","r7","r8","r9","r10","r11","memory":"alignstack","volatile");
+        asm!("blx $0"::"r"(service_routine.data_abort):"r0","r1","r2","r3","r4","r5",
+             "r6","r7","r8","r9","r10","r11","memory":"alignstack","volatile");
     }
     //data_abort_service_routine();
     //Cpu::restore_context_and_return();
@@ -135,9 +141,11 @@ pub fn irq_service_routine()
 #[no_mangle]
 #[allow(private_no_mangle_fns)]
 #[linkage="weak"] // Verhindert, dass der Optimierer die Funktion eliminiert
-pub fn undefined_service_routine(adr: *const u32) {
+pub fn undefined_service_routine(ptr: *const u32) {
+    let addr = unsafe{ ptr.offset(-1)};
+    let cmd  = unsafe{ *addr };
     // Sobald eine Prozessabstraktion existiert, sollte dies angepasst werden.
-    kprint!("Unbekannter Befehl @ {:?}\n",adr);
+    kprint!("Unbekannter Befehl 0{:08x} @ 0{:08x}\n",cmd, addr as usize);
     panic!("Unbehandelt");
 }
 
