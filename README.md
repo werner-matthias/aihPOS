@@ -18,10 +18,9 @@ Put `cargo-kernel` in your path. Then run
 cargo kernel --target=arm-none-eabihf 
 ```
 
-::: warning
-Currently, the optimizer seems to break the code. Don't use
-`--release` option.
-:::
+> :heavy_exclamation_mark: Currently, the optimizer seems to break the
+> code. Don't use `--release` option.
+
 
 ## Remark
 Since aihPOS should support an undergraduate course at a German university, all
