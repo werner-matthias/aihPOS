@@ -175,7 +175,7 @@ fn init_paging() {
             .mem_type(MemType::NormalUncashed)
             .domain(0)
             .entry();
-        frame_allocator.reserve(frm);
+        frame_allocator.reserve(frm).expect("frame allocator failed");
     }
     kprint!(" after iterator.\n");
     // Kernel-Daten + BSS
@@ -187,7 +187,7 @@ fn init_paging() {
             .no_execute(true)
             .domain(0)
             .entry();
-        frame_allocator.reserve(frm);
+        frame_allocator.reserve(frm).expect("frame allocator failed");
     }
     // Stacks
     let spage_table: &mut PageTable = &mut KernelData::spages();
@@ -200,7 +200,7 @@ fn init_paging() {
             .no_execute(true)
             .domain(0)
             .entry();
-        frame_allocator.reserve(frm);
+        frame_allocator.reserve(frm).expect("frame allocator failed");
 
     }
 

@@ -1,3 +1,6 @@
+///! Der Framemanager verwaltet die Allozierung von Speicher-Frames.
+///! Je nach konfigurierter (maximaler) Speichergröße und 
+
 use core::cmp::min;
 use core::usize;
 use core::mem;
@@ -6,6 +9,7 @@ use super::{Address, AddressRange, Frame, MEM_SIZE, PAGE_SIZE};
 
 const BITVECTOR_SIZE: usize = (MEM_SIZE / (PAGE_SIZE * mem::size_of::<u64>() * 8)) as usize;
 
+#[derive(Debug)]
 pub enum FrameError {
     OutOfBound,   // Ungültiger Frame
     Exhausted,    // kein freier Frame übrig
