@@ -19,7 +19,7 @@ cargo kernel --target=arm-none-eabihf
 ```
 
 > :heavy_exclamation_mark: Currently, the optimizer seems to break the
-> code. Don't use `--release` option.
+> code. Don't use the `--release` option.
 
 
 ## Remark
