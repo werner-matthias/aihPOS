@@ -21,6 +21,15 @@ cargo kernel --target=arm-none-eabihf
 > :heavy_exclamation_mark: Currently, the optimizer seems to break the
 > code. Don't use the `--release` option.
 
+## Status
+[x] Tools and Booting
+[x] Debug LED interface
+[x] Console ouput (framebuffer, for debug)
+[ ] Keyboard input
+[x] Heap (allocator)
+[x] Paging
+[ ] Context switch
+[ ] IPC
 
 ## Remark
 Since aihPOS should support an undergraduate course at a German university, all
