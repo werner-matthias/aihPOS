@@ -57,8 +57,8 @@ use core::mem::size_of;
 use data::kernel::{KernelData,KERNEL_PID};
 mod memory;
 use memory::Address;
-use memory::paging::{Frame,PageDirectory,FrameManager};
-use memory::paging::{MemoryAccessRight,MemType,DomainAccess,PAGES_PER_SECTION};
+use memory::paging::{Frame,Section,PageDirectory,FrameManager};
+use memory::paging::{MemoryAccessRight,MemType,DomainAccess,PAGES_PER_SECTION,MAX_ADDRESS};
 use memory::paging::builder::{MemoryBuilder,DirectoryEntry,TableEntry,EntryBuilder};
 use memory::paging::PageTable;
 //use memory::paging::builder::Deb;
@@ -154,14 +154,13 @@ fn init_paging() {
     let page_directory: &mut PageDirectory = PageDirectory::get();
     let frame_allocator: &mut FrameManager = FrameManager::get();
     
-    //kprint!(" FrameTable: @ {}\n",frame_allocator.addr_of_bitarray() ;WHITE);
     // Standard ist Seitenfehler
-    for section in 0..4096 {
-        page_directory[section] = MemoryBuilder::<DirectoryEntry>::new_entry(DirectoryEntry::Fault).entry();
+    for section in Section::iter(0 .. MAX_ADDRESS) {
+        page_directory[section.nr()] = MemoryBuilder::<DirectoryEntry>::new_entry(DirectoryEntry::Fault).entry();
     }
     // Der Kernel-Bereich wird auf sich selbst gemappt
-    let mut kpage_table: &mut PageTable = &mut KernelData::kpages();
-    kprint!(" Address of PT: {}\n",kpage_table as *const _ as usize;WHITE);
+    let kpage_table: &mut PageTable = &mut KernelData::kpages();
+    //kprint!(" Address of PT: {}\n",kpage_table as *const _ as usize;WHITE);
     kpage_table.invalidate();
 
     page_directory[0] = MemoryBuilder::<DirectoryEntry>::new_entry(DirectoryEntry::CoarsePageTable)
@@ -229,8 +228,8 @@ fn init_paging() {
 }
  
 fn report() {
-    kprint!("aihPOS"; RED);
-    kprint!(" Version {}\n",VERSION; RED);
+    kprint!("aihPOS"; DARKCYAN);
+    kprint!(" Version {}\n",VERSION; DARKCYAN);
     let  (firmware_version, board_model, board_revision,serial) = (report_board_info(BoardReport::FirmwareVersion),
                                                                    report_board_info(BoardReport::BoardModel),
                                                                    report_board_info(BoardReport::BoardRevision),

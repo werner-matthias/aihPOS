@@ -1,7 +1,7 @@
 use core::usize;
 
 pub const MEM_SIZE:          usize = 512*1024*1024;
-//pub const MAX_ADDR:          usize = usize::MAX;
+pub const MAX_ADDRESS:       usize = usize::MAX;
 pub const PAGE_SIZE:         usize = 4*1024;
 pub const SECTION_SIZE:      usize = 1024 * 1024;
 pub const PAGES_PER_SECTION: usize = SECTION_SIZE / PAGE_SIZE; // 256
@@ -69,8 +69,11 @@ pub use self::builder::{DirectoryEntry,TableEntry};
 mod page_table;
 pub use self::page_table::PageTable;
 
-mod frames;
-pub use self::frames::{Frame};
+mod frame;
+pub use self::frame::Frame;
+
+mod section;
+pub use self::section::Section;
 
 mod frame_manager;
 pub use self::frame_manager::{FrameManager,FrameError};
