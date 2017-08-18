@@ -8,8 +8,8 @@ use debug::blink;
 const FB_WIDTH: u32     = 800;
 const FB_HEIGHT: u32    = 600;
 const FB_COLOR_DEP: u32 = 32;
-const DEF_COLOR: u32    = 0xff00ff00;
-const DEF_BG_COLOR: u32 = 0xff000000;
+const DEF_COLOR: u32    = 0x7f007f00;
+const DEF_BG_COLOR: u32 = 0xff7f7f7f;
 
 #[allow(dead_code)]
 pub struct Framebuffer<'a> {
