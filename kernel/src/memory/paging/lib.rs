@@ -1,4 +1,15 @@
+#![no_std]
+#![feature(
+    attr_literals,            // Literale in Attributen (nicht nur Strings)
+    const_fn,                 // const Funktionen (für Constructoren)
+    iterator_step_by,         // Spezifische Schrittweite bei Iterationen
+    repr_align,               // Alignment
+)]
 use core::usize;
+use core::ops::Range;
+
+pub type Address      = usize;
+pub type AddressRange = Range<Address>;
 
 pub const MEM_SIZE:          usize = 512*1024*1024;
 pub const MAX_ADDRESS:       usize = usize::MAX;
@@ -43,28 +54,14 @@ pub enum MemoryAccessRight {
     SysRoUsrRw      = 0b110
 }
 
-/// Jeder Speicherbereich ist einen von (max.) 32 Domains zugordnet.
-///  * Code kann dann unter einer oder mehreren Domainen ausgeführt werden
-///  * 
-#[allow(dead_code)] 
-pub enum Domains {
-    Standard = 0,
-    Sharing,
-    Console,
-    HWClock,
-}
-
-#[allow(dead_code)] 
 pub enum DomainAccess {
     None    = 0b00,   // jeder Zugriff auf entsprechenden Domain-Speicher führt zu einem Zugriffs-Fehler
     Client  = 0b01,   // Zugriffe werden entsprechend der Rechte überprüft
     Manager = 0b11    // keine Rechteüberprüfung, Zugriff gewährt
 }
-use super::{Address,AddressRange};
 
-
-pub mod builder;
-pub use self::builder::{DirectoryEntry,TableEntry};
+mod builder;
+pub use self::builder::{MemoryBuilder,EntryBuilder,DirectoryEntry,TableEntry};
 
 mod page_table;
 pub use self::page_table::PageTable;

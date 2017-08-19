@@ -1,5 +1,5 @@
-use memory::paging::{PageTable, FrameManager};
-use sync::no_concurrency::NoConcurrency;
+use memory::{PageTable, FrameManager};
+use sync::NoConcurrency;
 
 type PidType = usize;
 

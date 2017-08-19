@@ -16,6 +16,22 @@ compiler_builtins = { git = "https://github.com/rust-lang-nursery/compiler-built
 compiler_error = "0.1.1"
 #lazy_static = { version = "0.2.8", features = ["spin_no_std"] }
 
+[dependencies.boundary_tag_allocator]
+path = "src/memory/heap"
+
+[dependencies.arm6_paging]
+path = "src/memory/paging"
+
+[dependencies.pi_debug]
+path = "src/debug"
+
+[dependencies.rpi_hal]
+path = "src/hal"
+
+[dependencies.aihpos_sync]
+path = "src/sync"
+
+
 [profile.dev]
 panic = "abort"
 lto = false

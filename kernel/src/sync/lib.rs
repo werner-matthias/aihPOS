@@ -1,3 +1,7 @@
+#![no_std]
+#![feature(
+    const_fn,                 // const Funktionen (für Constructoren)
+)]
 use core::cell::UnsafeCell;
 
 pub struct NoConcurrency<T: Sized> {

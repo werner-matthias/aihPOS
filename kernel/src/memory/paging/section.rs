@@ -1,8 +1,9 @@
-#![deny(missing_docs)]
+#![warn(missing_docs)]
 use core::usize;
-use super::{Address, AddressRange, SECTION_SIZE,MAX_ADDRESS};
+use super::{Address, AddressRange, SECTION_SIZE};
 
 #[derive(Copy,Clone)]
+/// Abschnitt im Speicher von 1 MiB Größe
 pub struct Section(usize);
 
 impl Section {

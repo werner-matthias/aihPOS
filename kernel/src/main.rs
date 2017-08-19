@@ -25,7 +25,7 @@
     nonzero,                  // Werte ohne Null (hier: usize)
     plugin,                   // Nutzung von Compiler-Plugins
     repr_align,               // Alignment
-    // use_extern_macros,
+    use_extern_macros,
     unique,                   // Unique-Pointer
     used,                     // Erlaubt das Verbot, scheinbar toten Code zu eliminieren
 )
@@ -37,28 +37,35 @@ extern crate alloc;
 extern crate bit_field;
 extern crate compiler_builtins;
 
-#[macro_use] mod aux_macros;
-#[macro_use] mod debug;
+#[macro_use]
+extern crate debug;
+extern crate hal;
+extern crate sync;
+#[macro_use]
+mod aux_macros;
+use debug::*;
+//#[macro_use] mod debug;
 mod panic;
-mod sync;
 mod data;
 //use alloc::boxed::Box;
 
-#[macro_use] mod hal;
+//#[macro_use] mod hal;
 use hal::board::{MemReport,BoardReport,report_board_info,report_memory};
-use hal::entry::syscall;
+#[macro_use]
+mod entry;
+use entry::syscall;
 use hal::cpu::{Cpu,ProcessorMode,MMU};
 use core::mem::size_of;
 //use sync::no_concurrency::NoConcurrency;
 use data::kernel::{KernelData,KERNEL_PID};
 mod memory;
-use memory::Address;
-use memory::paging::{Frame,Section,PageDirectory,FrameManager};
-use memory::paging::{MemoryAccessRight,MemType,DomainAccess,PAGES_PER_SECTION,MAX_ADDRESS};
-use memory::paging::builder::{MemoryBuilder,DirectoryEntry,TableEntry,EntryBuilder};
-use memory::paging::PageTable;
+use memory::*;
+//use memory::paging::{Frame,Section,PageDirectory,FrameManager};
+//use memory::paging::{MemoryAccessRight,MemType,DomainAccess,PAGES_PER_SECTION,MAX_ADDRESS};
+//use memory::paging::builder::{MemoryBuilder,DirectoryEntry,TableEntry,EntryBuilder};
+//use memory::paging::PageTable;
 //use memory::paging::builder::Deb;
-use memory::HEAP;
+//use memory::HEAP;
 //use core::mem;
 
 import_linker_symbol!(__text_end);
@@ -251,7 +258,7 @@ fn report() {
     kprint!("0x{:08x} ({:10}): Initiales Ende Kernelheap\n",__bss_start as usize + INIT_HEAP_SIZE, __bss_start as usize + INIT_HEAP_SIZE; WHITE);
     kprint!("0x{:08x} ({:10}): TOS System\n",determine_svc_stack() as usize, determine_svc_stack() as usize; WHITE);
     kprint!("0x{:08x} ({:10}): TOS Interrupt\n",determine_irq_stack() as usize, determine_irq_stack() as usize; WHITE);
-    debug::kprint::deb_info();
+    debug::deb_info();
 }
 
 fn test() {

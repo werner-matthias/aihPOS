@@ -1,8 +1,8 @@
-use hal::cpu::cache::Cache;
-use hal::cpu::tlb::Tlb;
-use hal::cpu::Cpu;
+use super::cache::Cache;
+use super::tlb::Tlb;
+use super::Cpu;
 use bit_field::BitField;
-use memory::paging::{DomainAccess};
+use paging::{DomainAccess};
 
 pub struct MMU {}
 

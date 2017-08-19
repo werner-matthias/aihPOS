@@ -1,0 +1,26 @@
+[package]
+name = "pi_debug"
+version = "0.1.4"
+authors = ["Matthias Werner <mwerner@informatik.tu-chemnitz.de>"]
+publish = false
+
+[lib]
+name = "debug"
+path = "lib.rs"
+
+[dependencies.aihpos_sync]
+path = "../sync"
+
+[dependencies.rpi_hal]
+path = "../hal"
+
+[profile.dev]
+panic = "abort"
+lto = false
+opt-level = 0
+
+[profile.release]
+panic = "abort"
+lto = false
+opt-level = 3
+

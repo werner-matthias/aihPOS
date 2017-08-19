@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 use hal::cpu::Cpu;
 use ::kernel_start;
+use debug::*;
 
 /// Sprungtabelle für Ausnahmen (Interrupts, Syscalls, etc.).
 #[repr(C)]

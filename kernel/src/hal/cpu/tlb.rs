@@ -1,4 +1,4 @@
-use hal::cpu::Cpu;
+use super::Cpu;
 
 pub struct Tlb{}
 

@@ -1,0 +1,23 @@
+[package]
+name = "boundary_tag_allocator"
+version = "0.1.2"
+authors = ["Matthias Werner <mwerner@informatik.tu-chemnitz.de>"]
+publish = false
+
+[lib]
+name = "heap"
+path = "lib.rs"
+
+[dependencies]
+bit_field = "0.8.0"
+
+[profile.dev]
+panic = "abort"
+lto = false
+opt-level = 0
+
+[profile.release]
+panic = "abort"
+lto = false
+opt-level = 3
+

@@ -1,8 +1,9 @@
 use core::ops::{Index, IndexMut};
 use super::builder::{PageDirectoryEntry,DirectoryEntry};
-use sync::no_concurrency::NoConcurrency;
 use super::Address;
 
+extern crate sync;
+use self::sync::NoConcurrency;
 
 #[repr(C)]
 #[repr(align(16384))]
@@ -36,7 +37,6 @@ impl PageDirectory {
     }
 
     /// Gibt die Addresse des Seitenverzeichnisses zurück
-    #[cfg(feature="debug")]
     pub fn addr() -> Address {
         &PAGE_DIR as *const _ as Address
     }

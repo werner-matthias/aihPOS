@@ -1,3 +1,13 @@
+#![no_std]
+#![feature(
+    alloc,                    // Nutzung der Alloc-Crate
+    allocator_api,            // Nutzung der Allocator-API
+    const_fn,                 // const Funktionen (für Constructoren)
+    nonzero,                  // Werte ohne Null (hier: usize)
+    unique,                   // Unique-Pointer
+)]
+extern crate alloc;
+
 use alloc::allocator::{Alloc,Layout,AllocErr};
 use core::{mem,cmp};
 use core::cell::Cell;
@@ -45,7 +55,9 @@ impl BoundaryTagAllocator {
         mr.write_to_memory();
         //self.debug_list();
     }
-    
+
+    /*
+    #[cfg(feature="debug")]
     pub fn debug_list(&self) {
         let start = &self.first as *const _;
         let mut nr = 0;
@@ -53,11 +65,11 @@ impl BoundaryTagAllocator {
         loop {
             if let Some(mr_addr) = mem_reg {
                 let mr: MemoryRegion = unsafe{ MemoryRegion::new_from_memory(mr_addr) };
-                kprint!(" Region #{} @ {} :",nr,mr_addr;YELLOW);
-                kprint!(" {:?}\n",mr;YELLOW);
+                //kprint!(" Region #{} @ {} :",nr,mr_addr;YELLOW);
+                //kprint!(" {:?}\n",mr;YELLOW);
                 mem_reg = mr.next_addr();
             } else {
-                kprint!("  EOL\n";YELLOW);
+                /kprint!("  EOL\n";YELLOW);
                 return
             }
             nr += 1;
@@ -65,19 +77,19 @@ impl BoundaryTagAllocator {
                 break;
             }
         }
-    }
+    }*/
 }
  
 unsafe impl<'a> Alloc for &'a BoundaryTagAllocator {
     
     unsafe fn alloc(&mut self, layout: Layout) -> Result<*mut u8, AllocErr> {
-        kprint!(" alloc: try to alloc {} byte with alignment {}\n",layout.size(),layout.align());
-        self.debug_list();
+        //kprint!(" alloc: try to alloc {} byte with alignment {}\n",layout.size(),layout.align());
+        //self.debug_list();
         let start = MemoryRegion::new_from_memory(self.first.as_ptr() as usize);
         for mut mr in start {
             if mr.is_sufficient(&layout) {
                 let ret = mr.allocate(layout);
-                self.debug_list();
+                //self.debug_list();
                 //loop{}
                 return ret;
             }

@@ -1,6 +1,6 @@
 pub use core::fmt::{write,Write,Arguments};
-use sync::no_concurrency::NoConcurrency;
-use debug::framebuffer::Framebuffer;
+use sync::NoConcurrency;
+use framebuffer::Framebuffer;
 
 #[allow(dead_code)]
 pub const LIGHTRED: u32 =  0x00ff0000;
@@ -67,7 +67,7 @@ pub fn fkprint(arg: Arguments) {
 }
 
 pub fn kprint_init() {
-    _KPRINT_FB.set(Some(::debug::framebuffer::Framebuffer::new()));
+    _KPRINT_FB.set(Some(::framebuffer::Framebuffer::new()));
     kprint_clear()
 }
 
@@ -85,14 +85,14 @@ pub fn kprint_clear() {
 }
 
 
-//#[macro_export]
+#[macro_export]
 macro_rules! kprint {
-    ($($a: expr),*) => { ::debug::fkprint(format_args!($($a),*)); };
-    ($($a: expr),* ; $c: ident) => { ::debug::fkprintc(format_args!($($a),*),::debug::kprint::$c); };
-    ($($a: expr),* ; $c: expr) => { ::debug::fkprintc(format_args!($($a),*),$c); }
+    ($($a: expr),*) => { self::fkprint(format_args!($($a),*)); };
+    ($($a: expr),* ; $c: ident) => { self::fkprintc(format_args!($($a),*),self::$c); };
+    ($($a: expr),* ; $c: expr) => { self::fkprintc(format_args!($($a),*),$c); }
 }
 
-#[cfg(feature="debug")]
+//#[cfg(feature="debug")]
 pub fn deb_info() {
     let addr =  _KPRINT_FB.get().as_ref().unwrap().info_addr();
     kprint!("0x{:08x} ({:10}): Framebuffer\n",addr,addr;WHITE);

@@ -1,7 +1,7 @@
 #![warn(missing_docs)]
-use bit_field::BitField;
+extern crate bit_field;
+use self::bit_field::BitField;
 use super::{MemType,MemoryAccessRight};
-//use core::fmt;
 use core::marker::{PhantomData};
 
 pub type PageDirectoryEntry = u32;
@@ -9,18 +9,35 @@ pub type PageTableEntry     = u32;
 
 #[allow(dead_code)]
 #[derive(PartialEq,Clone,Copy)]
+/// Im Seitenverzeichnis können vier verschiedene Arten von Einträgen enthalten sein:
+///  * Seitenfehler, führt zu Ausnahme
+///  * Section: 1 MiB großer Speicherabschnitt
+///  * Supersection: 16 MiB großer Speicherabschnitt
+///  * Seitentabelle: Indirektion; verwaltet 1 MiB Seiten à 4 kiB
 pub enum DirectoryEntry {
+    /// Seitenfehler
     Fault           = 0,
+    /// reserviert; erzeugt ebenfalls Seitenfehler
     AltFault        = 0b11,
+    /// Seitentabelle
     CoarsePageTable = 0b01,
+    /// 1 MiB Speicherbereich
     Section         = 0b10,
+    /// 16 MiB Speichebereich
     Supersection    = 0x40002
 }
 
 #[derive(PartialEq,Clone,Copy)]
+/// In der Seitentabelle können drei Arten von Einträgen enthalten sein:
+/// * Seitenfehler
+/// * Seiten zu 64 kiB
+/// * Seiten zu 4 kiB
 pub enum TableEntry {
+    /// Seitenfehler
     Fault       = 0x0,
+    /// große Seite: 64 kiB
     LargePage   = 0x1,
+    /// kleine Seite: 4 kiB
     SmallPage   = 0x2,
 }
 

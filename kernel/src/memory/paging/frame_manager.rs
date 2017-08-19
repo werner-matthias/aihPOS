@@ -4,7 +4,9 @@
 use core::cmp::min;
 use core::usize;
 use core::mem;
-use sync::no_concurrency::NoConcurrency;
+
+extern crate sync;
+use self::sync::NoConcurrency;
 use super::{Address, AddressRange, Frame, MEM_SIZE, PAGE_SIZE};
 
 const BITVECTOR_SIZE: usize = (MEM_SIZE / (PAGE_SIZE * mem::size_of::<u64>() * 8)) as usize;

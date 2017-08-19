@@ -1,4 +1,6 @@
-use bit_field::BitField;
+extern crate bit_field;
+
+use self::bit_field::BitField;
 use core::ptr::Unique;
 use core::nonzero::NonZero;
 

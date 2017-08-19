@@ -1,18 +1,4 @@
-use core::ops::Range;
-
-//pub type PhysicalAddress = usize;
-//pub type LogicalAddress  = usize;
-//pub type PhysicalAddressRange = Range<PhysicalAddress>;
-//pub type LogicalAddressRange  = Range<LogicalAddress>;
-
-pub type Address      = usize;
-pub type AddressRange = Range<Address>;
-    
-pub mod paging;
-//pub use self::paging::{DomainAccess,DirectoryEntry};
-//pub use self::paging::{DomainAccess,MemoryAccessRight,MemType,PageDirectoryEntry,PageDirectoryEntryType,PdEntry,PageTableEntry,PageTableEntryType,Pte,PageTable};
-
-mod heap;
+extern crate heap;
 use self::heap::BoundaryTagAllocator;
 
 #[global_allocator]
@@ -23,3 +9,8 @@ pub fn init_heap(start: Address, size: usize) {
         HEAP.init(start,size);
     }
 }
+
+extern crate paging;
+pub use self::paging::*;
+ 
+
