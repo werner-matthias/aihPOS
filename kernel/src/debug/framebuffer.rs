@@ -2,15 +2,15 @@ use core::{fmt,cmp,slice};
 //use core::fmt::Write;
 //use core::ops::{DerefMut, Deref};
 extern crate hal;
-use self::hal::board::{mailbox, Channel,Tag,PropertyTagBuffer,BUFFER_SIZE};
+use self::hal::board::{mailbox, Channel,Tag,PropertyTagBuffer};
 use font::{Font,SystemFont};
 use blink;
 
 const FB_WIDTH: u32     = 800;
 const FB_HEIGHT: u32    = 600;
 const FB_COLOR_DEP: u32 = 32;
-const DEF_COLOR: u32    = 0x7f007f00;
-const DEF_BG_COLOR: u32 = 0xff7f7f7f;
+const DEF_COLOR: u32    = 0x5f005f00;
+const DEF_BG_COLOR: u32 = 0x7f7f7f7f;
 
 #[allow(dead_code)]
 pub struct Framebuffer<'a> {
@@ -48,7 +48,7 @@ impl<'a> Framebuffer<'a> {
         prob_tag_buf.add_tag_with_param(Tag::AllocateFrameBuffer,Some(&[16]));
         prob_tag_buf.add_tag_with_param(Tag::GetPitch,None);
         let mb = mailbox(0);
-        mb.write(Channel::ATags, &prob_tag_buf.data as *const [u32; BUFFER_SIZE] as u32);
+        mb.write(Channel::ATags, prob_tag_buf.data_addr() as u32);
         mb.read(Channel::ATags);
         // Die Antwort enthält die Speicheradresse des Framebuffers
         let ret = prob_tag_buf.get_answer(Tag::AllocateFrameBuffer);
@@ -63,7 +63,6 @@ impl<'a> Framebuffer<'a> {
                 // Wenn etwas schiefgelaufen ist, haben wir keine Konsole zur Fehlerausgabe.
                 // Daher wird die LED genutzt
                 blink::blink(blink::BS_SOS);
-                unreachable!();
             }
         };
         
@@ -75,7 +74,6 @@ impl<'a> Framebuffer<'a> {
             }
             _ => {
                 blink::blink(blink::BS_SOS);
-                unreachable!();
             }
         }        
         let fb = Framebuffer {
@@ -116,7 +114,7 @@ impl<'a> Framebuffer<'a> {
         prob_tag_buf.init();
         prob_tag_buf.add_tag_with_param(Tag::SetVirtualOffset,Some(&[0,0]));
         let mb = mailbox(0);
-        mb.write(Channel::ATags, &prob_tag_buf.data as *const [u32; BUFFER_SIZE] as u32);
+        mb.write(Channel::ATags, prob_tag_buf.data_addr() as u32);
         mb.read(Channel::ATags);
     }
     /// Gibt alle Zeichen einer Zeichenkette aus
@@ -205,7 +203,7 @@ impl<'a> Framebuffer<'a> {
         let mb = mailbox(0);
         prob_tag_buf.init();
         prob_tag_buf.add_tag_with_param(Tag::SetVirtualOffset,Some(&[0,self.y_offset]));
-        mb.write(Channel::ATags, &prob_tag_buf.data as *const [u32; BUFFER_SIZE] as u32);
+        mb.write(Channel::ATags, prob_tag_buf.data_addr() as u32);
         mb.read(Channel::ATags);
     }
 
