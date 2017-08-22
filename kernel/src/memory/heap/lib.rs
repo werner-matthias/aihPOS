@@ -1,3 +1,4 @@
+#![warn(missing_docs)]
 #![no_std]
 #![feature(
     alloc,                    // Nutzung der Alloc-Crate
@@ -6,7 +7,9 @@
     nonzero,                  // Werte ohne Null (hier: usize)
     unique,                   // Unique-Pointer
 )]
+//! Boundary-Tag-Allocator.
 extern crate alloc;
+
 
 use alloc::allocator::{Alloc,Layout,AllocErr};
 use core::{mem,cmp};
@@ -14,7 +17,7 @@ use core::cell::Cell;
 
 mod boundary_tag;
 mod memory_region;
-use self::boundary_tag::{BoundaryTag,StartBoundaryTag,EndBoundaryTag,HeapAddress};
+use self::boundary_tag::{BoundaryTag,StartBoundaryTag,EndBoundaryTag};
 use self::memory_region::MemoryRegion;
 
 pub struct BoundaryTagAllocator {
