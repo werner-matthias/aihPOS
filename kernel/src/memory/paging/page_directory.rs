@@ -10,12 +10,13 @@ use self::sync::NoConcurrency;
 /// ARM hat eine ein- bis zweistufige Paging-Hierarchie.
 /// Die obere Stufe ist das Seitenverzeichnis (_page directory_)
 /// Es besteht aus 4096 Einträgen, die entweder
-///   * einen Seitenfehler beinhalten;
-///   * einen Speicherbereich von 1 MiB (_Section_) beschreiben;
-///   * einen Speicherbereich von 16 MiB (_Supersection_) beschreiben;
-///   * auf eine Seitentabelle (_page table_) für 1 MiB verweisen
+///
+/// * einen Seitenfehler beinhalten;
+/// * einen Speicherbereich von 1 MiB (_Section_) beschreiben;
+/// * einen Speicherbereich von 16 MiB (_Supersection_) beschreiben;
+/// * auf eine Seitentabelle (_page table_) für 1 MiB verweisen
 pub struct PageDirectory {
-    pub dir: [PageDirectoryEntry;4096]
+    dir: [PageDirectoryEntry;4096]
 }
 
 impl PageDirectory {
