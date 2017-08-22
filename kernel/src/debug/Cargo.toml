@@ -17,7 +17,7 @@ path = "../hal"
 [profile.dev]
 panic = "abort"
 lto = false
-opt-level = 0
+opt-level = 1
 
 [profile.release]
 panic = "abort"
