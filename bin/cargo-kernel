@@ -14,6 +14,8 @@ BINPATH=./target/$TARGET/$PROFILE
 xargo build $@
 PKG=`xargo pkgid -q | cut -d# -f2 | cut -d: -f1`
 if [ -f $BINPATH/$PKG ]; then
+   echo "Building kernel"
    arm-none-eabi-objcopy $BINPATH/$PKG -O binary  $BINPATH/kernel.img
+   echo "Generate assembler dump"
    arm-none-eabi-objdump -D $BINPATH/$PKG > $BINPATH/$PKG.list
 fi
