@@ -188,7 +188,7 @@ fn init_paging() {
         kpage_table[frm.rel()] = MemoryBuilder::<TableEntry>::new_entry(TableEntry::SmallPage)
             .base_addr(frm.start())
             .rights(MemoryAccessRight::SysRwUsrNone)
-            .mem_type(MemType::NormalUncashed)
+            .mem_type(MemType::NormalWB)
             .domain(0)
             .entry();
         frame_allocator.reserve(frm).expect("frame allocator failed");
@@ -198,7 +198,7 @@ fn init_paging() {
         kpage_table[frm.rel()] = MemoryBuilder::<TableEntry>::new_entry(TableEntry::SmallPage)
             .base_addr(frm.start())
             .rights(MemoryAccessRight::SysRwUsrNone)
-            .mem_type(MemType::NormalWB)
+            .mem_type(MemType::NormalWT)
             .no_execute(true)
             .domain(0)
             .entry();
