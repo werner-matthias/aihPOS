@@ -9,6 +9,10 @@ pub const BUFFER_SIZE: usize = 1024;
 
 #[derive(Clone,Copy)]
 #[repr(u32)]
+#[allow(missing_docs)]
+/// Tags des Mailbox-Interface. Für die Bedeutungen der einzelnen Tags
+/// siehe [Raspberry Firmware
+/// Wiki](https://github.com/raspberrypi/firmware/wiki/Mailbox-property-interface)
 pub enum Tag {
     None = 0,
     // Firmware
@@ -215,13 +219,15 @@ enum TagOffset {
 
 #[repr(C)]
 #[repr(align(16))]
+/// Pufferspeicher für Property-Tag-Nachrichten
 pub struct PropertyTagBuffer {
-    pub data: [u32; BUFFER_SIZE],
-    pub index:    usize,
+    data: [u32; BUFFER_SIZE],
+    index:    usize,
 }
 
 impl PropertyTagBuffer {
 
+    /// Erzeugt einen neuen Puffer.
     pub fn new() -> PropertyTagBuffer {
         PropertyTagBuffer{
             data: [0; BUFFER_SIZE],
@@ -229,6 +235,7 @@ impl PropertyTagBuffer {
         }
     }
 
+    /// Initialisert die Puffer-Struktur
     pub fn init(&mut self)  {
         self.index = 2;
         self.data[PbOffset::Size as usize] = 12; // Size + Code + Endtag
@@ -236,12 +243,14 @@ impl PropertyTagBuffer {
         self.data[self.index] = Tag::None as u32;
     }
 
+    /// Schreibt ein einzelnes Wort in den Puffer
     fn write(&mut self, data: u32){
         self.data[self.index] = data;
         self.data[PbOffset::Size as usize] += mem::size_of::<u32> as u32;
         self.index += 1;
     }
 
+    /// Fügt einen Tag und ggf. seine Parameter zu den Pufferdaten hinzu.
     pub fn add_tag_with_param(&mut self, tag: Tag,  params: Option<&[u32]>) {
         let old_index = self.index;
         let prop = ReqProperty::new(tag);
@@ -262,11 +271,13 @@ impl PropertyTagBuffer {
         self.data[PbOffset::Size as usize] = ((self.index +1) << 2) as u32; 
     }
 
+    /// Liest ein einzelnes Wort aus dem Puffer
     fn read(&mut self) -> u32 {
         self.index + 1;
         self.data[self.index - 1]
     }
 
+    /// Liest die Antwort auf eine Tag-Nachricht
     pub fn get_answer(&self, tag: Tag) -> Option<&[u32]> {
         if self.data[PbOffset::Code as usize] != ReqResCode::Success as u32 {
             return None
@@ -285,5 +296,10 @@ impl PropertyTagBuffer {
             index += (self.data[index+TagOffset::Size as usize] >> 2) as usize + 3;
         }
         None
+    }
+
+    /// Adresse der Puffer-Daten 
+    pub fn data_addr(&self) -> usize {
+        &self.data as *const _ as usize
     }
 }
