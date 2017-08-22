@@ -1,8 +1,9 @@
 #![warn(missing_docs)]
+//! Generierung von Tabelleneinträgen für die Speicherverwaltung
 extern crate bit_field;
 use self::bit_field::BitField;
 use super::{MemType,MemoryAccessRight};
-use core::marker::{PhantomData};
+use core::marker::PhantomData;
 
 pub type PageDirectoryEntry = u32;
 pub type PageTableEntry     = u32;
@@ -10,6 +11,7 @@ pub type PageTableEntry     = u32;
 #[allow(dead_code)]
 #[derive(PartialEq,Clone,Copy)]
 /// Im Seitenverzeichnis können vier verschiedene Arten von Einträgen enthalten sein:
+///
 ///  * Seitenfehler, führt zu Ausnahme
 ///  * Section: 1 MiB großer Speicherabschnitt
 ///  * Supersection: 16 MiB großer Speicherabschnitt
@@ -29,6 +31,7 @@ pub enum DirectoryEntry {
 
 #[derive(PartialEq,Clone,Copy)]
 /// In der Seitentabelle können drei Arten von Einträgen enthalten sein:
+///
 /// * Seitenfehler
 /// * Seiten zu 64 kiB
 /// * Seiten zu 4 kiB
@@ -63,31 +66,37 @@ pub trait EntryBuilder<T> {
     fn base_addr(self, a: usize) -> MemoryBuilder<T>;
         
     /// Legt die Art des Speichers (Caching) fest
+    ///
     ///  * Vorgabe: `StronglyOrdered`  (_stikt geordnet_), siehe ARM DDI 6-15
     fn mem_type(self, t: MemType) -> MemoryBuilder<T>;
     
     /// Setzt die Zugriffsrechte
+    ///
     ///  * Vorgabe: Kein Zugriff
     fn rights(self, r: MemoryAccessRight) -> MemoryBuilder<T>;
 
     /// Legt fest, zu welcher Domain der Speicherbereich gehört
+    ///
     ///   * Für Supersections und Seiten wird die Domain ignoriert
     ///   * Vorgabe: 0
     fn domain(self, d: u32) -> MemoryBuilder<T>;
 
     /// Legt Speicherbereich als gemeinsam (_shared_) fest
+    ///
     ///  * Vorgabe: `false` (nicht gemeinsam)
     fn shared(self, s: bool) ->  MemoryBuilder<T>;
 
     /// Legt fest, ob ein Speicherbereich global (`false`) oder prozessspezifisch
     /// ist. Bei prozessspezifischen Speicherbereichen wird die ASID aus dem
     /// ContextID-Register (CP15c13) genutzt.
+    ///
     ///  * Vorgabe: `false` (global)
     ///  * Anmerkung: aihPOS nutzt *keine* prozessspezifischen Speicherbereich
     fn process_specific(self, ps: bool) ->  MemoryBuilder<T>;
 
     /// Legt fest, ob Speicherinhalt als Code ausgeführt werden darf
-    ///  - Vorgabe: `false` (ausführbar)
+    ///
+    ///  * Vorgabe: `false` (ausführbar)
     fn no_execute(self, ne: bool) ->  MemoryBuilder<T>;
 
     /// Gibt den Eintrag zurück
@@ -95,6 +104,7 @@ pub trait EntryBuilder<T> {
 }
 
 /// Implementation für Einträge in das Seitenverzeichnis
+//
 ///   * vgl. ARM DDI 6-39
 impl EntryBuilder<DirectoryEntry> for MemoryBuilder<DirectoryEntry> {
  
