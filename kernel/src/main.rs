@@ -3,7 +3,7 @@
 #![no_main]
 #![feature(
     alloc,                    // Nutzung der Alloc-Crate
-    allocator_api,            // Nutzung der Allocator-API
+    //allocator_api,          // Nutzung der Allocator-API
     //abi_unadjusted,         //
     attr_literals,            // Literale in Attributen (nicht nur Strings)
     asm,                      // Assembler in Funktionen...
@@ -11,22 +11,22 @@
     // concat_idents,
     //collections,            // Nutzung des Collection-Crate
     const_fn,                 // const Funktionen (für Constructoren)
-    //range_contains,           // Funktion zur Bestimmung, ob eine Range einen Wert enthält
+    //range_contains,          // Funktion zur Bestimmung, ob eine Range einen Wert enthält
     compiler_builtins_lib,    // Nutzung der Compiler-Buildins-Bibliothek (div, mul, ...)
-    core_intrinsics,          // Nutzung der Intrinsics der Core-Bibliothek
+    //core_intrinsics,          // Nutzung der Intrinsics der Core-Bibliothek
     drop_types_in_const,      // Statics dürfen Typen mit Destructoren enthalten
     global_allocator,         // eigener globaler Allocator
     i128_type,                // 128-Bit-Typen
     inclusive_range_syntax,   // Inklusiver Bereich mit "..."   
-    iterator_step_by,         // Spezifische Schrittweite bei Iterationen
+    //iterator_step_by,         // Spezifische Schrittweite bei Iterationen
     lang_items,               // Funktionen interne Funktionen ersetzen (panic)
     linkage,                  // Angaben zum Linktyp (z.B. Sichtbarkeit)
     naked_functions,          // Funktionen ohne Prolog/Epilog
-    nonzero,                  // Werte ohne Null (hier: usize)
+    //nonzero,                  // Werte ohne Null (hier: usize)
     plugin,                   // Nutzung von Compiler-Plugins
     repr_align,               // Alignment
     use_extern_macros,
-    unique,                   // Unique-Pointer
+    //unique,                   // Unique-Pointer
     used,                     // Erlaubt das Verbot, scheinbar toten Code zu eliminieren
 )
 ]
@@ -75,6 +75,7 @@ import_linker_symbol!(__bss_start);
 import_linker_symbol!(__kernel_stack);
 
 const IRQ_STACK_SIZE: usize = 2048;
+const SVC_STACK_SIZE: usize = 64 * 1024;
 pub  const INIT_HEAP_SIZE: usize = 25 * 4096; // 25 Seiten = 100 kB
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
@@ -87,7 +88,8 @@ const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 /// nach dem Einschalten (old_kernel in "config.txt" gesetzt) als auch nach einer Neustart-Ausnahme
 /// hier startet.
 pub extern fn kernel_start() {
-    // Zum Start existiert noch kein Stack. Daher setzen wir einen temporären Stack, der nach dem Textsegment liegt.
+    // Zum Start existiert noch kein Stack. Daher setzen wir einen temporären Stack, der nach
+    //  dem Textsegment liegt.
     // Das Symbol ist in "layout.ld" definiert.
     Cpu::set_stack(__kernel_stack as Address);
     // Nun kann die Größe des Speichers und damit die Adresse für den "echten" Stacks bestimmt werden
@@ -96,8 +98,9 @@ pub extern fn kernel_start() {
     unreachable!();
 }
 
-#[inline(never)] // Verbietet dem Optimizer, kernel_init() und darin aufgerufene Funktionen mit kernel_start()
-                 // zu verschmelzen. Dies würde wegen #[naked]/keinen Stack schief gehen
+#[inline(never)] // Verbietet dem Optimizer, kernel_init() und darin aufgerufene Funktionen mit
+                 // kernel_start() zu verschmelzen. Dies würde wegen #[naked]/keinen Stack schief
+                 // gehen
 #[allow(unreachable_code)]
 /// Erledigt alle Initialisierungen:
 /// * Setzen der Stacks für Ausnahmemodi
@@ -115,14 +118,12 @@ pub(self) fn kernel_init() -> ! {
 
 #[inline(never)]
 fn determine_irq_stack() -> Address {
-    let addr = (report_memory(MemReport::ArmSize) - 3) & 0xFFFFFFFC;
-    addr
+    report_memory(MemReport::ArmSize) 
 }
 
 #[inline(never)]
 fn determine_svc_stack() -> Address {
-    let addr = ((report_memory(MemReport::ArmSize) - 3) & 0xFFFFFFFC) - IRQ_STACK_SIZE;
-    addr
+    report_memory(MemReport::ArmSize) - IRQ_STACK_SIZE
 }
 
 #[inline(never)]
@@ -161,18 +162,28 @@ fn init_paging() {
     
     // Standard ist Seitenfehler
     for section in Section::iter(0 .. MAX_ADDRESS) {
-        page_directory[section.nr()] = MemoryBuilder::<DirectoryEntry>::new_entry(DirectoryEntry::Fault).entry();
+        page_directory[section.nr()] = MemoryBuilder::<DirectoryEntry>::new_entry(DirectoryEntry::Fault)
+            .entry();
     }
-    // Der Kernel-Bereich wird auf sich selbst gemappt
+    // Für den Kernel richten wir zwei Seitentabellen ein:
+    // * Code (Textsegment), Daten und Heap => kpage_table
+    // * Stacks                             => spage_table
     let kpage_table: &mut PageTable = &mut KernelData::kpages();
-    //kprint!(" Address of PT: {}\n",kpage_table as *const _ as usize;WHITE);
     kpage_table.invalidate();
-
+    let spage_table: &mut PageTable = &mut KernelData::spages();
+    spage_table.invalidate();
+    // Die Seitentabellen werden in das Seitenverzeichnis eingetragen
     page_directory[0] = MemoryBuilder::<DirectoryEntry>::new_entry(DirectoryEntry::CoarsePageTable)
         .base_addr(kpage_table.addr())
         .domain(0)
         .entry();
-    // Code 
+    page_directory[Section::from_addr(determine_svc_stack() - 65556 ).nr()] =
+        MemoryBuilder::<DirectoryEntry>::new_entry(DirectoryEntry::CoarsePageTable)
+        .base_addr(spage_table.addr())
+        .entry();
+    // Der Kernel-Bereich wird auf sich selbst gemappt:
+    // Dabei ist der Code ausführbar, Daten nicht.
+    // Code
     for frm in Frame::iter(0 .. __text_end as usize) {
         kpage_table[frm.rel()] = MemoryBuilder::<TableEntry>::new_entry(TableEntry::SmallPage)
             .base_addr(frm.start())
@@ -182,53 +193,43 @@ fn init_paging() {
             .entry();
         frame_allocator.reserve(frm).expect("frame allocator failed");
     }
-    kprint!(" after iterator.\n");
     // Kernel-Daten + BSS
     for frm in Frame::iter(__data_start as usize .. __bss_start as usize + INIT_HEAP_SIZE) {
         kpage_table[frm.rel()] = MemoryBuilder::<TableEntry>::new_entry(TableEntry::SmallPage)
             .base_addr(frm.start())
             .rights(MemoryAccessRight::SysRwUsrNone)
-            .mem_type(MemType::NormalUncashed)
+            .mem_type(MemType::NormalWB)
             .no_execute(true)
             .domain(0)
             .entry();
         frame_allocator.reserve(frm).expect("frame allocator failed");
     }
     // Stacks
-    let spage_table: &mut PageTable = &mut KernelData::spages();
-    spage_table.invalidate();
-    for frm in  Frame::iter(determine_irq_stack() - 65556 .. determine_irq_stack() - 65556) {
+    for frm in  Frame::iter(determine_svc_stack() - SVC_STACK_SIZE .. determine_irq_stack() -1) {
         spage_table[frm.rel()] = MemoryBuilder::<TableEntry>::new_entry(TableEntry::SmallPage)
             .base_addr(frm.start())
             .rights(MemoryAccessRight::SysRwUsrNone)
-            .mem_type(MemType::NormalUncashed)
+            .mem_type(MemType::NormalWT)
             .no_execute(true)
             .domain(0)
             .entry();
         frame_allocator.reserve(frm).expect("frame allocator failed");
-
     }
-
-    for section in Frame::from_addr(determine_irq_stack() - 65556).section()..4096 {
+    // Der Rest des Speichers (Geräte) wird auf sich selbst gemappt
+    // TODO: nur die tatsächlichen Geräte mappen
+    for section in Section::iter(determine_irq_stack() .. MAX_ADDRESS) {
         let pde = MemoryBuilder::<DirectoryEntry>::new_entry(DirectoryEntry::Section)
-            .base_addr(Frame::from_nr(section * PAGES_PER_SECTION).start())
+            .base_addr(section.start())
             .rights(MemoryAccessRight::SysRwUsrNone)
             .mem_type(MemType::NormalUncashed)
+            .domain(0)
             .no_execute(true)
             .entry();
-        /*
-        let dpde = Deb::ug(pde);
-        kprint!("identity mapping of section {} with base addr {} ({}) \n{:?}\n",
-        section,
-        Frame::from_nr(section * PAGES_PER_SECTION).start,
-        pde,
-        dpde);
-         */
-        page_directory[section] = pde;
+        page_directory[section.nr()] = pde;
     }
     MMU::set_domain_access(0,DomainAccess::Manager);
     kprint!("Vorbereitungen für MMU-Aktivierung abgeschlossen.\n");
-    MMU::start();
+    unsafe{ MMU::start(); }
     kprint!("MMU aktiviert.\n");
 }
  
@@ -258,7 +259,7 @@ fn report() {
     kprint!("0x{:08x} ({:10}): Initiales Ende Kernelheap\n",__bss_start as usize + INIT_HEAP_SIZE, __bss_start as usize + INIT_HEAP_SIZE; WHITE);
     kprint!("0x{:08x} ({:10}): TOS System\n",determine_svc_stack() as usize, determine_svc_stack() as usize; WHITE);
     kprint!("0x{:08x} ({:10}): TOS Interrupt\n",determine_irq_stack() as usize, determine_irq_stack() as usize; WHITE);
-    debug::deb_info();
+    debug::kprint::deb_info();
 }
 
 fn test() {
@@ -294,7 +295,7 @@ fn test() {
     }
     kprint!("Ich lebe noch.");
      */
-    debug::blink(debug::BS_HI);
+    debug::blink::blink(debug::blink::BS_HI);
 }
 
 #[inline(never)]
