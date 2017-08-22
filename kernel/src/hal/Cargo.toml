@@ -22,5 +22,5 @@ opt-level = 1
 [profile.release]
 panic = "abort"
 lto = false
-opt-level = 3
+opt-level = 1
 
