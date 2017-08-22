@@ -28,8 +28,8 @@ pub extern "C" fn _Unwind_Resume() -> ! {
 pub extern fn rust_begin_panic(msg: core::fmt::Arguments,
                                file: &'static str,
                                line: u32) -> ! {
-    ::debug::fkprintc(format_args!("Colonel Panic meldet sich zur Stelle!\n"),::debug::RED);
-    ::debug::fkprint(msg);
-    ::debug::fkprint(format_args!(" @{}, Zeile: {}",file,line));
+    ::debug::kprint::fkprintc(format_args!("Colonel Panic meldet sich zur Stelle!\n"),::debug::kprint::RED);
+    ::debug::kprint::fkprint(msg);
+    ::debug::kprint::fkprint(format_args!(" @{}, Zeile: {}",file,line));
     loop{}
 }
