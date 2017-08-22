@@ -1,14 +1,13 @@
 [package]
-name = "aihPOS"
+name = "aihpos_kernel"
 version = "0.0.3"
 authors = ["Matthias Werner <mwerner@informatik.tu-chemnitz.de>"]
 publish = false
 
 [features]
-default = ["smallpages","debug"]
+default = ["smallpages"]
 largepages = []
 smallpages = []
-debug = []
 
 [dependencies]
 bit_field = "0.8.0"
@@ -31,7 +30,6 @@ path = "src/hal"
 [dependencies.aihpos_sync]
 path = "src/sync"
 
-
 [profile.dev]
 panic = "abort"
 lto = false
@@ -40,5 +38,5 @@ opt-level = 1
 [profile.release]
 panic = "abort"
 lto = false
-opt-level = 3
+opt-level = 2
 
