@@ -1,4 +1,4 @@
-use core::intrinsics::volatile_load;
+use core::intrinsics::{volatile_load,volatile_store};
 use core::mem::transmute;
 
 // Basisadresse des Mailregisters
@@ -41,20 +41,20 @@ impl Mailbox {
     /// Schreibt in den Kanal `channel` die Daten, die an der Adresse `addr` zu finden sind.
     pub fn write(&mut self, channel: Channel, addr: u32) {
         assert!(addr & 0x0Fu32 == 0);
-        loop{ 
-            if unsafe{volatile_load(&mut self.status)} & MAILBOX_FULL == 0 { break }; 
-        }
-        self.write =addr | channel as u32; 
+        while unsafe{volatile_load(&mut self.status)} & MAILBOX_FULL != 0 {  }; 
+        unsafe{ volatile_store::<u32>(&mut self.write as *mut _, addr | channel as u32)}; 
     }
 
     /// Liest die Antwort aus Kanal `channel`
     pub fn read(&mut self, channel: Channel) -> u32 {
         let mut ret = !0;
-        while ret & 0xF != channel as u32 {
+        loop{
             while (unsafe{volatile_load::<u32>(&self.status as *const _ )} & MAILBOX_EMPTY) != 0 {}
             ret = unsafe{volatile_load::<u32>(&self.read as *const _)};
+            if ret & 0xF == channel as u32 {
+                return ret >> 4;
+            }
         }
-        ret >> 4
     }
 }
 

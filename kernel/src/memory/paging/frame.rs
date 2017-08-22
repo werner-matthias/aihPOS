@@ -1,6 +1,7 @@
 use core::usize;
 use super::{Address, AddressRange, PAGE_SIZE, SECTION_SIZE};
 
+#[derive(Debug)]
 pub struct Frame(AddressRange);
 
 impl Frame {
@@ -9,7 +10,7 @@ impl Frame {
         Frame (
             AddressRange {
                 start: nr * PAGE_SIZE,
-                end: (nr * PAGE_SIZE) + PAGE_SIZE - 1,
+                end: (nr * PAGE_SIZE) + (PAGE_SIZE - 1),
             })
     }
 
@@ -18,7 +19,7 @@ impl Frame {
         assert_eq!(start & (PAGE_SIZE - 1), 0);
         Frame (AddressRange {
             start: start,
-            end: start + PAGE_SIZE - 1,
+            end: start + (PAGE_SIZE - 1),
         })
     }
 
@@ -53,11 +54,9 @@ impl Frame {
 
     pub fn iter(r: AddressRange) -> FrameIterator {
         FrameIterator {
-            range: r.clone(),
-            current: AddressRange {
-                start: r.start,
-                end:   r.start + PAGE_SIZE
-            }
+            range: AddressRange{ start: r.start,
+                                 end:   r.end - 1},
+            current: Some(Frame::from_addr(r.start))
         }
     }
 
@@ -65,18 +64,22 @@ impl Frame {
 
 pub struct FrameIterator {
     range:   AddressRange,
-    current: AddressRange,
+    current: Option<Frame>,
 }
 
 impl Iterator for FrameIterator {
     type Item = Frame;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.current.start <= self.range.end {
-            let ret = self.current.clone();
-            self.current.start += PAGE_SIZE;
-            self.current.end += PAGE_SIZE;
-            Some(Frame(ret))
+        if self.current.is_some() {
+            let tmp = Frame::from_start(self.current.as_ref().unwrap().start());
+            self.current =
+                if tmp.end() >= self.range.end {
+                    None
+                } else {
+                    Some(Frame::from_start(tmp.start() + PAGE_SIZE))
+                };
+            Some(tmp)
         } else {
             None
         }

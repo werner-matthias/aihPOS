@@ -32,7 +32,7 @@ impl Section {
 
     /// Ende der Section
     pub fn end(&self) -> Address {
-        (self.0 + 1) * SECTION_SIZE - 1
+        self.start() + (SECTION_SIZE-1)
     }
     
     /// Nummer der Section
@@ -62,10 +62,10 @@ impl Iterator for SectionIterator {
         // getestet werden. Daher wird intern mit `Option<>` gearbeitet. 
         if let Some(current) = self.current {
             self.current =
-                if current.end() > self.range.end {
-                    Some(Section(current.0 + 1))
-                } else {
+                if current.end() >= self.range.end {
                     None
+                } else {
+                    Some(Section(current.0 + 1))
                 };
             Some(current)
         } else {

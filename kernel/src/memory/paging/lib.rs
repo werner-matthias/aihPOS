@@ -55,7 +55,8 @@ pub enum MemoryAccessRight {
 }
 
 pub enum DomainAccess {
-    None    = 0b00,   // jeder Zugriff auf entsprechenden Domain-Speicher führt zu einem Zugriffs-Fehler
+    None    = 0b00,   // jeder Zugriff auf entsprechenden Domain-Speicher führt zu einem
+                      //   Zugriffs-Fehler
     Client  = 0b01,   // Zugriffe werden entsprechend der Rechte überprüft
     Manager = 0b11    // keine Rechteüberprüfung, Zugriff gewährt
 }
