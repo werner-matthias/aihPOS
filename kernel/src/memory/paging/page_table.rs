@@ -1,7 +1,7 @@
 use core::ops::{Index, IndexMut};
 
 use super::builder::{PageTableEntry,TableEntry,MemoryBuilder,EntryBuilder};
-//use super::Address;
+use super::Address;
 
 #[repr(C)]
 #[repr(align(1024))]
@@ -28,7 +28,7 @@ impl PageTable {
     }*/
 
 
-    pub fn addr(&self) -> usize {
+    pub fn addr(&self) -> Address {
         self as *const _ as usize
     }
 }
