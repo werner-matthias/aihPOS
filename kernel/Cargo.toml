@@ -41,5 +41,11 @@ opt-level = 1
 [profile.release]
 panic = "abort"
 lto = false
-opt-level = 2
+opt-level = 3
+
+[profile.doc]
+panic = "abort"
+lto = false
+opt-level = 0
+
 
