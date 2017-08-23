@@ -1,5 +1,6 @@
 use core::intrinsics::{volatile_load,volatile_store};
 use core::mem::transmute;
+use cpu::Cpu;
 
 // Basisadresse des Mailregisters
 const MAILBOX_BASE: u32 = 0x2000B880;
@@ -38,24 +39,35 @@ pub struct Mailbox {
 }
 
 impl Mailbox {
-    /// Schreibt in den Kanal `channel` die Daten, die an der Adresse `addr` zu finden sind.
-    pub fn write(&mut self, channel: Channel, addr: u32) {
-        assert!(addr & 0x0Fu32 == 0);
-        while unsafe{volatile_load(&mut self.status)} & MAILBOX_FULL != 0 {  }; 
-        unsafe{ volatile_store::<u32>(&mut self.write as *mut _, addr | channel as u32)}; 
-    }
-
     /// Liest die Antwort aus Kanal `channel`
     pub fn read(&mut self, channel: Channel) -> u32 {
         let mut ret = !0;
         loop{
-            while (unsafe{volatile_load::<u32>(&self.status as *const _ )} & MAILBOX_EMPTY) != 0 {}
+            while (unsafe{volatile_load::<u32>(&self.status as *const _ )} & MAILBOX_EMPTY) != 0 {
+                // DMB: Das ist evtl. redundant zum "volatile", aber empfohlen im Firmware-Wiki:
+                // mindestens nach dem letzten Lesen und vor dem ersten Schreiben
+                // (vgl. https://github.com/raspberrypi/firmware/wiki/
+                //  Accessing-mailboxes#memory-barriers--invalidatingflushing-data-cache)
+                Cpu::data_memory_barrier();
+            }
             ret = unsafe{volatile_load::<u32>(&self.read as *const _)};
+            Cpu::data_memory_barrier();
             if ret & 0xF == channel as u32 {
                 return ret >> 4;
             }
         }
     }
+
+    /// Schreibt in den Kanal `channel` die Daten, die an der Adresse `addr` zu finden sind.
+    pub fn write(&mut self, channel: Channel, addr: u32) {
+        assert!(addr & 0x0Fu32 == 0);
+        while unsafe{volatile_load(&mut self.status)} & MAILBOX_FULL != 0 {
+            Cpu::data_memory_barrier();
+        };
+        Cpu::data_memory_barrier();
+        unsafe{ volatile_store::<u32>(&mut self.write as *mut _, addr | channel as u32)}; 
+    }
+
 }
 
 /// Gibt die Mailbox `nr`
