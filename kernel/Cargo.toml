@@ -27,6 +27,9 @@ path = "src/debug"
 [dependencies.rpi_hal]
 path = "src/hal"
 
+[dependencies.aihpos_process]
+path = "src/process"
+
 [dependencies.aihpos_sync]
 path = "src/sync"
 

@@ -41,6 +41,7 @@ extern crate compiler_builtins;
 extern crate debug;
 extern crate hal;
 extern crate sync;
+extern crate process;
 #[macro_use]
 mod aux_macros;
 use debug::*;
@@ -98,15 +99,16 @@ pub extern fn kernel_start() {
     unreachable!();
 }
 
-#[inline(never)] // Verbietet dem Optimizer, kernel_init() und darin aufgerufene Funktionen mit
-                 // kernel_start() zu verschmelzen. Dies würde wegen #[naked]/keinen Stack schief
-                 // gehen
-#[allow(unreachable_code)]
 /// Erledigt alle Initialisierungen:
 /// * Setzen der Stacks für Ausnahmemodi
 /// * Anlegen des Heaps
 /// * Einrichten Paging
 /// * Interrups
+// Verbietet dem Optimizer, kernel_init() und darin aufgerufene Funktionen mit
+// kernel_start() zu verschmelzen. Dies würde wegen #[naked]/keinen Stack schief
+// gehen
+#[inline(never)]
+#[allow(unreachable_code)]
 pub(self) fn kernel_init() -> ! {
     KernelData::set_pid(KERNEL_PID);
     report();
@@ -168,6 +170,11 @@ fn init_paging() {
     // Für den Kernel richten wir zwei Seitentabellen ein:
     // * Code (Textsegment), Daten und Heap => kpage_table
     // * Stacks                             => spage_table
+    //
+    // # Anmerkung:
+    // Der Kernel ist relativ klein, daher reicht eine Seitentabelle für Code und Daten.
+    // Sollte sich dies mal ändern, müsste zunächst die Anzahl der benötigten Tabellen bestimmt
+    // werden. In diesem Fall sollten die Tabellen auf dem Heap angelegt werden.
     let kpage_table: &mut PageTable = &mut KernelData::kpages();
     kpage_table.invalidate();
     let spage_table: &mut PageTable = &mut KernelData::spages();
@@ -175,7 +182,6 @@ fn init_paging() {
     // Die Seitentabellen werden in das Seitenverzeichnis eingetragen
     page_directory[0] = MemoryBuilder::<DirectoryEntry>::new_entry(DirectoryEntry::CoarsePageTable)
         .base_addr(kpage_table.addr())
-        .domain(0)
         .entry();
     page_directory[Section::from_addr(determine_svc_stack() - 65556 ).nr()] =
         MemoryBuilder::<DirectoryEntry>::new_entry(DirectoryEntry::CoarsePageTable)
@@ -188,7 +194,7 @@ fn init_paging() {
         kpage_table[frm.rel()] = MemoryBuilder::<TableEntry>::new_entry(TableEntry::SmallPage)
             .base_addr(frm.start())
             .rights(MemoryAccessRight::SysRwUsrNone)
-            .mem_type(MemType::NormalWB)
+            .mem_type(MemType::NormalWT)
             .domain(0)
             .entry();
         frame_allocator.reserve(frm).expect("frame allocator failed");
@@ -198,7 +204,7 @@ fn init_paging() {
         kpage_table[frm.rel()] = MemoryBuilder::<TableEntry>::new_entry(TableEntry::SmallPage)
             .base_addr(frm.start())
             .rights(MemoryAccessRight::SysRwUsrNone)
-            .mem_type(MemType::NormalWT)
+            .mem_type(MemType::NormalWB)
             .no_execute(true)
             .domain(0)
             .entry();
@@ -267,18 +273,6 @@ fn test() {
     let ret=syscall!(23,1,2);
     kprint!("Returned from system call: {}.\n",ret);
     /*
-    let mut frame_manager = FrameManager::new();
-    frame_manager.mark_not_available(0..0x0002ffff);
-    //kprint!("ff: {}\n",frame_manager.first_free);
-    for _ in 0..1 {
-        let adr: u32 = frame_manager.allocate();
-        kprint!("Neuer Frame @ {:08x}\n",adr);
-    }
-    frame_manager.release(0x00090000);
-    for _ in 0..2 {
-        let adr: u32 = frame_manager.allocate();
-        kprint!("Neuer Frame @ {:08x}\n",adr);
-    }
     {
         let v1 = Box::new(0);
         let v2 = Box::new((23,42));
