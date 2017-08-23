@@ -40,6 +40,7 @@ pub enum MemType {
 /// Bei den Zugriffsrechten wird zwischen privilegierten (Sys) und nichtpreviligierten
 /// Modi (Usr) unterschieden.
 /// Rechte können sein:
+///
 ///  - RW: Lesen und Schreiben
 ///  - Ro: Nur Lesen
 ///  - None: weder Lesen noch Schreiben
