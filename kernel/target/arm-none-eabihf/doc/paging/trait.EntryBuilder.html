@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `EntryBuilder` trait in crate `paging`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, EntryBuilder">
+
+    <title>paging::EntryBuilder - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc trait">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'>Trait EntryBuilder</p><div class="block items"><ul><li><a href="#required-methods">Required Methods</a></li><li><a href="#implementors">Implementors</a></li></ul></div><p class='location'><a href='index.html'>paging</a></p><script>window.sidebarCurrent = {name: 'EntryBuilder', ty: 'trait', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Trait <a href='index.html'>paging</a>::<wbr><a class="trait" href=''>EntryBuilder</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../src/paging/builder.rs.html#57-104' title='goto source code'>[src]</a></span></h1>
+<pre class='rust trait'>pub trait EntryBuilder&lt;T&gt; {
+    fn <a href='#tymethod.new_entry' class='fnname'>new_entry</a>(kind: T) -&gt; <a class="struct" href="../paging/struct.MemoryBuilder.html" title="struct paging::MemoryBuilder">MemoryBuilder</a>&lt;T&gt;;
+<div class='item-spacer'></div>    fn <a href='#tymethod.kind' class='fnname'>kind</a>(&amp;self) -&gt; T;
+<div class='item-spacer'></div>    fn <a href='#tymethod.base_addr' class='fnname'>base_addr</a>(self, a: usize) -&gt; <a class="struct" href="../paging/struct.MemoryBuilder.html" title="struct paging::MemoryBuilder">MemoryBuilder</a>&lt;T&gt;;
+<div class='item-spacer'></div>    fn <a href='#tymethod.mem_type' class='fnname'>mem_type</a>(self, t: <a class="enum" href="../paging/enum.MemType.html" title="enum paging::MemType">MemType</a>) -&gt; <a class="struct" href="../paging/struct.MemoryBuilder.html" title="struct paging::MemoryBuilder">MemoryBuilder</a>&lt;T&gt;;
+<div class='item-spacer'></div>    fn <a href='#tymethod.rights' class='fnname'>rights</a>(self, r: <a class="enum" href="../paging/enum.MemoryAccessRight.html" title="enum paging::MemoryAccessRight">MemoryAccessRight</a>) -&gt; <a class="struct" href="../paging/struct.MemoryBuilder.html" title="struct paging::MemoryBuilder">MemoryBuilder</a>&lt;T&gt;;
+<div class='item-spacer'></div>    fn <a href='#tymethod.domain' class='fnname'>domain</a>(self, d: u32) -&gt; <a class="struct" href="../paging/struct.MemoryBuilder.html" title="struct paging::MemoryBuilder">MemoryBuilder</a>&lt;T&gt;;
+<div class='item-spacer'></div>    fn <a href='#tymethod.shared' class='fnname'>shared</a>(self, s: bool) -&gt; <a class="struct" href="../paging/struct.MemoryBuilder.html" title="struct paging::MemoryBuilder">MemoryBuilder</a>&lt;T&gt;;
+<div class='item-spacer'></div>    fn <a href='#tymethod.process_specific' class='fnname'>process_specific</a>(self, ps: bool) -&gt; <a class="struct" href="../paging/struct.MemoryBuilder.html" title="struct paging::MemoryBuilder">MemoryBuilder</a>&lt;T&gt;;
+<div class='item-spacer'></div>    fn <a href='#tymethod.no_execute' class='fnname'>no_execute</a>(self, ne: bool) -&gt; <a class="struct" href="../paging/struct.MemoryBuilder.html" title="struct paging::MemoryBuilder">MemoryBuilder</a>&lt;T&gt;;
+<div class='item-spacer'></div>    fn <a href='#tymethod.entry' class='fnname'>entry</a>(self) -&gt; u32;
+}</pre><div class='docblock'><p>Einträge in das Seitenverzeichnis (<em>page directory</em>) und die Seitentabellen
+(<em>page table</em>) haben ähnliche Funktionalität. Daher haben sie einen Trait als
+gemeinsames Interface.</p>
+</div>
+            <h2 id='required-methods' class='small-section-header'>
+              Required Methods<a href='#required-methods' class='anchor'></a>
+            </h2>
+            <div class='methods'>
+        <h3 id='tymethod.new_entry' class='method'><span id='new_entry.v' class='invisible'><code>fn <a href='#tymethod.new_entry' class='fnname'>new_entry</a>(kind: T) -&gt; <a class="struct" href="../paging/struct.MemoryBuilder.html" title="struct paging::MemoryBuilder">MemoryBuilder</a>&lt;T&gt;</code></span></h3><div class='docblock'><p>Erzeugt einen neuen Eintrag </p>
+</div><h3 id='tymethod.kind' class='method'><span id='kind.v' class='invisible'><code>fn <a href='#tymethod.kind' class='fnname'>kind</a>(&amp;self) -&gt; T</code></span></h3><div class='docblock'><p>Gibt die Art des Eintrags</p>
+</div><h3 id='tymethod.base_addr' class='method'><span id='base_addr.v' class='invisible'><code>fn <a href='#tymethod.base_addr' class='fnname'>base_addr</a>(self, a: usize) -&gt; <a class="struct" href="../paging/struct.MemoryBuilder.html" title="struct paging::MemoryBuilder">MemoryBuilder</a>&lt;T&gt;</code></span></h3><div class='docblock'><p>Setzt die Basisadresse</p>
+</div><h3 id='tymethod.mem_type' class='method'><span id='mem_type.v' class='invisible'><code>fn <a href='#tymethod.mem_type' class='fnname'>mem_type</a>(self, t: <a class="enum" href="../paging/enum.MemType.html" title="enum paging::MemType">MemType</a>) -&gt; <a class="struct" href="../paging/struct.MemoryBuilder.html" title="struct paging::MemoryBuilder">MemoryBuilder</a>&lt;T&gt;</code></span></h3><div class='docblock'><p>Legt die Art des Speichers (Caching) fest</p>
+
+<ul>
+<li>Vorgabe: <code>StronglyOrdered</code>  (<em>stikt geordnet</em>), siehe ARM DDI 6-15</li>
+</ul>
+</div><h3 id='tymethod.rights' class='method'><span id='rights.v' class='invisible'><code>fn <a href='#tymethod.rights' class='fnname'>rights</a>(self, r: <a class="enum" href="../paging/enum.MemoryAccessRight.html" title="enum paging::MemoryAccessRight">MemoryAccessRight</a>) -&gt; <a class="struct" href="../paging/struct.MemoryBuilder.html" title="struct paging::MemoryBuilder">MemoryBuilder</a>&lt;T&gt;</code></span></h3><div class='docblock'><p>Setzt die Zugriffsrechte</p>
+
+<ul>
+<li>Vorgabe: Kein Zugriff</li>
+</ul>
+</div><h3 id='tymethod.domain' class='method'><span id='domain.v' class='invisible'><code>fn <a href='#tymethod.domain' class='fnname'>domain</a>(self, d: u32) -&gt; <a class="struct" href="../paging/struct.MemoryBuilder.html" title="struct paging::MemoryBuilder">MemoryBuilder</a>&lt;T&gt;</code></span></h3><div class='docblock'><p>Legt fest, zu welcher Domain der Speicherbereich gehört</p>
+
+<ul>
+<li>Für Supersections und Seiten wird die Domain ignoriert</li>
+<li>Vorgabe: 0</li>
+</ul>
+</div><h3 id='tymethod.shared' class='method'><span id='shared.v' class='invisible'><code>fn <a href='#tymethod.shared' class='fnname'>shared</a>(self, s: bool) -&gt; <a class="struct" href="../paging/struct.MemoryBuilder.html" title="struct paging::MemoryBuilder">MemoryBuilder</a>&lt;T&gt;</code></span></h3><div class='docblock'><p>Legt Speicherbereich als gemeinsam (<em>shared</em>) fest</p>
+
+<ul>
+<li>Vorgabe: <code>false</code> (nicht gemeinsam)</li>
+</ul>
+</div><h3 id='tymethod.process_specific' class='method'><span id='process_specific.v' class='invisible'><code>fn <a href='#tymethod.process_specific' class='fnname'>process_specific</a>(self, ps: bool) -&gt; <a class="struct" href="../paging/struct.MemoryBuilder.html" title="struct paging::MemoryBuilder">MemoryBuilder</a>&lt;T&gt;</code></span></h3><div class='docblock'><p>Legt fest, ob ein Speicherbereich global (<code>false</code>) oder prozessspezifisch
+ist. Bei prozessspezifischen Speicherbereichen wird die ASID aus dem
+ContextID-Register (CP15c13) genutzt.</p>
+
+<ul>
+<li>Vorgabe: <code>false</code> (global)</li>
+<li>Anmerkung: aihPOS nutzt <em>keine</em> prozessspezifischen Speicherbereich</li>
+</ul>
+</div><h3 id='tymethod.no_execute' class='method'><span id='no_execute.v' class='invisible'><code>fn <a href='#tymethod.no_execute' class='fnname'>no_execute</a>(self, ne: bool) -&gt; <a class="struct" href="../paging/struct.MemoryBuilder.html" title="struct paging::MemoryBuilder">MemoryBuilder</a>&lt;T&gt;</code></span></h3><div class='docblock'><p>Legt fest, ob Speicherinhalt als Code ausgeführt werden darf</p>
+
+<ul>
+<li>Vorgabe: <code>false</code> (ausführbar)</li>
+</ul>
+</div><h3 id='tymethod.entry' class='method'><span id='entry.v' class='invisible'><code>fn <a href='#tymethod.entry' class='fnname'>entry</a>(self) -&gt; u32</code></span></h3><div class='docblock'><p>Gibt den Eintrag zurück</p>
+</div></div>
+        <h2 id='implementors' class='small-section-header'>
+          Implementors<a href='#implementors' class='anchor'></a>
+        </h2>
+        <ul class='item-list' id='implementors-list'>
+    <li><code>impl EntryBuilder&lt;<a class="enum" href="../paging/enum.DirectoryEntry.html" title="enum paging::DirectoryEntry">DirectoryEntry</a>&gt; for <a class="struct" href="../paging/struct.MemoryBuilder.html" title="struct paging::MemoryBuilder">MemoryBuilder</a>&lt;<a class="enum" href="../paging/enum.DirectoryEntry.html" title="enum paging::DirectoryEntry">DirectoryEntry</a>&gt;</code></li>
+<li><code>impl EntryBuilder&lt;<a class="enum" href="../paging/enum.TableEntry.html" title="enum paging::TableEntry">TableEntry</a>&gt; for <a class="struct" href="../paging/struct.MemoryBuilder.html" title="struct paging::MemoryBuilder">MemoryBuilder</a>&lt;<a class="enum" href="../paging/enum.TableEntry.html" title="enum paging::TableEntry">TableEntry</a>&gt;</code></li>
+</ul><script type="text/javascript" async
+                         src="../implementors/paging/trait.EntryBuilder.js">
+                 </script></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../";
+        window.currentCrate = "paging";
+    </script>
+    <script src="../main.js"></script>
+    <script defer src="../search-index.js"></script>
+</body>
+</html>

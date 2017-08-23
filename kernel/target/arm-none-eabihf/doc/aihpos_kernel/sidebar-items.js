@@ -1,0 +1,1 @@
+initSidebarItems({"constant":[["INIT_HEAP_SIZE",""]],"fn":[["kernel_start","`kernel_start()` ist die Einsprungsstelle in den aihPOS-Code. Der erste Eintrag in der Sprungtabelle hält die Adresse von `kernel_start`, so dass aihPOS sowohl nach dem Einschalten (old_kernel in \"config.txt\" gesetzt) als auch nach einer Neustart-Ausnahme hier startet."],["svc_service_routine",""]]});

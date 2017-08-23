@@ -1,0 +1,1 @@
+initSidebarItems({"constant":[["BLACK",""],["BLUE",""],["BROWN",""],["CYAN",""],["DARKBLUE",""],["GRAY",""],["GREEN",""],["LIGHGREEN",""],["LIGHTGRAY",""],["LIGHTRED",""],["MAGENTA",""],["PURPLE",""],["RED",""],["TEAL",""],["WHITE",""],["YELLOW",""]],"fn":[["kprint_clear",""]]});

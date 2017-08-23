@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `Tag` enum in crate `hal`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, Tag">
+
+    <title>hal::board::Tag - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc enum">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'>Enum Tag</p><div class="block items"><ul><li><a href="#variants">Variants</a></li><li><a href="#implementations">Trait Implementations</a></li></ul></div><p class='location'><a href='../index.html'>hal</a>::<wbr><a href='index.html'>board</a></p><script>window.sidebarCurrent = {name: 'Tag', ty: 'enum', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Enum <a href='../index.html'>hal</a>::<wbr><a href='index.html'>board</a>::<wbr><a class="enum" href=''>Tag</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../../src/hal/board/propertytags.rs.html#16-97' title='goto source code'>[src]</a></span></h1>
+<pre class='rust enum'><div class="docblock attributes">#[repr(u32)]
+</div>pub enum Tag {
+    None,
+    GetFirmwareVersion,
+    GetBoardModel,
+    GetBoardRevision,
+    GetBoardMacAddress,
+    GetBoardSerial,
+    GetArmMemory,
+    GetVcMemory,
+    GetClocks,
+    GetCommandLine,
+    GetDmaChannels,
+    GetPowerState,
+    GetTiming,
+    SetPowerState,
+    GetClockState,
+    SetClockState,
+    GetClockRate,
+    SetClockRate,
+    GetMaxClockRate,
+    GetMinClockRate,
+    GetTurbo,
+    SetTurbo,
+    GetVoltage,
+    SetVoltage,
+    GetMaxVoltage,
+    GetMinVoltage,
+    GetTemperature,
+    GetMaxTemperature,
+    AllocateMemory,
+    LockMemory,
+    UnlockMemory,
+    ReleaseMemory,
+    ExecuteCode,
+    GetDispmanxResHandle,
+    GetEDIDBlock,
+    AllocateFrameBuffer,
+    ReleaseFrameBuffer,
+    BlankScreen,
+    GetPhysicalDisplaySize,
+    TestPhysicalDisplaySize,
+    SetPhysicalDisplaySize,
+    GetVirtualDisplaySize,
+    TestVirtualDisplaySize,
+    SetVirtualDisplaySize,
+    GetDepth,
+    TestDepth,
+    SetDepth,
+    GetPixelOrder,
+    TestPixelOrder,
+    SetPixelOrder,
+    GetAlphaMode,
+    TestAlphaMode,
+    SetAlphaMode,
+    GetPitch,
+    GetVirtualOffset,
+    TestVirtualOffset,
+    SetVirtualOffset,
+    GetOverscan,
+    TestOverscan,
+    SetOverscan,
+    GetPalette,
+    TestPalette,
+    SetPalette,
+    SetCursorInfo,
+    SetCursorState,
+}</pre><div class='docblock'><p>Tags des Mailbox-Interface. Für die Bedeutungen der einzelnen Tags
+siehe <a href="https://github.com/raspberrypi/firmware/wiki/Mailbox-property-interface">Raspberry Firmware
+Wiki</a></p>
+</div><h2 id='variants' class='variants small-section-header'>
+                   Variants<a href='#variants' class='anchor'></a></h2>
+<span id='variant.None' class='variant'><span id='None.v' class='invisible'><code>None</code></span></span><span id='variant.GetFirmwareVersion' class='variant'><span id='GetFirmwareVersion.v' class='invisible'><code>GetFirmwareVersion</code></span></span><span id='variant.GetBoardModel' class='variant'><span id='GetBoardModel.v' class='invisible'><code>GetBoardModel</code></span></span><span id='variant.GetBoardRevision' class='variant'><span id='GetBoardRevision.v' class='invisible'><code>GetBoardRevision</code></span></span><span id='variant.GetBoardMacAddress' class='variant'><span id='GetBoardMacAddress.v' class='invisible'><code>GetBoardMacAddress</code></span></span><span id='variant.GetBoardSerial' class='variant'><span id='GetBoardSerial.v' class='invisible'><code>GetBoardSerial</code></span></span><span id='variant.GetArmMemory' class='variant'><span id='GetArmMemory.v' class='invisible'><code>GetArmMemory</code></span></span><span id='variant.GetVcMemory' class='variant'><span id='GetVcMemory.v' class='invisible'><code>GetVcMemory</code></span></span><span id='variant.GetClocks' class='variant'><span id='GetClocks.v' class='invisible'><code>GetClocks</code></span></span><span id='variant.GetCommandLine' class='variant'><span id='GetCommandLine.v' class='invisible'><code>GetCommandLine</code></span></span><span id='variant.GetDmaChannels' class='variant'><span id='GetDmaChannels.v' class='invisible'><code>GetDmaChannels</code></span></span><span id='variant.GetPowerState' class='variant'><span id='GetPowerState.v' class='invisible'><code>GetPowerState</code></span></span><span id='variant.GetTiming' class='variant'><span id='GetTiming.v' class='invisible'><code>GetTiming</code></span></span><span id='variant.SetPowerState' class='variant'><span id='SetPowerState.v' class='invisible'><code>SetPowerState</code></span></span><span id='variant.GetClockState' class='variant'><span id='GetClockState.v' class='invisible'><code>GetClockState</code></span></span><span id='variant.SetClockState' class='variant'><span id='SetClockState.v' class='invisible'><code>SetClockState</code></span></span><span id='variant.GetClockRate' class='variant'><span id='GetClockRate.v' class='invisible'><code>GetClockRate</code></span></span><span id='variant.SetClockRate' class='variant'><span id='SetClockRate.v' class='invisible'><code>SetClockRate</code></span></span><span id='variant.GetMaxClockRate' class='variant'><span id='GetMaxClockRate.v' class='invisible'><code>GetMaxClockRate</code></span></span><span id='variant.GetMinClockRate' class='variant'><span id='GetMinClockRate.v' class='invisible'><code>GetMinClockRate</code></span></span><span id='variant.GetTurbo' class='variant'><span id='GetTurbo.v' class='invisible'><code>GetTurbo</code></span></span><span id='variant.SetTurbo' class='variant'><span id='SetTurbo.v' class='invisible'><code>SetTurbo</code></span></span><span id='variant.GetVoltage' class='variant'><span id='GetVoltage.v' class='invisible'><code>GetVoltage</code></span></span><span id='variant.SetVoltage' class='variant'><span id='SetVoltage.v' class='invisible'><code>SetVoltage</code></span></span><span id='variant.GetMaxVoltage' class='variant'><span id='GetMaxVoltage.v' class='invisible'><code>GetMaxVoltage</code></span></span><span id='variant.GetMinVoltage' class='variant'><span id='GetMinVoltage.v' class='invisible'><code>GetMinVoltage</code></span></span><span id='variant.GetTemperature' class='variant'><span id='GetTemperature.v' class='invisible'><code>GetTemperature</code></span></span><span id='variant.GetMaxTemperature' class='variant'><span id='GetMaxTemperature.v' class='invisible'><code>GetMaxTemperature</code></span></span><span id='variant.AllocateMemory' class='variant'><span id='AllocateMemory.v' class='invisible'><code>AllocateMemory</code></span></span><span id='variant.LockMemory' class='variant'><span id='LockMemory.v' class='invisible'><code>LockMemory</code></span></span><span id='variant.UnlockMemory' class='variant'><span id='UnlockMemory.v' class='invisible'><code>UnlockMemory</code></span></span><span id='variant.ReleaseMemory' class='variant'><span id='ReleaseMemory.v' class='invisible'><code>ReleaseMemory</code></span></span><span id='variant.ExecuteCode' class='variant'><span id='ExecuteCode.v' class='invisible'><code>ExecuteCode</code></span></span><span id='variant.GetDispmanxResHandle' class='variant'><span id='GetDispmanxResHandle.v' class='invisible'><code>GetDispmanxResHandle</code></span></span><span id='variant.GetEDIDBlock' class='variant'><span id='GetEDIDBlock.v' class='invisible'><code>GetEDIDBlock</code></span></span><span id='variant.AllocateFrameBuffer' class='variant'><span id='AllocateFrameBuffer.v' class='invisible'><code>AllocateFrameBuffer</code></span></span><span id='variant.ReleaseFrameBuffer' class='variant'><span id='ReleaseFrameBuffer.v' class='invisible'><code>ReleaseFrameBuffer</code></span></span><span id='variant.BlankScreen' class='variant'><span id='BlankScreen.v' class='invisible'><code>BlankScreen</code></span></span><span id='variant.GetPhysicalDisplaySize' class='variant'><span id='GetPhysicalDisplaySize.v' class='invisible'><code>GetPhysicalDisplaySize</code></span></span><span id='variant.TestPhysicalDisplaySize' class='variant'><span id='TestPhysicalDisplaySize.v' class='invisible'><code>TestPhysicalDisplaySize</code></span></span><span id='variant.SetPhysicalDisplaySize' class='variant'><span id='SetPhysicalDisplaySize.v' class='invisible'><code>SetPhysicalDisplaySize</code></span></span><span id='variant.GetVirtualDisplaySize' class='variant'><span id='GetVirtualDisplaySize.v' class='invisible'><code>GetVirtualDisplaySize</code></span></span><span id='variant.TestVirtualDisplaySize' class='variant'><span id='TestVirtualDisplaySize.v' class='invisible'><code>TestVirtualDisplaySize</code></span></span><span id='variant.SetVirtualDisplaySize' class='variant'><span id='SetVirtualDisplaySize.v' class='invisible'><code>SetVirtualDisplaySize</code></span></span><span id='variant.GetDepth' class='variant'><span id='GetDepth.v' class='invisible'><code>GetDepth</code></span></span><span id='variant.TestDepth' class='variant'><span id='TestDepth.v' class='invisible'><code>TestDepth</code></span></span><span id='variant.SetDepth' class='variant'><span id='SetDepth.v' class='invisible'><code>SetDepth</code></span></span><span id='variant.GetPixelOrder' class='variant'><span id='GetPixelOrder.v' class='invisible'><code>GetPixelOrder</code></span></span><span id='variant.TestPixelOrder' class='variant'><span id='TestPixelOrder.v' class='invisible'><code>TestPixelOrder</code></span></span><span id='variant.SetPixelOrder' class='variant'><span id='SetPixelOrder.v' class='invisible'><code>SetPixelOrder</code></span></span><span id='variant.GetAlphaMode' class='variant'><span id='GetAlphaMode.v' class='invisible'><code>GetAlphaMode</code></span></span><span id='variant.TestAlphaMode' class='variant'><span id='TestAlphaMode.v' class='invisible'><code>TestAlphaMode</code></span></span><span id='variant.SetAlphaMode' class='variant'><span id='SetAlphaMode.v' class='invisible'><code>SetAlphaMode</code></span></span><span id='variant.GetPitch' class='variant'><span id='GetPitch.v' class='invisible'><code>GetPitch</code></span></span><span id='variant.GetVirtualOffset' class='variant'><span id='GetVirtualOffset.v' class='invisible'><code>GetVirtualOffset</code></span></span><span id='variant.TestVirtualOffset' class='variant'><span id='TestVirtualOffset.v' class='invisible'><code>TestVirtualOffset</code></span></span><span id='variant.SetVirtualOffset' class='variant'><span id='SetVirtualOffset.v' class='invisible'><code>SetVirtualOffset</code></span></span><span id='variant.GetOverscan' class='variant'><span id='GetOverscan.v' class='invisible'><code>GetOverscan</code></span></span><span id='variant.TestOverscan' class='variant'><span id='TestOverscan.v' class='invisible'><code>TestOverscan</code></span></span><span id='variant.SetOverscan' class='variant'><span id='SetOverscan.v' class='invisible'><code>SetOverscan</code></span></span><span id='variant.GetPalette' class='variant'><span id='GetPalette.v' class='invisible'><code>GetPalette</code></span></span><span id='variant.TestPalette' class='variant'><span id='TestPalette.v' class='invisible'><code>TestPalette</code></span></span><span id='variant.SetPalette' class='variant'><span id='SetPalette.v' class='invisible'><code>SetPalette</code></span></span><span id='variant.SetCursorInfo' class='variant'><span id='SetCursorInfo.v' class='invisible'><code>SetCursorInfo</code></span></span><span id='variant.SetCursorState' class='variant'><span id='SetCursorState.v' class='invisible'><code>SetCursorState</code></span></span>
+            <h2 id='implementations' class='small-section-header'>
+              Trait Implementations<a href='#implementations' class='anchor'></a>
+            </h2>
+        <h3 class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a> for <a class="enum" href="../../hal/board/enum.Tag.html" title="enum hal::board::Tag">Tag</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/hal/board/propertytags.rs.html#10' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.clone' class="method"><span id='clone.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone' class='fnname'>clone</a>(&amp;self) -&gt; <a class="enum" href="../../hal/board/enum.Tag.html" title="enum hal::board::Tag">Tag</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/hal/board/propertytags.rs.html#10' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Returns a copy of the value. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone">Read more</a></p>
+</div><h4 id='method.clone_from' class="method"><span id='clone_from.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from' class='fnname'>clone_from</a>(&amp;mut self, source: &amp;Self)</code></span><span class='out-of-band'><div class='ghost'></div><div class='since' title='Stable since Rust version 1.0.0'>1.0.0</div><a class='srclink' href='https://doc.rust-lang.org/nightly/src/core/clone.rs.html#111-113' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Performs copy-assignment from <code>source</code>. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from">Read more</a></p>
+</div></div><h3 class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html" title="trait core::marker::Copy">Copy</a> for <a class="enum" href="../../hal/board/enum.Tag.html" title="enum hal::board::Tag">Tag</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/hal/board/propertytags.rs.html#10' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'></div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "hal";
+    </script>
+    <script src="../../main.js"></script>
+    <script defer src="../../search-index.js"></script>
+</body>
+</html>

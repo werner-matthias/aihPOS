@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["ProcessorMode","AMR-Prozessor-Modi, siehe ARM Architectur Reference Manual A2-3"]],"struct":[["Cpu","Interface des ARM Hauptprozessors. "],["MMU","Interface für die Memory Management Unit (MMU)"]]});
