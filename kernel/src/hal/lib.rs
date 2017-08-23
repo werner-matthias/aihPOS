@@ -3,6 +3,7 @@
 #![feature(
     asm,                      // Assembler in Funktionen...
     attr_literals,            // Literale in Attributen (nicht nur Strings)
+    compiler_fences,          // Steuert (verbietet) re-ordering von Lese-/Schreibzugriffen
     core_intrinsics,          // Nutzung der Intrinsics der Core-Bibliothek
     repr_align,               // Alignment
 )]

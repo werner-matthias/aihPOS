@@ -5,6 +5,7 @@ mod mmu;
 
 pub use self::mmu::MMU;
 use paging::Address;
+use core::sync::atomic;
 
 /// AMR-Prozessor-Modi, siehe ARM Architectur Reference Manual A2-3
 pub enum ProcessorMode {
@@ -33,22 +34,28 @@ impl Cpu {
     pub fn set_mode(mode: ProcessorMode) {
         unsafe{
             match mode {
-                ProcessorMode::User =>   asm!("cps 0x10"),
-                ProcessorMode::Fiq =>    asm!("cps 0x11"),
-                ProcessorMode::Irq =>    asm!("cps 0x12"),
-                ProcessorMode::Svc =>    asm!("cps 0x13"),
-                ProcessorMode::Abort =>  asm!("cps 0x17"),
-                ProcessorMode::Undef =>  asm!("cps 0x1B"),
-                ProcessorMode::System => asm!("cps 0x1F"),
+                ProcessorMode::User =>   asm!("cps 0x10":::"memory":),
+                ProcessorMode::Fiq =>    asm!("cps 0x11":::"memory":),
+                ProcessorMode::Irq =>    asm!("cps 0x12":::"memory":),
+                ProcessorMode::Svc =>    asm!("cps 0x13":::"memory":),
+                ProcessorMode::Abort =>  asm!("cps 0x17":::"memory":),
+                ProcessorMode::Undef =>  asm!("cps 0x1B":::"memory":),
+                ProcessorMode::System => asm!("cps 0x1F":::"memory":),
             };
         }
+        // DMB. Dient hier eigentlich als Compiler-Fence, da der Optimizer
+        // den Assemblerbefehl gern verschiebt.
+        // core::sync::atomic::compiler_fence() ist hier nicht ausreichend, da "cps" nicht
+        // als Schreibe- oder Lesebefehl gewertet wird.
+        atomic::compiler_fence(atomic::Ordering::SeqCst);
+        //Cpu::data_memory_barrier();
     }
 
     /// Setzt das Stack-Register 
     #[inline(always)]
     pub fn set_stack(adr: Address) {
         unsafe{
-            asm!("mov sp, $0"::"r"(adr)::"volatile");
+            asm!("mov sp, $0"::"r"(adr):"memory":"volatile");
         }
     }
     
@@ -106,6 +113,7 @@ impl Cpu {
         unsafe {
             asm!("mcr p15, #0, $0, c7, c5, #4"::"r"(0));
         }
+        atomic::compiler_fence(atomic::Ordering::SeqCst);
     }
 
     /// 
