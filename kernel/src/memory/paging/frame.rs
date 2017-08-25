@@ -5,7 +5,7 @@ use super::{Address, AddressRange, PAGE_SIZE, SECTION_SIZE};
 pub struct Frame(AddressRange);
 
 impl Frame {
-    /// Frame aus Framenummer
+    /// Frame aus absoluter Framenummer
     pub fn from_nr(nr: usize) -> Self {
         Frame (
             AddressRange {
@@ -52,6 +52,7 @@ impl Frame {
         (self.0.start % SECTION_SIZE) / PAGE_SIZE
     }
 
+    /// Iterator über Frames eines Adressbereiches
     pub fn iter(r: AddressRange) -> FrameIterator {
         FrameIterator {
             range: AddressRange{ start: r.start,

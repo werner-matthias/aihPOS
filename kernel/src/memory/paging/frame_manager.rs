@@ -21,7 +21,6 @@ pub enum FrameError {
 
 /// FrameManager verwaltet die Allozierung von Frames.
 /// Jedes Bit in `bits` steht für einen Frame.
-
 pub struct FrameManager {
     bits: [u64; BITVECTOR_SIZE],
     first_free: usize,
@@ -31,7 +30,7 @@ impl FrameManager {
     
     /// Erzeugt einen neuen Framemanager
     ///
-    /// #Anmerkung
+    /// # Anmerkung
     /// Der Framemanager ist ein Singleton, daher ist `new()` nicht öffentlich
     /// Zugriff erhält man über die assoziierte Methode `get()`.
     const fn new() -> FrameManager {
@@ -41,7 +40,7 @@ impl FrameManager {
         }
     }
 
-    /// Gibt eine Referenz auf Seitenverzeichnis-Singleton zurück
+    /// Gibt eine Referenz auf Framemanager-Singleton zurück
     pub fn get() -> &'static mut FrameManager {
         FRAME_MANAGER.get()
     }
@@ -96,7 +95,7 @@ impl FrameManager {
 
     /// Markiert alle Frames eines Adressbereiches als reserviert
     ///
-    /// #Anmerkung
+    /// # Anmerkung
     /// Wenn die Grenzen des Adressbereichs nicht seiten-aligned sind, werden
     /// die "Randbereiche" reserviert.
     pub fn reserve_range(&mut self, r: AddressRange) {
@@ -133,7 +132,7 @@ impl FrameManager {
         self.bits[slice] & (1u64 << bit) != 0
     }
 
-    /// Anzahl der Bits im Bittarray
+    /// Anzahl der Bits im Bitarray
     fn bit_length(&self) -> usize {
         BITVECTOR_SIZE * mem::size_of::<u64>() * 8
     }

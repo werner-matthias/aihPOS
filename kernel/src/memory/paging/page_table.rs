@@ -10,24 +10,21 @@ pub struct PageTable {
 }
 
 impl PageTable {
+    /// Erzeugt eine neue Tabelle
     pub const fn new() ->  PageTable {
         PageTable {
             table: [0;256]
         }
     }
-    
+
+    /// Füllt die Tabelle mit Seitenfehlern
     pub fn invalidate(&mut self) {
         for ndx in 0..256 {
             self.table[ndx] = MemoryBuilder::new_entry(TableEntry::Fault).entry();
         }
     }
 
-    /*
-    pub fn map(&mut self, paddr: Address, laddr: Address) {
-        
-    }*/
-
-
+    /// Addresse der Tabelle
     pub fn addr(&self) -> Address {
         self as *const _ as usize
     }

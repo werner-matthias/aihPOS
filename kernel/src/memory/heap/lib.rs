@@ -20,13 +20,16 @@ mod memory_region;
 use self::boundary_tag::{BoundaryTag,StartBoundaryTag,EndBoundaryTag};
 use self::memory_region::MemoryRegion;
 
+/// Heapverwaltung mit Boundary-Tag-Verfahren
 pub struct BoundaryTagAllocator {
+    /// Listenkopf
     first: Cell<StartBoundaryTag>,
+    /// Größe des verwalteten Speicherbereiches
     size:  usize
 }
 
 impl BoundaryTagAllocator {
-    
+    /// Erzeugt eine leere Liste
     pub const fn empty() -> BoundaryTagAllocator {
         BoundaryTagAllocator {
             first: Cell::new(StartBoundaryTag::new()),
