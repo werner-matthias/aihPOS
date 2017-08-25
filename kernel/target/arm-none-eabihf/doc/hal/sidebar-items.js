@@ -1,1 +1,0 @@
-initSidebarItems({"mod":[["board","Interfaces für den Zugriff auf einige Funktionen des BCM2835 SoC"],["cpu","Low-Level-Funktionen der ARM-CPU."]]});

@@ -1,1 +1,0 @@
-initSidebarItems({"macro":[["kprint","Consolenausgabe vom Kernel aus (kernel print). Dient im Wesentlichen für Debugging-Zwecke während der Kernel-Entwicklung"]],"mod":[["blink","Der Raspberry hat zwei LEDs. Dieses Modul nutzt die grüne LED, um Signal zu generieren. Dies kann z.B. als Low-Level-Debugging-Interface genutzt werden,"],["kprint",""]]});
