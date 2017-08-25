@@ -5,7 +5,6 @@ mod mmu;
 
 pub use self::mmu::MMU;
 use paging::Address;
-use core::sync::atomic;
 
 /// AMR-Prozessor-Modi, siehe ARM Architectur Reference Manual A2-3
 pub enum ProcessorMode {
@@ -43,12 +42,6 @@ impl Cpu {
                 ProcessorMode::System => asm!("cps 0x1F":::"memory":),
             };
         }
-        // DMB. Dient hier eigentlich als Compiler-Fence, da der Optimizer
-        // den Assemblerbefehl gern verschiebt.
-        // core::sync::atomic::compiler_fence() ist hier nicht ausreichend, da "cps" nicht
-        // als Schreibe- oder Lesebefehl gewertet wird.
-        atomic::compiler_fence(atomic::Ordering::SeqCst);
-        //Cpu::data_memory_barrier();
     }
 
     /// Setzt das Stack-Register 
@@ -113,7 +106,6 @@ impl Cpu {
         unsafe {
             asm!("mcr p15, #0, $0, c7, c5, #4"::"r"(0));
         }
-        atomic::compiler_fence(atomic::Ordering::SeqCst);
     }
 
     /// 
