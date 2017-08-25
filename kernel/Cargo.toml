@@ -13,7 +13,6 @@ smallpages = []
 bit_field = "0.8.0"
 compiler_builtins = { git = "https://github.com/rust-lang-nursery/compiler-builtins", features = ["mem"] }
 compiler_error = "0.1.1"
-#lazy_static = { version = "0.2.8", features = ["spin_no_std"] }
 
 [dependencies.boundary_tag_allocator]
 path = "src/memory/heap"
