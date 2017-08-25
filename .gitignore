@@ -1,9 +1,6 @@
 .DS_Store
 .cargo-lock
-**/target/*/debug
-**/target/debug
-**/target/release
-**/target/*/release
+target
 jtag/build/
 jtag/obj/
 Cargo.lock
