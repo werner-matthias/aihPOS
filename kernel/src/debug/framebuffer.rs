@@ -1,9 +1,8 @@
 use core::{fmt,cmp,slice};
 //use core::fmt::Write;
 //use core::ops::{DerefMut, Deref};
-extern crate hal;
-use self::hal::board::{mailbox, Channel,Tag,PropertyTagBuffer};
-use font::{Font,SystemFont};
+use ::hal::bmc2835::{mailbox, Channel,Tag,PropertyTagBuffer};
+use debug::font::{Font,SystemFont};
 use blink;
 
 const FB_WIDTH: u32     = 800;

@@ -2,7 +2,7 @@ use super::cache::Cache;
 use super::tlb::Tlb;
 use super::Cpu;
 use bit_field::BitField;
-use paging::{DomainAccess,Address};
+use memory::{DomainAccess,Address};
 
 /// Interface für die *Memory Management Unit* (MMU)
 pub struct MMU {}

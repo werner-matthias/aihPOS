@@ -10,6 +10,8 @@ pub type PageTableEntry     = u32;
 
 #[allow(dead_code)]
 #[derive(PartialEq,Clone,Copy)]
+/// Art des Eintrages in das Seitenverzeichnis.
+///
 /// Im Seitenverzeichnis können vier verschiedene Arten von Einträgen enthalten sein:
 ///
 ///  * Seitenfehler, führt zu Ausnahme
@@ -30,7 +32,9 @@ pub enum DirectoryEntry {
 }
 
 #[derive(PartialEq,Clone,Copy)]
-/// In der Seitentabelle können drei Arten von Einträgen enthalten sein:
+/// Art des Eintrages in eine Seitentabelle.
+///
+/// In einer Seitentabelle können drei Arten von Einträgen enthalten sein:
 ///
 /// * Seitenfehler
 /// * Seiten zu 64 kiB
@@ -45,7 +49,7 @@ pub enum TableEntry {
 }
 
 /// `MemoryBuilder` ist eine Builder-Struct für zur Erstellung von Einträgen
-///  in das Seitenverzeichnis oder in Seitentabellen
+///  in das Seitenverzeichnis oder in Seitentabellen.
 pub struct MemoryBuilder<T>(u32,PhantomData<T>);
 
 impl<DirectoryEntry>  MemoryBuilder<DirectoryEntry>{}
@@ -91,7 +95,7 @@ pub trait EntryBuilder<T> {
     /// ContextID-Register (CP15c13) genutzt.
     ///
     ///  * Vorgabe: `false` (global)
-    ///  * Anmerkung: aihPOS nutzt *keine* prozessspezifischen Speicherbereich
+    ///  * Anmerkung: aihPOS nutzt *keine* prozessspezifischen Speicherbereiche.
     fn process_specific(self, ps: bool) ->  MemoryBuilder<T>;
 
     /// Legt fest, ob Speicherinhalt als Code ausgeführt werden darf

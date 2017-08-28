@@ -4,7 +4,6 @@
     const_fn,                 // const Funktionen (für Constructoren)
     i128_type,                // 128-Bit-Typen
 )] 
-extern crate sync;
 
 mod jtag;
 mod framebuffer;

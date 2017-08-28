@@ -13,47 +13,46 @@
     const_fn,                 // const Funktionen (für Constructoren)
     //range_contains,          // Funktion zur Bestimmung, ob eine Range einen Wert enthält
     compiler_builtins_lib,    // Nutzung der Compiler-Buildins-Bibliothek (div, mul, ...)
-    //core_intrinsics,          // Nutzung der Intrinsics der Core-Bibliothek
+    core_intrinsics,          // Nutzung der Intrinsics der Co[dependencies.aihpos_process]
+    doc_cfg,                  // Plattform-spezifische Dokumentation
     drop_types_in_const,      // Statics dürfen Typen mit Destructoren enthalten
     global_allocator,         // eigener globaler Allocator
     i128_type,                // 128-Bit-Typen
     inclusive_range_syntax,   // Inklusiver Bereich mit "..."   
-    //iterator_step_by,         // Spezifische Schrittweite bei Iterationen
+    iterator_step_by,         // Spezifische Schrittweite bei Iterationen
     lang_items,               // Funktionen interne Funktionen ersetzen (panic)
     linkage,                  // Angaben zum Linktyp (z.B. Sichtbarkeit)
     naked_functions,          // Funktionen ohne Prolog/Epilog
-    //nonzero,                  // Werte ohne Null (hier: usize)
+    nonzero,                  // Werte ohne Null (hier: usize)
     plugin,                   // Nutzung von Compiler-Plugins
     repr_align,               // Alignment
     use_extern_macros,
-    //unique,                   // Unique-Pointer
+    unique,                   // Unique-Pointer
     used,                     // Erlaubt das Verbot, scheinbar toten Code zu eliminieren
 )
 ]
 #![plugin(compiler_error)]
-
+#![doc(html_logo_url = "file:///Users/mwerner/Development/aihPOS/aihPOS-docs/logo-128.png")]
 /// Benutzte Crates
 extern crate alloc;
 extern crate bit_field;
 extern crate compiler_builtins;
 
 #[macro_use]
-extern crate debug;
-extern crate hal;
-extern crate sync;
-extern crate process;
-#[macro_use]
 mod aux_macros;
-use debug::*;
-//#[macro_use] mod debug;
+#[macro_use] mod debug;
+mod hal;
 mod panic;
 mod data;
+mod process;
+mod sync;
 //use alloc::boxed::Box;
 
 //#[macro_use] mod hal;
-use hal::board::{MemReport,BoardReport,report_board_info,report_memory};
+use hal::bmc2835::{MemReport,BoardReport,report_board_info,report_memory};
 #[macro_use]
 mod entry;
+use debug::*;
 use entry::syscall;
 use hal::cpu::{Cpu,ProcessorMode,MMU};
 use core::mem::size_of;
@@ -61,13 +60,6 @@ use core::mem::size_of;
 use data::kernel::{KernelData,KERNEL_PID};
 mod memory;
 use memory::*;
-//use memory::paging::{Frame,Section,PageDirectory,FrameManager};
-//use memory::paging::{MemoryAccessRight,MemType,DomainAccess,PAGES_PER_SECTION,MAX_ADDRESS};
-//use memory::paging::builder::{MemoryBuilder,DirectoryEntry,TableEntry,EntryBuilder};
-//use memory::paging::PageTable;
-//use memory::paging::builder::Deb;
-//use memory::HEAP;
-//use core::mem;
 
 import_linker_symbol!(__text_end);
 import_linker_symbol!(__data_start);
@@ -159,8 +151,8 @@ fn init_stacks() {
 
 fn init_paging() {
     MMU::set_page_dir(PageDirectory::addr());
-    let page_directory: &mut PageDirectory = PageDirectory::get();
-    let frame_allocator: &mut FrameManager = FrameManager::get();
+    let page_directory: &mut PageDirectory = KernelData::page_directory();
+    let frame_allocator: &mut FrameManager = KernelData::frame_allocator();
     
     // Standard ist Seitenfehler
     for section in Section::iter(0 .. MAX_ADDRESS) {
@@ -271,7 +263,35 @@ fn report() {
 fn test() {
     kprint!("Calling system.\n");
     let ret=syscall!(23,1,2);
+    let stack: [u32;20] = [0u32;20];
+    let sp: *const u32 = &stack[19];
     kprint!("Returned from system call: {}.\n",ret);
+    unsafe{
+        let mut ptr: *const u32 = sp;
+        asm!("mov r9, sp":::"r9":"volatile");
+        asm!("mov sp, $0"::"r"(sp):"sp":"volatile");
+        asm!("mov r0, 0":::"r0":"volatile");
+        asm!("mov r1, #0x1":::"r1":"volatile");
+        asm!("mov r2, #0x2":::"r2":"volatile");
+        asm!("mov r3, #0x3":::"r3":"volatile");
+        asm!("mov r4, #0x4":::"r4":"volatile");
+        asm!("mov r5, #0x5":::"r5":"volatile");
+        asm!("mov r6, #0x6":::"r6":"volatile");
+        asm!("mov r7, #0x7":::"r7":"volatile");
+        //asm!("mov r11, #0x11":::"r11":"volatile");
+        //asm!("mov r12, #0x12":::"r12":"volatile");
+        asm!("stmfd sp!, {r0-r10}":::"sp":"volatile");
+        asm!("mov sp, r9":::"r9":"volatile");
+        kprint!("Inspect stack\n"; BLUE);
+        let mut l: u8 = 20;
+        while l>0 {
+            kprint!("{:08x}: {:08x}\n",ptr as u32, *ptr; WHITE);
+            ptr = ptr.offset(-1);
+            l -= 1;
+        }
+    }
+
+    
     /*
     {
         let v1 = Box::new(0);
@@ -300,4 +320,27 @@ pub fn svc_service_routine(nr: u32, arg1: u32, arg2: u32)  -> u32
 {
     kprint!("System Call #{:X} with parameter {} and {}\n",nr,arg1,arg2);
     42
+}
+
+
+pub fn syscall_yield() {
+    syscall!(1);
+}
+
+pub fn process_a() {
+    loop {
+        let n: u32 = 0;
+        kprint!("Ich bin A: {}\n",n);
+        n.wrapping_add(1);
+        syscall_yield();
+    }
+}
+
+pub fn process_b() {
+    loop {
+        let n: u32 = 0;
+        kprint!("Ich bin B: {}\n",n);
+        n.wrapping_add(1);
+        syscall_yield();
+    }
 }

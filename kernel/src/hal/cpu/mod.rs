@@ -4,7 +4,7 @@ mod tlb;
 mod mmu;
 
 pub use self::mmu::MMU;
-use paging::Address;
+use memory::Address;
 
 /// AMR-Prozessor-Modi, siehe ARM Architectur Reference Manual A2-3
 pub enum ProcessorMode {

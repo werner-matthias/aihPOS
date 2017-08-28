@@ -1,6 +1,6 @@
 use core::fmt::{write,Arguments};
-use sync::NoConcurrency;
-use framebuffer::Framebuffer;
+use sync::no_concurrency::NoConcurrency;
+use debug::framebuffer::Framebuffer;
 
 //#[allow(dead_code)]
 pub const LIGHTRED: u32 =  0x00ff0000;
@@ -71,7 +71,7 @@ pub fn fkprint(arg: Arguments) {
 
 #[doc(hidden)]
 pub fn kprint_init() {
-    _KPRINT_FB.set(Some(::framebuffer::Framebuffer::new()));
+    _KPRINT_FB.set(Some(::debug::framebuffer::Framebuffer::new()));
     kprint_clear()
 }
 

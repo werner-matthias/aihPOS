@@ -2,13 +2,13 @@ use core::ops::{Index, IndexMut};
 use super::builder::{PageDirectoryEntry,DirectoryEntry};
 use super::Address;
 
-extern crate sync;
-use self::sync::NoConcurrency;
+use sync::no_concurrency::NoConcurrency;
 
 #[repr(C)]
 #[repr(align(16384))]
 /// ARM hat eine ein- bis zweistufige Paging-Hierarchie.
-/// Die obere Stufe ist das Seitenverzeichnis (_page directory_)
+/// Die obere Stufe ist das Seitenverzeichnis (_page directory_).
+///
 /// Es besteht aus 4096 Einträgen, die entweder
 ///
 /// * einen Seitenfehler beinhalten;

@@ -1,6 +1,6 @@
 use core::intrinsics::{volatile_load,volatile_store};
 use core::mem::transmute;
-use cpu::Cpu;
+use hal::cpu::Cpu;
 
 // Basisadresse des Mailregisters
 const MAILBOX_BASE: u32 = 0x2000B880;
@@ -41,7 +41,7 @@ pub struct Mailbox {
 impl Mailbox {
     /// Liest die Antwort aus Kanal `channel`
     pub fn read(&mut self, channel: Channel) -> u32 {
-        let mut ret = !0;
+        let mut ret ;
         loop{
             while (unsafe{volatile_load::<u32>(&self.status as *const _ )} & MAILBOX_EMPTY) != 0 {
                 // DMB: Das ist evtl. redundant zum "volatile", aber empfohlen im Firmware-Wiki:

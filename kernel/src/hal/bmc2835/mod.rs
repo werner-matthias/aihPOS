@@ -1,5 +1,10 @@
+mod timer;
 mod mailbox;
 mod propertytags;
+
+fn device_base() -> usize {
+    0x20000000
+}
 
 pub use self::propertytags::{Tag,PropertyTagBuffer,BUFFER_SIZE};
 pub use self::mailbox::{mailbox, Channel};

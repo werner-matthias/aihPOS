@@ -17,13 +17,17 @@ pub const PAGE_SIZE:         usize = 4*1024;
 pub const SECTION_SIZE:      usize = 1024 * 1024;
 pub const PAGES_PER_SECTION: usize = SECTION_SIZE / PAGE_SIZE; // 256
 
+/// Sepicher- und Cachemodell für einen Speicherabschnitt.
+///
 /// Der MMU-Code geht von folgender Konfiguration aus:
+///
 ///  - keine Rückwärtskompatibilität zu ARMv5.
 ///  - TEX-Remapping aus (muss wahrscheinlich für spätere Unterstützung von virtuellen Speicher geändert werden)
-
+///
 /// ARM kennt eine Vielzahl von Speichertypen, die sich auf das Caching in den einzelnen
 /// Ebenen auswirken.
 /// Es werden hier nur die "üblichen" Caching-Varianten benutzt:
+///
 ///  - Write trough => ohne Allocate
 ///  - Write back   => mit Allocate
 #[allow(dead_code)]
@@ -37,6 +41,8 @@ pub enum MemType {
     NormalWB        = 0b00111
 }
 
+/// Zugriffsrechte auf eine Speicherseite oder -section.
+///
 /// Bei den Zugriffsrechten wird zwischen privilegierten (Sys) und nichtpreviligierten
 /// Modi (Usr) unterschieden.
 /// Rechte können sein:
@@ -55,11 +61,16 @@ pub enum MemoryAccessRight {
     SysRoUsrRw      = 0b110
 }
 
+/// Art des erlaubten Zugriffs für eine gegebene Speicherdomaine.
+
 pub enum DomainAccess {
-    None    = 0b00,   // jeder Zugriff auf entsprechenden Domain-Speicher führt zu einem
-                      //   Zugriffs-Fehler
-    Client  = 0b01,   // Zugriffe werden entsprechend der Rechte überprüft
-    Manager = 0b11    // keine Rechteüberprüfung, Zugriff gewährt
+    /// Jeder Zugriff auf entsprechenden Domain-Speicher führt zu einem Zugriffs-Fehler.
+    None    = 0b00,
+    /// Zugriffe auf entsprechende Domain-Seiten werden entsprechend der Rechte überprüft.
+    Client  = 0b01,
+    /// Für Zugriffe auf entsprechende Domain-Seiten erfolgt keine Rechteüberprüfung; es
+    /// wird Zugriff gewährt.
+    Manager = 0b11   
 }
 
 mod builder;

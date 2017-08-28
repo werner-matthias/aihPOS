@@ -1,6 +1,7 @@
 use core::usize;
 use super::{Address, AddressRange, PAGE_SIZE, SECTION_SIZE};
 
+/// Ein Frame ist ein physischer Speicherbereich, in den eine Speicherseite geladen werden kann.
 #[derive(Debug)]
 pub struct Frame(AddressRange);
 

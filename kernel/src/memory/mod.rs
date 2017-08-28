@@ -10,7 +10,7 @@ pub fn init_heap(start: Address, size: usize) {
     }
 }
 
-extern crate paging;
+mod paging;
 pub use self::paging::*;
  
 

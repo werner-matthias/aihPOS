@@ -1,7 +1,7 @@
-use memory::{PageTable, FrameManager};
-use sync::NoConcurrency;
+use memory::{PageTable, FrameManager,PageDirectory};
+use sync::no_concurrency::NoConcurrency;
 
-type PidType = usize;
+pub type PidType = usize;
 
 pub const KERNEL_PID: PidType = 0;
 
@@ -42,5 +42,9 @@ impl KernelData {
 
     pub fn frame_allocator<'a>() -> &'a mut FrameManager {
         FrameManager::get()
+    }
+
+    pub fn page_directory<'a>() -> &'a mut PageDirectory {
+        PageDirectory::get()
     }
 }

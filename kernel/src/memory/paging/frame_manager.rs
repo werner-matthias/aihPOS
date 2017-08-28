@@ -5,8 +5,7 @@ use core::cmp::min;
 use core::usize;
 use core::mem;
 
-extern crate sync;
-use self::sync::NoConcurrency;
+use sync::no_concurrency::NoConcurrency;
 use super::{Address, AddressRange, Frame, MEM_SIZE, PAGE_SIZE};
 
 const BITVECTOR_SIZE: usize = (MEM_SIZE / (PAGE_SIZE * mem::size_of::<u64>() * 8)) as usize;
@@ -20,6 +19,7 @@ pub enum FrameError {
 }
 
 /// FrameManager verwaltet die Allozierung von Frames.
+///
 /// Jedes Bit in `bits` steht für einen Frame.
 pub struct FrameManager {
     bits: [u64; BITVECTOR_SIZE],

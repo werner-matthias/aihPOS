@@ -3,6 +3,7 @@ use core::ops::{Index, IndexMut};
 use super::builder::{PageTableEntry,TableEntry,MemoryBuilder,EntryBuilder};
 use super::Address;
 
+/// Eine Seitentabelle (_page table_) ist die zweite Stufe der Speicherhierarchie.
 #[repr(C)]
 #[repr(align(1024))]
 pub struct PageTable {
