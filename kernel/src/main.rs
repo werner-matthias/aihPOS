@@ -23,11 +23,11 @@
     lang_items,               // Funktionen interne Funktionen ersetzen (panic)
     linkage,                  // Angaben zum Linktyp (z.B. Sichtbarkeit)
     naked_functions,          // Funktionen ohne Prolog/Epilog
-    nonzero,                  // Werte ohne Null (hier: usize)
+    //nonzero,                  // Werte ohne Null (hier: usize)
     plugin,                   // Nutzung von Compiler-Plugins
     repr_align,               // Alignment
     use_extern_macros,
-    unique,                   // Unique-Pointer
+    //unique,                   // Unique-Pointer
     used,                     // Erlaubt das Verbot, scheinbar toten Code zu eliminieren
 )
 ]
@@ -50,6 +50,7 @@ mod sync;
 
 //#[macro_use] mod hal;
 use hal::bmc2835::{MemReport,BoardReport,report_board_info,report_memory};
+use hal::bmc2835::irq_controller::{IrqController,InterruptPending,BaseInterruptPending};
 #[macro_use]
 mod entry;
 use debug::*;
@@ -105,6 +106,7 @@ pub(self) fn kernel_init() -> ! {
     KernelData::set_pid(KERNEL_PID);
     report();
     init_mem();
+    init_interrupt();
     test();
     loop {}
     unreachable!();
@@ -117,6 +119,7 @@ fn determine_irq_stack() -> Address {
 
 #[inline(never)]
 fn determine_svc_stack() -> Address {
+    kprint!("determine stack called.\n";WHITE);
     report_memory(MemReport::ArmSize) - IRQ_STACK_SIZE
 }
 
@@ -230,6 +233,19 @@ fn init_paging() {
     unsafe{ MMU::start(); }
     kprint!("MMU aktiviert.\n");
 }
+
+fn init_interrupt() {
+    let irq_controller = IrqController::get();
+    irq_controller.enable(InterruptPending::Basic(BaseInterruptPending::ARMtimer));
+    let timer = hal::bmc2835::arm_timer::ArmTimer::get()
+        .resolution(hal::bmc2835::arm_timer::ArmTimerResolution::Counter23Bit)
+        .predivider(250)
+        .count(1000000)
+        .enable(true)
+        .activate_interrupt(true);
+    kprint!("Timer: {:?}\n",timer;WHITE);
+    kprint!("Interrupt aktiviert.\n";BLUE);
+}
  
 fn report() {
     kprint!("aihPOS"; BLUE);
@@ -263,9 +279,11 @@ fn report() {
 fn test() {
     kprint!("Calling system.\n");
     let ret=syscall!(23,1,2);
-    let stack: [u32;20] = [0u32;20];
-    let sp: *const u32 = &stack[19];
+    //let stack: [u32;20] = [0u32;20];
+    //let sp: *const u32 = &stack[19];
     kprint!("Returned from system call: {}.\n",ret);
+    Cpu::enable_interrupts();
+    /*
     unsafe{
         let mut ptr: *const u32 = sp;
         asm!("mov r9, sp":::"r9":"volatile");
@@ -290,6 +308,7 @@ fn test() {
             l -= 1;
         }
     }
+     */
 
     
     /*
@@ -309,6 +328,16 @@ fn test() {
     }
     kprint!("Ich lebe noch.");
      */
+    //Cpu::enable_interrupts();
+    let timer = hal::bmc2835::arm_timer::ArmTimer::get();
+    loop {
+       kprint!(".";WHITE);
+       // if timer.interrupt_occured() {
+            //kprint!("Interrupt should have occured!\n";RED);
+         //   timer.reset_interrupt();
+        //}
+        debug::blink::blink_once(debug::blink::BS_HI);
+    }
     debug::blink::blink(debug::blink::BS_HI);
 }
 

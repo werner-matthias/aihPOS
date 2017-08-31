@@ -1,8 +1,9 @@
-mod timer;
+pub mod arm_timer;
+pub mod irq_controller;
 mod mailbox;
 mod propertytags;
 
-fn device_base() -> usize {
+const fn device_base() -> usize {
     0x20000000
 }
 

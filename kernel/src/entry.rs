@@ -1,6 +1,9 @@
 #![allow(dead_code)]
 use hal::cpu::Cpu;
+use hal::bmc2835::arm_timer;
 use ::kernel_start;
+use debug::blink;
+
 /// Sprungtabelle für Ausnahmen (Interrupts, Syscalls, etc.).
 #[repr(C)]
 pub struct ExceptionTable {
@@ -81,15 +84,16 @@ pub extern "C" fn dispatch_undefined() {
 // questions/42238878/why-are-there-extra-asm-instructions-in-a-naked-rust-function),
 // würde r0 bei Opt-Level=0 überschrieben oder der Stack korrumpiert werden.
 pub extern "C" fn dispatch_svc(nr: u32, arg1: u32, arg2: u32){
-    unsafe{
-        // r0 braucht (zunächst) nicht gerettet zu werden; das wird bei der Rückgabe
-        // sowieso überschrieben
-        asm!("stmfd sp!, {r1-r11, lr}":::"memory");
-        asm!("blx $0"::"r"(service_routine.svc):"r0","r1","r2","r3","r4","r5",
-             "r6","r7","r8","r9","r10","r11","memory":"alignstack","volatile");
-        asm!("ldmfd sp!, {r1-r11, pc}^":::"memory");
-    };
-}
+     unsafe {
+        asm!("push {r0-r4, r12, lr}");
+        asm!("and r4, #4");
+        asm!("add sp, r4");
+        Cpu::data_memory_barrier();
+        asm!("bl svc_service_routine");
+        Cpu::data_memory_barrier();
+        asm!("sub sp, r4");
+        asm!("ldmfd sp!, {r0-r4, r12, pc}^");
+    }}
 
 #[naked]
 pub extern "C" fn dispatch_prefetch_abort() {
@@ -116,15 +120,28 @@ pub extern "C" fn dispatch_data_abort() {
 }
 
 #[naked]
+#[allow(unreachable_code)] // remove after debug!!
 pub extern "C" fn dispatch_interrupt() {
-    Cpu::save_context();
-    Cpu::restore_context_and_return();
+    unsafe {
+        asm!("sub lr, lr, #4");
+        asm!("srs 0x13");
+        asm!("cpsid if, 0x13");
+        asm!("push {r0-r4, r12, lr}");
+        asm!("and r4, #4");
+        asm!("add sp, r4");
+        Cpu::data_memory_barrier();
+        asm!("bl interrupt_service");
+        Cpu::data_memory_barrier();
+        asm!("sub sp, r4");
+        asm!("pop {r0-r4, r12, lr}");
+        Cpu::enable_interrupts();
+        asm!("rfe sp!");
+    }
 }
 
 #[naked]
+#[allow(unreachable_code)] // remove after debug!!
 pub extern "C" fn dispatch_fast_interrupt() {
-    Cpu::save_context();
-    Cpu::restore_context_and_return();
 }
 
 #[inline(never)]
@@ -187,11 +204,22 @@ pub fn syscall(nr: u32, arg1: u32, arg2: u32) -> u32 {
         // Der Optimizer erkennt keinen Ruf und rettet das Link-Register nicht, daher
         // muss dies manuell geschehen
         asm!("push {lr}");   
-        asm!("svc #42");
+        asm!("svc #42"); 
         asm!("pop {lr}");
         asm!("mov $0,r0":"=r"(ret)::"r0");
     }
     ret
+}
+
+#[no_mangle]
+#[linkage="weak"]
+#[inline(never)]
+pub extern "C" fn interrupt_service() {
+    let mut timer = arm_timer::ArmTimer::get();
+    //kprint!("Interrupt!\n";GREEN);
+    timer.next_count(1000000);
+    timer.reset_interrupt();
+    //kprint!("Acknowledged\n";GREEN);
 }
 
 // Zur Bequemlichkeit gibt es ein Macro, das Systemrufe mit 0 bis 2 Argumenten zulässt.
