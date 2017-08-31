@@ -1,8 +1,3 @@
-#![no_std]
-#![feature(
-    const_fn,                 // const Funktionen (für Constructoren)
-)]
-
 pub mod no_concurrency {
     use core::cell::UnsafeCell;
     

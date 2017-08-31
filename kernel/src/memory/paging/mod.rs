@@ -1,10 +1,10 @@
-#![no_std]
-#![feature(
-    attr_literals,            // Literale in Attributen (nicht nur Strings)
-    const_fn,                 // const Funktionen (für Constructoren)
-    iterator_step_by,         // Spezifische Schrittweite bei Iterationen
-    repr_align,               // Alignment
-)]
+//! # Dieses Modul enthält die Datentypen für die seitenbasierte Adressübersetzung (Paging)
+//!
+//! Der Code geht von folgender Konfiguration aus:
+//!
+//!  - keine Rückwärtskompatibilität zu ARMv5.
+//!  - TEX-Remapping aus (muss wahrscheinlich für spätere Unterstützung von virtuellen Speicher
+//!    geändert werden)
 use core::usize;
 use core::ops::Range;
 
@@ -18,11 +18,6 @@ pub const SECTION_SIZE:      usize = 1024 * 1024;
 pub const PAGES_PER_SECTION: usize = SECTION_SIZE / PAGE_SIZE; // 256
 
 /// Sepicher- und Cachemodell für einen Speicherabschnitt.
-///
-/// Der MMU-Code geht von folgender Konfiguration aus:
-///
-///  - keine Rückwärtskompatibilität zu ARMv5.
-///  - TEX-Remapping aus (muss wahrscheinlich für spätere Unterstützung von virtuellen Speicher geändert werden)
 ///
 /// ARM kennt eine Vielzahl von Speichertypen, die sich auf das Caching in den einzelnen
 /// Ebenen auswirken.
@@ -62,7 +57,7 @@ pub enum MemoryAccessRight {
 }
 
 /// Art des erlaubten Zugriffs für eine gegebene Speicherdomaine.
-
+#[allow(dead_code)]
 pub enum DomainAccess {
     /// Jeder Zugriff auf entsprechenden Domain-Speicher führt zu einem Zugriffs-Fehler.
     None    = 0b00,

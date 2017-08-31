@@ -5,6 +5,7 @@ use super::{Address, AddressRange, PAGE_SIZE, SECTION_SIZE};
 #[derive(Debug)]
 pub struct Frame(AddressRange);
 
+#[allow(dead_code)]
 impl Frame {
     /// Frame aus absoluter Framenummer
     pub fn from_nr(nr: usize) -> Self {

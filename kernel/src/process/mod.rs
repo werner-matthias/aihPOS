@@ -32,6 +32,7 @@ struct PCB {
 }
 
 impl<'a> PCB {
+    /*
     pub fn create_process(stack_size: usize) -> PCB {
         unimplemented!()
             /*
@@ -39,7 +40,7 @@ impl<'a> PCB {
         stack_size = ailgn_up(PAGE_SIZE);
         
         *page_table*/
-    }
+    }*/
 
     pub fn destroy() {
         unimplemented!()
