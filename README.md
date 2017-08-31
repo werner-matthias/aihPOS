@@ -23,6 +23,7 @@ cargo kernel --target=arm-none-eabihf
 - [x] Debug LED interface
 - [x] Console ouput (framebuffer, for debug)
 - [ ] Keyboard input
+- [x] Timer
 - [x] Heap (allocator)
 - [x] Paging
 - [ ] Context switch
