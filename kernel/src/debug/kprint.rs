@@ -2,9 +2,9 @@ use core::fmt::{write,Arguments};
 use sync::no_concurrency::NoConcurrency;
 use debug::framebuffer::Framebuffer;
 
-//#[allow(dead_code)]
+#[allow(dead_code)]
 pub const LIGHTRED: u32 =  0x00ff0000;
-//#[allow(dead_code)]
+#[allow(dead_code)]
 pub const RED: u32 =       0x007f0000;
 #[allow(dead_code)]
 pub const GREEN: u32 =     0x00007f00;
@@ -25,7 +25,7 @@ pub const PURPLE:u32 =     0x007f007f;
 #[allow(dead_code)]
 pub const CYAN:u32 =       0x0000ffff;    
 #[allow(dead_code)]
-pub const TEAL:u32 =   0x00007f7f;    
+pub const TEAL:u32 =       0x00007f7f;    
 #[allow(dead_code)]
 pub const WHITE:u32 =      0x00ffffff;    
 #[allow(dead_code)]
