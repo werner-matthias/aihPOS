@@ -1,10 +1,3 @@
-#![no_std]
-#![feature(
-    asm,                      // Assembler in Funktionen...
-    const_fn,                 // const Funktionen (für Constructoren)
-    i128_type,                // 128-Bit-Typen
-)] 
-
 mod jtag;
 mod framebuffer;
 mod font;
