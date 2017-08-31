@@ -1,3 +1,3 @@
 for c in `cargo local-pkgs pkgid  | cut -f2 -d# | cut -f1 -d: ` ;
-   do xargo doc --target=arm-none-eabihf --no-deps -p $c ;
+   do xargo doc --target=arm-none-eabihf --all --no-deps -p $c ;
 done;

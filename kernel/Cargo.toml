@@ -21,6 +21,7 @@ path = "src/memory/heap"
 panic = "abort"
 lto = false
 opt-level = 1
+#opt-level = 0
 
 [profile.release]
 panic = "abort"
