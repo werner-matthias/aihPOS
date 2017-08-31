@@ -74,6 +74,10 @@ pub  const INIT_HEAP_SIZE: usize = 25 * 4096; // 25 Seiten = 100 kB
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
+use core::sync::atomic::{AtomicBool, Ordering};
+
+static mut TEST_BIT: AtomicBool = AtomicBool::new(false);
+
 #[no_mangle]      // Name wird für den Export nicht verändert
 #[naked]          // Kein Prolog, da dieser den Stack nutzen würde, den wir noch nicht gesetzt haben
 #[allow(unreachable_code)]
@@ -89,6 +93,7 @@ pub extern fn kernel_start() {
     // Nun kann die Größe des Speichers und damit die Adresse für den "echten" Stacks bestimmt werden
     Cpu::set_stack(determine_svc_stack());
     kernel_init();
+    kprint!("Rückkehr aus init() ??!\n";RED);
     unreachable!();
 }
 
@@ -102,12 +107,13 @@ pub extern fn kernel_start() {
 // gehen
 #[inline(never)]
 #[allow(unreachable_code)]
-pub(self) fn kernel_init() -> ! {
+pub(self) fn kernel_init() {
     KernelData::set_pid(KERNEL_PID);
     report();
     init_mem();
     init_interrupt();
     test();
+    kprint!("Rückkehr aus test() ??!\n";RED);
     loop {}
     unreachable!();
 }
@@ -188,7 +194,8 @@ fn init_paging() {
     for frm in Frame::iter(0 .. __text_end as usize) {
         kpage_table[frm.rel()] = MemoryBuilder::<TableEntry>::new_entry(TableEntry::SmallPage)
             .base_addr(frm.start())
-            .rights(MemoryAccessRight::SysRwUsrNone)
+            //.rights(MemoryAccessRight::SysRwUsrNone)
+            .rights(MemoryAccessRight::SysRwUsrRw)
             .mem_type(MemType::NormalWT)
             .domain(0)
             .entry();
@@ -198,7 +205,8 @@ fn init_paging() {
     for frm in Frame::iter(__data_start as usize .. __bss_start as usize + INIT_HEAP_SIZE) {
         kpage_table[frm.rel()] = MemoryBuilder::<TableEntry>::new_entry(TableEntry::SmallPage)
             .base_addr(frm.start())
-            .rights(MemoryAccessRight::SysRwUsrNone)
+            //.rights(MemoryAccessRight::SysRwUsrNone)
+            .rights(MemoryAccessRight::SysRwUsrRw)
             .mem_type(MemType::NormalWB)
             .no_execute(true)
             .domain(0)
@@ -209,7 +217,8 @@ fn init_paging() {
     for frm in  Frame::iter(determine_svc_stack() - SVC_STACK_SIZE .. determine_irq_stack() -1) {
         spage_table[frm.rel()] = MemoryBuilder::<TableEntry>::new_entry(TableEntry::SmallPage)
             .base_addr(frm.start())
-            .rights(MemoryAccessRight::SysRwUsrNone)
+            //.rights(MemoryAccessRight::SysRwUsrNone)
+            .rights(MemoryAccessRight::SysRwUsrRw)
             .mem_type(MemType::NormalWT)
             .no_execute(true)
             .domain(0)
@@ -221,7 +230,8 @@ fn init_paging() {
     for section in Section::iter(determine_irq_stack() .. MAX_ADDRESS) {
         let pde = MemoryBuilder::<DirectoryEntry>::new_entry(DirectoryEntry::Section)
             .base_addr(section.start())
-            .rights(MemoryAccessRight::SysRwUsrNone)
+            //.rights(MemoryAccessRight::SysRwUsrNone)
+            .rights(MemoryAccessRight::SysRwUsrRw)
             .mem_type(MemType::NormalUncashed)
             .domain(0)
             .no_execute(true)
@@ -240,7 +250,7 @@ fn init_interrupt() {
     let timer = hal::bmc2835::arm_timer::ArmTimer::get()
         .resolution(hal::bmc2835::arm_timer::ArmTimerResolution::Counter23Bit)
         .predivider(250)
-        .count(1000000)
+        .count(2000000)
         .enable(true)
         .activate_interrupt(true);
     kprint!("Timer: {:?}\n",timer;WHITE);
@@ -278,11 +288,16 @@ fn report() {
 
 fn test() {
     kprint!("Calling system.\n");
-    let ret=syscall!(23,1,2);
-    //let stack: [u32;20] = [0u32;20];
-    //let sp: *const u32 = &stack[19];
-    kprint!("Returned from system call: {}.\n",ret);
+    let stack: [u32;1024] = [0u32;1024];
+    Cpu::set_mode(ProcessorMode::System);
+    Cpu::set_stack(&stack as *const _ as usize);
     Cpu::enable_interrupts();
+    Cpu::set_mode(ProcessorMode::User);
+    kprint!("Arbeite im Usr-Mode.\n");
+    {
+        let ret=syscall!(23,1,2);
+        kprint!("Returned from system call: {}.\n",ret);
+    }
     /*
     unsafe{
         let mut ptr: *const u32 = sp;
@@ -328,14 +343,18 @@ fn test() {
     }
     kprint!("Ich lebe noch.");
      */
-    //Cpu::enable_interrupts();
     let timer = hal::bmc2835::arm_timer::ArmTimer::get();
     loop {
-       kprint!(".";WHITE);
+        Cpu::disable_interrupts();
+        if unsafe{ TEST_BIT.load(Ordering::SeqCst)} {
+            kprint!("Interrupt detected!\n";YELLOW);
+            unsafe{ TEST_BIT.store(false,Ordering::SeqCst);}
+        }
        // if timer.interrupt_occured() {
             //kprint!("Interrupt should have occured!\n";RED);
          //   timer.reset_interrupt();
         //}
+        Cpu::enable_interrupts();
         debug::blink::blink_once(debug::blink::BS_HI);
     }
     debug::blink::blink(debug::blink::BS_HI);

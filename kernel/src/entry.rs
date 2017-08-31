@@ -79,10 +79,6 @@ pub extern "C" fn dispatch_undefined() {
 #[naked]
 #[inline(never)]
 #[allow(unused_variables)]
-// Achtung, diese Funktion wird nur bei einem Opt-Level >= 1 korrekt übersetzt. Da #[naked] im
-// unoptimierten Fall buggy^H^H^H^H unerwartete Ergebnisse erzeugt (vgl.https://stackoverflow.com/
-// questions/42238878/why-are-there-extra-asm-instructions-in-a-naked-rust-function),
-// würde r0 bei Opt-Level=0 überschrieben oder der Stack korrumpiert werden.
 pub extern "C" fn dispatch_svc(nr: u32, arg1: u32, arg2: u32){
      unsafe {
         asm!("push {r0-r4, r12, lr}");
@@ -123,18 +119,47 @@ pub extern "C" fn dispatch_data_abort() {
 #[allow(unreachable_code)] // remove after debug!!
 pub extern "C" fn dispatch_interrupt() {
     unsafe {
+        // Das Linkregister zeigt bereits auf den übernächsten Befehl,
+        // siehe ARM ARM A2.6.8 (Seite A2-24).
+        // Daher wird es um eine Befehlsgröße dekrementiert.
         asm!("sub lr, lr, #4");
+        // Linkregister und SPSR werden auf den Svc(!)-Stack gelegt.
         asm!("srs 0x13");
-        asm!("cpsid if, 0x13");
-        asm!("push {r0-r4, r12, lr}");
-        asm!("and r4, #4");
-        asm!("add sp, r4");
+        // Wechsel in den SVC-Modus, Interrupt gesperrt
+        asm!("cpsid i, 0x13");
+        // Rette alle allgemeinen Register
+        //
+        // # Anmerkung
+        // Sobald Prozesse existieren, solle der Stack des unterbrochenen
+        // Prozesses (m.H.d. Sys-Modes) genutzt werden
+        asm!("push {r0-r12}");
+        // Funktionen dürfen nur mit einem Stackalignment von 8 gerufen werden,
+        // siehe 5.2.1.2 (Seite 17) des "Procedure Call Standard for the ARM® Architecture"
+        // (http://infocenter.arm.com/help/topic/com.arm.doc.ihi0042e/IHI0042E_aapcs.pdf)
+        // Ein Alignment von 4 ist bereits durch den Compiler garantiert. Eine unaligned
+        // Adresse unterscheidet sich von einer aligned also durch den Wert 1 für das Bit 2.
+        // Dieses wird per AND-Operation bestimmt, r5 enthält also 4 oder 0.
+        // Im Fall 4 (unaligned) muss der Stack um 4 erhöht werden, es kann also einfach
+        // addiert werden.
+        asm!("mov r5, #4");
+        asm!("and r5, sp");
+        asm!("add sp, r5");
+        // Um anschließend den Stack wieder zu korrigieren, wird der Offset gepeichert.
+        // Damit das Alignment nicht mehr verletzt wird, wird ein weiteres Register gespeichert.
+        asm!("push {r0,r5}");
+        // Stelle sicher, dass vor dem Ruf der "normalen" Service-Funktion alle Speicher-
+        // operationen beendet sind.
         Cpu::data_memory_barrier();
+        // Rufe eigentliche ISR.
         asm!("bl interrupt_service");
         Cpu::data_memory_barrier();
-        asm!("sub sp, r4");
-        asm!("pop {r0-r4, r12, lr}");
-        Cpu::enable_interrupts();
+        // Hole Alignment-Korrektur und passe den Stack an
+        asm!("pop {r0,r5}");
+        asm!("sub sp, r5");
+        // Hole gesicherte Register
+        asm!("pop {r0-r12}");
+        //Cpu::enable_interrupts();
+        // Hole SPSR und PC => Rücksprung.
         asm!("rfe sp!");
     }
 }
@@ -215,9 +240,12 @@ pub fn syscall(nr: u32, arg1: u32, arg2: u32) -> u32 {
 #[linkage="weak"]
 #[inline(never)]
 pub extern "C" fn interrupt_service() {
+    use core::sync::atomic::{Ordering};
+    use ::TEST_BIT;
+    unsafe{ TEST_BIT.store(true,Ordering::SeqCst);}
     let mut timer = arm_timer::ArmTimer::get();
-    //kprint!("Interrupt!\n";GREEN);
-    timer.next_count(1000000);
+    kprint!("Interrupt!\n";GREEN);
+    //timer.next_count(1000000);
     timer.reset_interrupt();
     //kprint!("Acknowledged\n";GREEN);
 }

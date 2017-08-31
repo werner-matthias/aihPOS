@@ -31,20 +31,20 @@ impl ArmTimer {
     }
     
     pub fn get() -> &'static mut ArmTimer{
-        kprint!("Get timer called.\n";CYAN);
+        //kprint!("Get timer called.\n";CYAN);
         unsafe {
             &mut *(Self::base() as *mut ArmTimer)
         }
     }
 
     pub fn count(&mut self, val: u32) -> &mut Self {
-        kprint!(" count called.\n";CYAN);
+        //kprint!(" count called.\n";CYAN);
         self.load = val;
         self
     }
 
     pub fn next_count(&mut self, val: u32) -> &mut Self {
-        kprint!(" next_count called.\n";CYAN);
+        //kprint!(" next_count called.\n";CYAN);
         self.reload = val;
         self
     }
@@ -118,7 +118,7 @@ impl ArmTimer {
     }
 
     pub fn reset_interrupt(&mut self) -> &mut Self {
-        kprint!("reset_interrupt called.\n";CYAN);
+        //kprint!("reset_interrupt called.\n";CYAN);
         self.irq_clear = 0x42;
         self
     }
