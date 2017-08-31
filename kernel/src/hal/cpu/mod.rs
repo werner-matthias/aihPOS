@@ -65,27 +65,29 @@ impl Cpu {
     }
 
     #[inline(always)]
-    /// Sperrt Interrupts
+    /// Sperrt Interrupts 
     // Ggf. muss bei disable_interrupts und enable_interrupts noch der
     // "imprecise data abort" berücksichtigt werden. Vorerst bleibt er
     // im Initialzustand = ausgeschaltet.
     pub fn disable_interrupts(){
-        unsafe {asm!("cpsid if");}
+        unsafe {asm!("cpsid i":::"memory");}
     }
 
     /// Erlaubt Interrupts
     #[inline(always)]
     pub fn enable_interrupts(){
-        unsafe {asm!("cpsie if");}
+        unsafe {asm!("cpsie i":::"memory");}
     }
 
     /// Speicherzugriffsbarriere (DMB):
     ///
     /// Alle expliziten Speicherzugriffe vor DMB werden *vor* allen
     /// Speicherzugriffen *nach* DMB wahrgenommen, siehe ARM ARM B2.6.1
+    #[inline(always)]
     pub fn data_memory_barrier() {
         unsafe{
-            asm!("mcr p15, #0, $0, c7, c10, #5"::"r"(0));
+            asm!("mov r12, #0
+                  mcr p15, #0, r12, c7, c10, #5":::"r12","memory");
         }
     }
 
@@ -94,24 +96,30 @@ impl Cpu {
     /// DSB bewirkt, dass alle nachfolgenden Befehle erst ausgeführt werden, wenn alle vorherigen
     /// Speicherzugriffe, Cacheoperationen, Sprungvorhersageoperationen und TLB-Operationen ferig sind,
     /// siehe ARM ARM B2.6.2
+    #[inline(always)]
     pub fn data_synchronization_barrier() {
         unsafe{
-            asm!("mcr p15, #0, $0, c7, c10, #4"::"r"(0));
+            asm!("mov r12, #0
+                  mcr p15, #0, r12, c7, c10, #4":::"r12","memory");
         }
     }
 
     /// Löscht die Prozessor-Pipeline, so dass vorherige Statusänderungen für als folgenden
     /// Befehle gültig sind, siehe ARM ARM B2.6.3
+    #[inline(always)]
     pub fn prefetch_flush() {
         unsafe {
-            asm!("mcr p15, #0, $0, c7, c5, #4"::"r"(0));
+            asm!("mov r12, #0
+                  mcr p15, #0, r12, c7, c5, #4":::"r12");
         }
     }
 
     /// 
+    #[inline(always)]
     pub fn wait_for_interrupt() {
         unsafe {
-            asm!("mcr p15, #0, $0, c7, c0, #4"::"r"(0));
+            asm!("mov r12, #0
+                  mcr p15, #0, r12, c7, c0, #4":::"r12","memory");
         }
     }
 }
