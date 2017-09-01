@@ -1,10 +1,52 @@
+//! Interrupt-Controller.
+//!
+//! Der Interrupt-Controller steuert die Aktivierung von Interrupts und gibt Informationen über
+//! anhängende (pendig) Interrupts.
+//!
+//! # Arten von Interrupts
+//! Der Interrupt-Controller unterscheidet zwei Arten von Interruptquellen:
+//!
+//! - Allgemeine (general) Interrupts
+//! - Basic Interrupts
+//!
+//! Beide Arten werden als eigene Typen definiert. Der Trait `Interrupt` dient zum Überlanden
+//! von Methoden des Interrupt-Controllers.
 use super::device_base;
 use bit_field::BitField;
 
 const FIQ_BASIC_INTR_OFFSET: u32 = 64;
 const FIQ_ENABLE_BIT: u8        = 7;
+const FIQ_LAST_VALID: u32       = 71;
+/// Der `Interrupt`-Trait dient zum Überladen von `IrqController`-Methoden.
+///
+/// # Beispiel:
+/// ```
+/// irq_controller = IrqController::get();
+/// irq_controller(BasicInterrupt::ARMtimer);
+/// irq_controller(BasicInterrupt::SystemTimer1);
+/// ```
+pub trait Interrupt {
+    /// Konvertiert Interrupt in die u32-Interruptnummer.
+    fn as_u32(&self) -> u32;
 
+    /// Gibt den Interrupt als `Option`, wenn es ein Basicinterrupt ist, sonst `None`.
+    fn as_basic_interrupt(&self) -> Option<BasicInterrupt>;
+
+    /// Gibt den Interrupt als `Option`, wenn es ein allgemeiner Interrupt ist, sonst `None`.
+    ///
+    /// # Anmerkung
+    /// Einige Basicinterrupts sind auch allgemeine Interrupts und werden als solche zurückgegeben.
+    fn as_general_interrupt(&self) -> Option<GeneralInterrupt>;
+
+    fn is_general(&self) -> bool;
+
+    fn is_basic(&self) -> bool;
+}
+
+/// General Interrupts.
+///
 /// Vgl. https://github.com/raspberrypi/linux/blob/rpi-3.6.y/arch/arm/mach-bcm2708/include/mach/platform.h
+/// Die genaue Interruptursache ist z.T. schlecht dokumentiert.
 #[derive(Copy,Clone,Debug)]
 #[repr(u32)]
 #[allow(missing_doc)]
@@ -80,6 +122,20 @@ pub enum GeneralInterrupt {
 }
 
 impl GeneralInterrupt {
+
+    /// Liefert für die General-Interrupt die Adresse (Wort- und Bitindex)  für
+    /// die Doppelregister (`Pending`, `Enable` und `Disable`)
+    fn index_and_bit(&self) -> (usize, usize) {
+        let bit = self.as_u32() as usize;
+        if bit > 31 {
+            (1, bit - 32)
+        } else {
+            (0, bit)
+        }
+    }
+}
+
+impl Interrupt for GeneralInterrupt {
     /// Konvertiert Interrupt in die u32-Interruptnummer. Diese entspricht der Bitnummer
     /// in den Interruptregistern `Pending`, `Enable` und `Disable`. Die Doppelregister
     /// werden dabei als ein `u64` gezählt.
@@ -91,15 +147,20 @@ impl GeneralInterrupt {
         }
     }
 
-    /// Liefert für die General-Interrupt die Adresse (Wort- und Bitindex)  für
-    /// die Doppelregister (`Pending`, `Enable` und `Disable`)
-    fn index_and_bit(&self) -> (usize, usize) {
-        let bit = self.as_u32() as usize;
-        if bit > 31 {
-            (1, bit - 32)
-        } else {
-            (0, bit)
-        }
+    fn is_general(&self) -> bool {
+        true
+    }
+
+    fn is_basic(&self) -> bool {
+        false
+    }
+
+    fn as_basic_interrupt(&self) -> Option<BasicInterrupt> {
+        None
+    }
+
+    fn as_general_interrupt(&self) -> Option<GeneralInterrupt> {
+        Some(*self)
     }
 }
 
@@ -135,8 +196,7 @@ pub enum BasicInterrupt {
     SDHCI,               // General Interrupt 62
 }
 
-impl BasicInterrupt {
-
+impl Interrupt for BasicInterrupt {
     /// Konvertiert Interrupt in die u32-Interruptnummer. Diese entspricht der Bitnummer
     /// in den Interruptregistern `Pending`, `Enable` und `Disable`. 
     fn as_u32(&self) -> u32 {
@@ -145,8 +205,16 @@ impl BasicInterrupt {
         }
     }
 
+    fn is_general(&self) -> bool {
+        false
+    }
+
+    fn is_basic(&self) -> bool {
+        true
+    }   
+
     /// Gibt den General-Interrupt, der dem gegebenen Basic-Interrupt entspricht, oder `None`.
-    fn as_general(&self) -> Option<GeneralInterrupt> {
+    fn as_general_interrupt(&self) -> Option<GeneralInterrupt> {
         match *self {
             BasicInterrupt::JPEG  => Some(GeneralInterrupt::JPEG),
             BasicInterrupt::USB   => Some(GeneralInterrupt::USB),
@@ -162,7 +230,11 @@ impl BasicInterrupt {
             _                     => None,
         }
     }
-}   
+
+    fn as_basic_interrupt(&self) -> Option<BasicInterrupt> {
+        Some(*self)
+    }
+}
 
 #[derive(Debug)]
 pub enum InterruptPending {
@@ -200,52 +272,43 @@ impl IrqController {
         }
     }
 
+
+
     /// Schaltet den gegebenen Interrupt aktiv.
-    pub fn enable(&mut self, int: InterruptPending) -> &mut Self {
-        match int {
-            InterruptPending::Basic(ref interrupt) => {
-                if let Some(general) = interrupt.as_general() {
-                    self.enable(InterruptPending::General(general));
-                } else {
-                    self.enable_basic = 0x1u32 << interrupt.as_u32();
-                }
-            },
-            InterruptPending::General(interrupt) => {
-                let (ndx, shift) = interrupt.index_and_bit();
-                self.enable_general[ndx] = 0x1u32 << shift;
-            }
+    pub fn enable<T: Interrupt + Sized>(&mut self, int: T) -> &mut Self {
+        if let Some(general_int) = int.as_general_interrupt() {
+            let (ndx, shift) = general_int.index_and_bit();
+            self.enable_general[ndx] = 0x1u32 << shift;
+        } else {
+            let basic_int = int.as_basic_interrupt().unwrap();
+            self.enable_basic = 0x1u32 << basic_int.as_u32();
         }
         self
     }
 
-    /// Deaktiviert den gegebenen Interrupt.
-    pub fn disable(&mut self, int: InterruptPending) -> &mut Self {
-        match int {
-            InterruptPending::Basic(ref interrupt) => {
-                if let Some(general) = interrupt.as_general() {
-                    self.disable(InterruptPending::General(general));
-                } else {
-                    self.disable_basic = 0x1u32 << interrupt.as_u32();
-                }
-            },
-            InterruptPending::General(interrupt) => {
-                let (ndx, shift) = interrupt.index_and_bit();
-                self.disable_general[ndx] = 0x1u32 << shift;
-            }
+    /// Schaltet den gegebenen Interrupt aktiv.
+    pub fn disable<T: Interrupt + Sized>(&mut self, int: T) -> &mut Self {
+         if let Some(general_int) = int.as_general_interrupt() {
+            let (ndx, shift) = general_int.index_and_bit();
+            self.disable_general[ndx] = 0x1u32 << shift;
+        } else {
+            let basic_int = int.as_basic_interrupt().unwrap();
+            self.disable_basic = 0x1u32 << basic_int.as_u32();
         }
         self
     }
-
+ 
     /// Wählt einen Interrupt als Schnellen Interrupt (FIQ) aus, und aktiviert den ihn.
     ///
     /// Bei Angabe eines ungültigen Interrupts (Basic-Sammelinterrupt) wird FIQ deaktiviert.
-    fn set_and_enable_fiq(&mut self, int: InterruptPending) -> &mut Self {
+    fn set_and_enable_fiq<T: Interrupt>(&mut self, int: T) -> &mut Self {
         let nr =
-            match int {
-                InterruptPending::General(interrupt) => interrupt.as_u32(),
-                InterruptPending::Basic(interrupt) =>  FIQ_BASIC_INTR_OFFSET + interrupt.as_u32(),
+            if int.is_general() {
+                int.as_u32()
+            } else {
+                FIQ_BASIC_INTR_OFFSET + int.as_u32()
             };
-        if nr < 72 {
+        if nr <= FIQ_LAST_VALID {
             self.fiq_control.set_bits(0..7,nr);
             self.fiq_control.set_bit(FIQ_ENABLE_BIT,true);
         } else {
@@ -253,6 +316,7 @@ impl IrqController {
         }
         self
     }
+
 
     /// Deaktivert den Schnellen Interrupt.
     fn disable_fiq(&mut self) -> &mut Self {

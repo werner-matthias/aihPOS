@@ -246,7 +246,7 @@ fn init_paging() {
 
 fn init_interrupt() {
     let irq_controller = IrqController::get();
-    irq_controller.enable(InterruptPending::Basic(BasicInterrupt::ARMtimer));
+    irq_controller.enable(BasicInterrupt::ARMtimer);
     let timer = hal::bmc2835::arm_timer::ArmTimer::get()
         .resolution(hal::bmc2835::arm_timer::ArmTimerResolution::Counter23Bit)
         .predivider(250)
