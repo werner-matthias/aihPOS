@@ -26,7 +26,7 @@ pub struct ArmTimer {
 
 #[allow(dead_code)]
 impl ArmTimer {
-    const fn base() -> usize {
+    fn base() -> usize {
         device_base()+0xb400
     }
     

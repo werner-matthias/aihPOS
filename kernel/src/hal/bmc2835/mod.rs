@@ -3,7 +3,7 @@ pub mod irq_controller;
 mod mailbox;
 mod propertytags;
 
-const fn device_base() -> usize {
+fn device_base() -> usize {
     0x20000000
 }
 
