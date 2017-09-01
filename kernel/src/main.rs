@@ -292,12 +292,14 @@ fn test() {
     Cpu::set_mode(ProcessorMode::System);
     Cpu::set_stack(&stack as *const _ as usize);
     Cpu::enable_interrupts();
-    Cpu::set_mode(ProcessorMode::User);
+    //Cpu::set_mode(ProcessorMode::User);
+    /*
     kprint!("Arbeite im Usr-Mode.\n");
     {
         let ret=syscall!(23,1,2);
         kprint!("Returned from system call: {}.\n",ret);
     }
+     */
     /*
     unsafe{
         let mut ptr: *const u32 = sp;
@@ -343,21 +345,23 @@ fn test() {
     }
     kprint!("Ich lebe noch.");
      */
-    let timer = hal::bmc2835::arm_timer::ArmTimer::get();
+    //let timer = hal::bmc2835::arm_timer::ArmTimer::get();
     loop {
-        Cpu::disable_interrupts();
-        if unsafe{ TEST_BIT.load(Ordering::SeqCst)} {
-            kprint!("Interrupt detected!\n";YELLOW);
-            unsafe{ TEST_BIT.store(false,Ordering::SeqCst);}
-        }
+        //Cpu::disable_interrupts();
+        //syscall!(1);
+        //if unsafe{ TEST_BIT.load(Ordering::SeqCst)} {
+        kprint!(".");
+         //   syscall!(1);
+        //    unsafe{ TEST_BIT.store(false,Ordering::SeqCst);}
+        //}
        // if timer.interrupt_occured() {
             //kprint!("Interrupt should have occured!\n";RED);
          //   timer.reset_interrupt();
         //}
-        Cpu::enable_interrupts();
+        //Cpu::enable_interrupts();
         debug::blink::blink_once(debug::blink::BS_HI);
     }
-    debug::blink::blink(debug::blink::BS_HI);
+    debug::blink::blink(debug::blink::BS_SOS);
 }
 
 #[inline(never)]
@@ -366,8 +370,12 @@ fn test() {
 #[linkage="weak"] // Verhindert, dass der Optimierer die Funktion eliminiert
 pub fn svc_service_routine(nr: u32, arg1: u32, arg2: u32)  -> u32
 {
-    kprint!("System Call #{:X} with parameter {} and {}\n",nr,arg1,arg2);
-    42
+    match nr {
+        0 => { kprint!("Interrupt detected.\n";YELLOW); },
+        1 => { kprint!(".";YELLOW); },
+        _ => { kprint!("SysCall: {}, Param: {} und {}\n",nr,arg1,arg2;WHITE);}
+    }
+    0
 }
 
 

@@ -81,14 +81,16 @@ pub extern "C" fn dispatch_undefined() {
 #[allow(unused_variables)]
 pub extern "C" fn dispatch_svc(nr: u32, arg1: u32, arg2: u32){
      unsafe {
-        asm!("push {r0-r4, r12, lr}");
-        asm!("and r4, #4");
-        asm!("add sp, r4");
-        Cpu::data_memory_barrier();
-        asm!("bl svc_service_routine");
-        Cpu::data_memory_barrier();
-        asm!("sub sp, r4");
-        asm!("ldmfd sp!, {r0-r4, r12, pc}^");
+         asm!("push {r0-r12, lr}");
+         asm!("and r4, sp, #4");
+         asm!("sub sp, sp, r4");
+         asm!("push {r0,r4}");
+         Cpu::data_memory_barrier();
+         asm!("bl svc_service_routine");
+         Cpu::data_memory_barrier();
+         asm!("pop {r0,r4}");
+         asm!("add sp, sp, r4");
+         asm!("ldmfd sp!, {r0-r12, pc}^");
     }}
 
 #[naked]
@@ -124,16 +126,18 @@ pub extern "C" fn dispatch_interrupt() {
         // Daher wird es um eine Befehlsgröße dekrementiert.
         asm!("sub lr, lr, #4");
         // Linkregister und SPSR werden auf den Svc(!)-Stack gelegt.
-        asm!("srs 0x13");
+        asm!("push {lr}");
+        asm!("mrs lr, spsr");
+        asm!("push {lr}");
         // Wechsel in den SVC-Modus, Interrupt gesperrt
-        asm!("cpsid i, 0x13");
+        //asm!("cpsid i, 0x13");
         // Rette alle allgemeinen Register
         //
         // # Anmerkung
         // Sobald Prozesse existieren, solle der Stack des unterbrochenen
         // Prozesses (m.H.d. Sys-Modes) genutzt werden
         asm!("push {r0-r12}");
-        // Funktionen dürfen nur mit einem Stackalignment von 8 gerufen werden,
+        // Externe Funktionen dürfen nur mit einem Stackalignment von 8 gerufen werden,
         // siehe 5.2.1.2 (Seite 17) des "Procedure Call Standard for the ARM® Architecture"
         // (http://infocenter.arm.com/help/topic/com.arm.doc.ihi0042e/IHI0042E_aapcs.pdf)
         // Ein Alignment von 4 ist bereits durch den Compiler garantiert. Eine unaligned
@@ -141,9 +145,8 @@ pub extern "C" fn dispatch_interrupt() {
         // Dieses wird per AND-Operation bestimmt, r5 enthält also 4 oder 0.
         // Im Fall 4 (unaligned) muss der Stack um 4 erhöht werden, es kann also einfach
         // addiert werden.
-        asm!("mov r5, #4");
-        asm!("and r5, sp");
-        asm!("add sp, r5");
+        asm!("and r5, sp, #4");
+        asm!("sub sp, sp, r5");
         // Um anschließend den Stack wieder zu korrigieren, wird der Offset gepeichert.
         // Damit das Alignment nicht mehr verletzt wird, wird ein weiteres Register gespeichert.
         asm!("push {r0,r5}");
@@ -155,12 +158,16 @@ pub extern "C" fn dispatch_interrupt() {
         Cpu::data_memory_barrier();
         // Hole Alignment-Korrektur und passe den Stack an
         asm!("pop {r0,r5}");
-        asm!("sub sp, r5");
+        asm!("add sp, sp, r5");
         // Hole gesicherte Register
         asm!("pop {r0-r12}");
         //Cpu::enable_interrupts();
         // Hole SPSR und PC => Rücksprung.
-        asm!("rfe sp!");
+        asm!("pop {lr}");
+        asm!("msr spsr, lr");
+        asm!("pop {lr}");
+        //asm!("rfeia sp!");
+        asm!("movs pc, lr");
     }
 }
 
@@ -240,9 +247,9 @@ pub fn syscall(nr: u32, arg1: u32, arg2: u32) -> u32 {
 #[linkage="weak"]
 #[inline(never)]
 pub extern "C" fn interrupt_service() {
-    use core::sync::atomic::{Ordering};
-    use ::TEST_BIT;
-    unsafe{ TEST_BIT.store(true,Ordering::SeqCst);}
+    //use core::sync::atomic::{Ordering};
+    //use ::TEST_BIT;
+    //unsafe{ TEST_BIT.store(true,Ordering::SeqCst);}
     let mut timer = arm_timer::ArmTimer::get();
     kprint!("Interrupt!\n";GREEN);
     //timer.next_count(1000000);
