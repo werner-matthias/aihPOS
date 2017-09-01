@@ -1,12 +1,14 @@
 use super::device_base;
-//use bit_field::BitField;
+use bit_field::BitField;
 
+const FIQ_BASIC_INTR_OFFSET: u32 = 64;
+const FIQ_ENABLE_BIT: u8        = 7;
 
 /// Vgl. https://github.com/raspberrypi/linux/blob/rpi-3.6.y/arch/arm/mach-bcm2708/include/mach/platform.h
 #[derive(Copy,Clone,Debug)]
 #[repr(u32)]
-#[allow(dead_code)]
-pub enum GeneralInterruptPending {
+#[allow(missing_doc)]
+pub enum GeneralInterrupt {
     /// System-Timer 0. Wird von GPU gebraucht, **nicht nutzen**.
     SystemTimer0 = 0,
     /// System-Timer 1.
@@ -75,23 +77,41 @@ pub enum GeneralInterruptPending {
     RNG,
     SDHCI,
     AVSPmon,
-    
 }
 
-impl GeneralInterruptPending {
+impl GeneralInterrupt {
+    /// Konvertiert Interrupt in die u32-Interruptnummer. Diese entspricht der Bitnummer
+    /// in den Interruptregistern `Pending`, `Enable` und `Disable`. Die Doppelregister
+    /// werden dabei als ein `u64` gezählt.
     fn as_u32(&self) -> u32 {
         // Es ist sicher, weil per Attribut `#[repr(u32)]` die interne Darstellung
         // festgelegt wurde.
         unsafe{
-            ::core::intrinsics::transmute::<GeneralInterruptPending,u32>((*self).clone())
+            ::core::intrinsics::transmute::<GeneralInterrupt,u32>((*self).clone())
+        }
+    }
+
+    /// Liefert für die General-Interrupt die Adresse (Wort- und Bitindex)  für
+    /// die Doppelregister (`Pending`, `Enable` und `Disable`)
+    fn index_and_bit(&self) -> (usize, usize) {
+        let bit = self.as_u32() as usize;
+        if bit > 31 {
+            (1, bit - 32)
+        } else {
+            (0, bit)
         }
     }
 }
 
+/// Basic-Interrupts
+///
+/// Die Basic-Interrupts enthalten einige General-Interrupts (d.h. Board-Interrupts), sowie
+/// Nur-ARM-Interrupts.
+/// Zu den Letzteren zählen auch die Sammelinterrupts `General1` und `General2`.
 #[derive(Copy,Clone,Debug)]
 #[repr(u32)]
 #[allow(dead_code)]
-pub enum BaseInterruptPending {
+pub enum BasicInterrupt {
     ARMtimer= 0,
     Mailbox,
     Doorbell1,
@@ -99,7 +119,7 @@ pub enum BaseInterruptPending {
     GPU0Stop,
     GPU1Stop,
     IllegalAccessType1,
-    IllegalAccessType2,
+    IllegalAccessType0,
     General1,
     General2,    
     JPEG = 10,           // General Interrupt 7
@@ -113,30 +133,49 @@ pub enum BaseInterruptPending {
     SDIO,                // General Interrupt 56
     UART,                // General Interrupt 57
     SDHCI,               // General Interrupt 62
-    
 }
 
-impl BaseInterruptPending {
+impl BasicInterrupt {
+
+    /// Konvertiert Interrupt in die u32-Interruptnummer. Diese entspricht der Bitnummer
+    /// in den Interruptregistern `Pending`, `Enable` und `Disable`. 
     fn as_u32(&self) -> u32 {
         unsafe{
-            ::core::intrinsics::transmute::<BaseInterruptPending,u32>((*self).clone())
+            ::core::intrinsics::transmute::<BasicInterrupt,u32>((*self).clone())
         }
     }
 
+    /// Gibt den General-Interrupt, der dem gegebenen Basic-Interrupt entspricht, oder `None`.
+    fn as_general(&self) -> Option<GeneralInterrupt> {
+        match *self {
+            BasicInterrupt::JPEG  => Some(GeneralInterrupt::JPEG),
+            BasicInterrupt::USB   => Some(GeneralInterrupt::USB),
+            BasicInterrupt::GPU3D => Some(GeneralInterrupt::GPU3D),
+            BasicInterrupt::DMA2  => Some(GeneralInterrupt::DMA2),
+            BasicInterrupt::DMA3  => Some(GeneralInterrupt::DMA3),
+            BasicInterrupt::I2C   => Some(GeneralInterrupt::I2C),
+            BasicInterrupt::SPI   => Some(GeneralInterrupt::SPI),
+            BasicInterrupt::PCM   => Some(GeneralInterrupt::PCM),
+            BasicInterrupt::SDIO  => Some(GeneralInterrupt::SDIO),
+            BasicInterrupt::UART  => Some(GeneralInterrupt::UART),
+            BasicInterrupt::SDHCI => Some(GeneralInterrupt::SDHCI),
+            _                     => None,
+        }
+    }
 }   
 
 #[derive(Debug)]
 pub enum InterruptPending {
-    Basic(BaseInterruptPending),
-    General(GeneralInterruptPending)
+    Basic(BasicInterrupt),
+    General(GeneralInterrupt)
 }
     
 /// Vgl. BMC2835 Manual, S. 112
 #[repr(C)]
 pub struct IrqController {
     basic_pending:   u32,
-    general_pending: [u32;2],  // Ich kann hier (und unten) nicht u64 nehmen, da das Alignment 
-                               // dann nicht stimmt
+    general_pending: [u32;2],  // Hier (und unten) kann man nicht u64 nehmen, da dann das  
+                               // Alignment nicht stimmt.
     fiq_control:     u32,
     enable_general:  [u32;2],
     enable_basic:    u32,
@@ -145,89 +184,79 @@ pub struct IrqController {
 }
 
 impl IrqController {
+    /// Basisadresse der IrqController-Hardwareregister.
+    ///
+    /// # Anmerkung
+    /// Das BMC2835 Manual gibt die Basisadresse mit 0xXXX0b000 an,
+    /// nutzt aber als ersten Index 0x200, siehe S. 112.
     fn base() -> usize {
         device_base()+0xb200
     }
 
-    
+    /// Gibt statische Referenz auf (Hardwareregister des) Interrupt-Controller(s) zurück.
     pub fn get() -> &'static mut IrqController{
         unsafe {
             &mut *(Self::base() as *mut IrqController)
         }
     }
 
+    /// Schaltet den gegebenen Interrupt aktiv.
     pub fn enable(&mut self, int: InterruptPending) -> &mut Self {
-        kprint!("int_enable called, {:?}\n",int;YELLOW);
         match int {
             InterruptPending::Basic(ref interrupt) => {
-                if interrupt.as_u32() > 7 {
-                    self.enable(InterruptPending::General(
-                        match *interrupt {
-                            BaseInterruptPending::JPEG =>  GeneralInterruptPending::JPEG,
-                            BaseInterruptPending::USB  =>  GeneralInterruptPending::USB,
-                            BaseInterruptPending::GPU3D => GeneralInterruptPending::GPU3D,
-                            BaseInterruptPending::DMA2 =>  GeneralInterruptPending::DMA2,
-                            BaseInterruptPending::DMA3 =>  GeneralInterruptPending::DMA3,
-                            BaseInterruptPending::I2C =>   GeneralInterruptPending::I2C,
-                            BaseInterruptPending::SPI =>   GeneralInterruptPending::SPI,
-                            BaseInterruptPending::PCM =>   GeneralInterruptPending::PCM,
-                            BaseInterruptPending::SDIO =>  GeneralInterruptPending::SDIO,
-                            BaseInterruptPending::UART =>  GeneralInterruptPending::UART,
-                            BaseInterruptPending::SDHCI => GeneralInterruptPending::SDHCI,
-                            _                           => unreachable!(),
-                          }
-                    ));
+                if let Some(general) = interrupt.as_general() {
+                    self.enable(InterruptPending::General(general));
                 } else {
-                    let v: u32 = 0x1u32 << interrupt.as_u32();
-                    kprint!("Setze Basic-Interrupt-Maske {:08x} @ {:08x}\n",v,
-                            &self.enable_basic as *const _ as u32; YELLOW);
-                    self.enable_basic = v;
+                    self.enable_basic = 0x1u32 << interrupt.as_u32();
                 }
             },
             InterruptPending::General(interrupt) => {
-                if interrupt.as_u32() < 32 {
-                    self.enable_general[0] = 0x1u32 << interrupt.as_u32();
-                } else {
-                    self.enable_general[1] = 0x1u32 << (interrupt.as_u32() - 32);
-                }
+                let (ndx, shift) = interrupt.index_and_bit();
+                self.enable_general[ndx] = 0x1u32 << shift;
             }
         }
         self
     }
 
+    /// Deaktiviert den gegebenen Interrupt.
     pub fn disable(&mut self, int: InterruptPending) -> &mut Self {
         match int {
             InterruptPending::Basic(ref interrupt) => {
-                if interrupt.as_u32() > 7 {
-                    self.disable(InterruptPending::General(
-                        match *interrupt {
-                            BaseInterruptPending::JPEG =>  GeneralInterruptPending::JPEG,
-                            BaseInterruptPending::USB  =>  GeneralInterruptPending::USB,
-                            BaseInterruptPending::GPU3D => GeneralInterruptPending::GPU3D,
-                            BaseInterruptPending::DMA2 =>  GeneralInterruptPending::DMA2,
-                            BaseInterruptPending::DMA3 =>  GeneralInterruptPending::DMA3,
-                            BaseInterruptPending::I2C =>   GeneralInterruptPending::I2C,
-                            BaseInterruptPending::SPI =>   GeneralInterruptPending::SPI,
-                            BaseInterruptPending::PCM =>   GeneralInterruptPending::PCM,
-                            BaseInterruptPending::SDIO =>  GeneralInterruptPending::SDIO,
-                            BaseInterruptPending::UART =>  GeneralInterruptPending::UART,
-                            BaseInterruptPending::SDHCI => GeneralInterruptPending::SDHCI,
-                            _                           => unreachable!(),
-                          }
-                    ));
+                if let Some(general) = interrupt.as_general() {
+                    self.disable(InterruptPending::General(general));
                 } else {
-                    self.disable_basic = 0x1 << interrupt.as_u32();
+                    self.disable_basic = 0x1u32 << interrupt.as_u32();
                 }
             },
             InterruptPending::General(interrupt) => {
-                if interrupt.as_u32() < 32 {
-                    self.disable_general[0] = 0x1u32 << interrupt.as_u32();
-                } else {
-                    self.disable_general[1] = 0x1u32 << (interrupt.as_u32() - 32);
-                }
+                let (ndx, shift) = interrupt.index_and_bit();
+                self.disable_general[ndx] = 0x1u32 << shift;
             }
         }
         self
     }
 
+    /// Wählt einen Interrupt als Schnellen Interrupt (FIQ) aus, und aktiviert den ihn.
+    ///
+    /// Bei Angabe eines ungültigen Interrupts (Basic-Sammelinterrupt) wird FIQ deaktiviert.
+    fn set_and_enable_fiq(&mut self, int: InterruptPending) -> &mut Self {
+        let nr =
+            match int {
+                InterruptPending::General(interrupt) => interrupt.as_u32(),
+                InterruptPending::Basic(interrupt) =>  FIQ_BASIC_INTR_OFFSET + interrupt.as_u32(),
+            };
+        if nr < 72 {
+            self.fiq_control.set_bits(0..7,nr);
+            self.fiq_control.set_bit(FIQ_ENABLE_BIT,true);
+        } else {
+            self.fiq_control.set_bit(FIQ_ENABLE_BIT,false);
+        }
+        self
+    }
+
+    /// Deaktivert den Schnellen Interrupt.
+    fn disable_fiq(&mut self) -> &mut Self {
+        self.fiq_control.set_bit(FIQ_ENABLE_BIT,false);
+        self
+    }
 }
