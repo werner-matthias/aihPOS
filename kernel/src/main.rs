@@ -50,7 +50,7 @@ mod sync;
 
 //#[macro_use] mod hal;
 use hal::bmc2835::{MemReport,BoardReport,report_board_info,report_memory};
-use hal::bmc2835::irq_controller::{IrqController,InterruptPending,BaseInterruptPending};
+use hal::bmc2835::irq_controller::{IrqController,InterruptPending,BasicInterrupt};
 #[macro_use]
 mod entry;
 use debug::*;
@@ -246,7 +246,7 @@ fn init_paging() {
 
 fn init_interrupt() {
     let irq_controller = IrqController::get();
-    irq_controller.enable(InterruptPending::Basic(BaseInterruptPending::ARMtimer));
+    irq_controller.enable(InterruptPending::Basic(BasicInterrupt::ARMtimer));
     let timer = hal::bmc2835::arm_timer::ArmTimer::get()
         .resolution(hal::bmc2835::arm_timer::ArmTimerResolution::Counter23Bit)
         .predivider(250)
@@ -287,10 +287,10 @@ fn report() {
 }
 
 fn test() {
-    kprint!("Calling system.\n");
     let stack: [u32;1024] = [0u32;1024];
-    Cpu::set_mode(ProcessorMode::System);
-    Cpu::set_stack(&stack as *const _ as usize);
+    kprint!("Start Test.\n");
+    //Cpu::set_mode(ProcessorMode::System);
+    //Cpu::set_stack(&stack as *const _ as usize);
     Cpu::enable_interrupts();
     //Cpu::set_mode(ProcessorMode::User);
     /*
