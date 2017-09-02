@@ -35,6 +35,7 @@
 #![doc(html_logo_url = "file:///Users/mwerner/Development/aihPOS/aihPOS-docs/logo-128.png")]
 /// Benutzte Crates
 extern crate alloc;
+//extern crate collections;
 extern crate bit_field;
 extern crate compiler_builtins;
 
@@ -49,8 +50,9 @@ mod sync;
 //use alloc::boxed::Box;
 
 //#[macro_use] mod hal;
+use hal::bmc2835::Bmc2835;
 use hal::bmc2835::{MemReport,BoardReport,report_board_info,report_memory};
-use hal::bmc2835::irq_controller::{IrqController,InterruptPending,BasicInterrupt};
+use hal::bmc2835::{IrqController,BasicInterrupt,ArmTimer,ArmTimerResolution};
 #[macro_use]
 mod entry;
 use debug::*;
@@ -247,8 +249,8 @@ fn init_paging() {
 fn init_interrupt() {
     let irq_controller = IrqController::get();
     irq_controller.enable(BasicInterrupt::ARMtimer);
-    let timer = hal::bmc2835::arm_timer::ArmTimer::get()
-        .resolution(hal::bmc2835::arm_timer::ArmTimerResolution::Counter23Bit)
+    let timer = ArmTimer::get()
+        .resolution(ArmTimerResolution::Counter23Bit)
         .predivider(250)
         .count(2000000)
         .enable(true)
@@ -287,7 +289,7 @@ fn report() {
 }
 
 fn test() {
-    let stack: [u32;1024] = [0u32;1024];
+    let _stack: [u32;1024] = [0u32;1024];
     kprint!("Start Test.\n");
     //Cpu::set_mode(ProcessorMode::System);
     //Cpu::set_stack(&stack as *const _ as usize);

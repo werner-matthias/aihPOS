@@ -1,8 +1,9 @@
 #![allow(dead_code)]
 use hal::cpu::Cpu;
-use hal::bmc2835::arm_timer;
+use hal::bmc2835::Bmc2835;
+use hal::bmc2835::ArmTimer;
 use ::kernel_start;
-use debug::blink;
+//use debug::blink;
 
 /// Sprungtabelle für Ausnahmen (Interrupts, Syscalls, etc.).
 #[repr(C)]
@@ -249,7 +250,7 @@ pub extern "C" fn interrupt_service() {
     //use core::sync::atomic::{Ordering};
     //use ::TEST_BIT;
     //unsafe{ TEST_BIT.store(true,Ordering::SeqCst);}
-    let mut timer = arm_timer::ArmTimer::get();
+    let mut timer = ArmTimer::get();
     kprint!("Interrupt!\n";GREEN);
     //timer.next_count(1000000);
     timer.reset_interrupt();

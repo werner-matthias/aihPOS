@@ -1,7 +1,5 @@
-use super::device_base;
+use super::Bmc2835;
 use bit_field::BitField;
-
-
 
 pub enum ArmTimerResolution {
     Counter16Bit,
@@ -24,18 +22,16 @@ pub struct ArmTimer {
     pub free_counter: u32
 }
 
+impl Bmc2835 for ArmTimer {
+    fn base_offset() -> usize {
+        0xb400
+    }
+
+}
+
+
 #[allow(dead_code)]
 impl ArmTimer {
-    fn base() -> usize {
-        device_base()+0xb400
-    }
-    
-    pub fn get() -> &'static mut ArmTimer{
-        //kprint!("Get timer called.\n";CYAN);
-        unsafe {
-            &mut *(Self::base() as *mut ArmTimer)
-        }
-    }
 
     pub fn count(&mut self, val: u32) -> &mut Self {
         //kprint!(" count called.\n";CYAN);

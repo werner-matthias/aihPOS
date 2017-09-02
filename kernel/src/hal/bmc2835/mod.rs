@@ -1,11 +1,37 @@
-pub mod arm_timer;
-pub mod irq_controller;
+mod uart;
+mod mini_uart;
+
+mod arm_timer;
+pub use self::arm_timer::{ArmTimer,ArmTimerResolution};
+mod interrupts;
+pub use self::interrupts::{Interrupt,BasicInterrupt,GeneralInterrupt};
+mod irq_controller;
+pub use self::irq_controller::IrqController;
+
 mod mailbox;
 mod propertytags;
 
-fn device_base() -> usize {
-    0x20000000
+pub trait Bmc2835 {
+
+    fn device_base() -> usize {
+        0x20000000
+    }
+
+    fn base_offset() -> usize;
+
+    fn base() -> usize {
+        Self::device_base() + Self::base_offset()
+    }
+    
+    fn get() -> &'static mut Self
+        where Self: Sized {
+        unsafe {
+            &mut *(Self::base() as * mut Self)
+        }
+    }
+
 }
+
 
 pub use self::propertytags::{Tag,PropertyTagBuffer,BUFFER_SIZE};
 pub use self::mailbox::{mailbox, Channel};

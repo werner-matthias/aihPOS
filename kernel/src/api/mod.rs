@@ -4,4 +4,6 @@ pub enum SysCall {
     Yield,
     Send,
     Receive,
+    Write,
+    Read,
 }
