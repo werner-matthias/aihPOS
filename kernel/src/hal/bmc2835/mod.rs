@@ -1,5 +1,7 @@
 mod uart;
-mod mini_uart;
+mod aux;
+mod gpio;
+mod system_timer;
 
 mod arm_timer;
 pub use self::arm_timer::{ArmTimer,ArmTimerResolution};
