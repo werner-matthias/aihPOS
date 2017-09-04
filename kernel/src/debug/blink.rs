@@ -48,9 +48,8 @@ pub fn blink_once(s: BlinkSeq) {
     let led_on  = GPSET1;
     let led_off = GPCLR1; 
 
-    for c in s {
-        let sym: Bc = c.clone();
-        match sym {
+    for &c in s {
+        match c {
             Bc::Long => {
                 unsafe { *(led_on) = 1 << 15; }
                 sleep(Bc::Long as u32);
