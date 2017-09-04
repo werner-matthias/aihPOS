@@ -95,10 +95,13 @@ impl Gpio {
 
     /// Weist dem `pin` die Funktion `func` zu.
     pub fn set_function(&mut self, pin: u8, func: GpioPinFunctions) {
-        // Pro 
-        let ndx: usize = pin as usize / 10;
-        let start_bit: u8 = (pin % 10) * 3;
-        self.function_select[ndx].set_bits(start_bit..(start_bit+3),func as u32);
+        if pin <= MAX_PIN_NR {
+            // Pro Register werden 10 Pins gesteuert...
+            let ndx: usize = pin as usize / 10;
+            // ... und jeder Pin braucht 3 Bit.
+            let start_bit: u8 = (pin % 10) * 3;
+            self.function_select[ndx].set_bits(start_bit..(start_bit+3),func as u32);
+        }
     }
 
     /// Setzt den Pin `pin` auf den Wert `value`.
@@ -144,15 +147,18 @@ impl Gpio {
             regs[pin as usize / 32].set_bit(pin % 32,b);
         }
     }
-    
+
+    /// Aktiviert die Ereigniserkennung für das gegebene Ereignis und den gegebenen Pin.
     pub fn enable_event_detection(&mut self, pin: u8, ev: Event) {
         self.set_event_detection(pin,ev,true);
     }
 
+    /// Deaktiviert die Ereigniserkennung den gegebenen Pin.
     pub fn disable_event_detection(&mut self, pin: u8, ev: Event) {
         self.set_event_detection(pin,ev,false);
     }
 
+    /// Deaktiviert die Ereigniserkennung für alle Pins.
     pub fn disable_all_events(&mut self) {
         self.high_level_enable[0]   = 0; 
         self.high_level_enable[1]   = 0;
@@ -168,19 +174,23 @@ impl Gpio {
         self.async_falling_edge[1]  = 0;
     }
 
+    /// Löscht Ereignis für gegebenen Pin.
     pub fn reset_event(&mut self, pin: u8) {
         self.event_status[pin as usize / 32].set_bit(pin % 32,true);
     }
 
+    /// Löscht alle Ereignise.
     pub fn reset_all_events(&mut self) {
         self.event_status[0] = !0;
         self.event_status[1] = !0;
     }
 
+    /// Gibt an, ob für den gegebenen Pin ein Ereignis vorliegt.
     pub fn event_detected (&self, pin: u8) -> bool {
         self.event_status[pin as usize / 32].get_bit(pin & 32)
     }
 
+    /// Gibt all vorliegenden Ereignisse zurück.
     pub fn get_events(&self) -> Vec<u8> {
         let mut ret: Vec<u8> = Vec::<u8>::new();
         let events: u64 = ((self.level[1] as u64) << 32) + self.level[0] as u64;
@@ -196,17 +206,20 @@ impl Gpio {
         ret
     }
 
+    /// Setzt Pullup/pulldown-Verhalten für den gegebenen Pin.
     pub fn set_pull(&mut self, pin: u8, pull: Pull) {
-        let val: u32 = match pull {
-            Pull::Off  => 0b00,
-            Pull::Down => 0b01,
-            Pull::Up   => 0b10,
-        };
-        self.pull_up_down_enable.set_bits(0..2,val);
-        SystemTimer::get().busy_csleep(160);
-        self.pull_up_down_clock[pin as usize / 32].set_bit(pin,true);
-        SystemTimer::get().busy_csleep(160);
-        self.pull_up_down_clock[pin as usize / 32].set_bit(pin,false);
+        if pin <= MAX_PIN_NR {
+            let val: u32 = match pull {
+                Pull::Off  => 0b00,
+                Pull::Down => 0b01,
+                Pull::Up   => 0b10,
+            };
+            self.pull_up_down_enable.set_bits(0..2,val);
+            SystemTimer::get().busy_csleep(160);
+            self.pull_up_down_clock[pin as usize / 32].set_bit(pin,true);
+            SystemTimer::get().busy_csleep(160);
+            self.pull_up_down_clock[pin as usize / 32].set_bit(pin,false);
+        }
     }
     
 }
