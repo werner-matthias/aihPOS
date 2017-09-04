@@ -34,13 +34,11 @@ impl Bmc2835 for ArmTimer {
 impl ArmTimer {
 
     pub fn count(&mut self, val: u32) -> &mut Self {
-        //kprint!(" count called.\n";CYAN);
         self.load = val;
         self
     }
 
     pub fn next_count(&mut self, val: u32) -> &mut Self {
-        //kprint!(" next_count called.\n";CYAN);
         self.reload = val;
         self
     }
