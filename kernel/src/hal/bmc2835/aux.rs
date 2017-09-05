@@ -37,6 +37,11 @@ pub struct MiniUART {
     pub baud:       u32,
 }
 
+pub enum AuxInterrupt {
+    UartReceive,
+    UartTransmit
+}
+
 pub struct SPI {
     ctl0:        u32,
     ctl1:        u32,
@@ -98,6 +103,19 @@ impl Aux {
         Self::mini_uart().baud as u16
     }
 
+    pub fn enable_interrupt(&self, intr: AuxInterrupt) {
+        match intr {
+            AuxInterrupt::UartReceive => { Self::mini_uart().int_enable.set_bit(1,true); },
+            AuxInterrupt::UartTransmit => { Self::mini_uart().int_enable.set_bit(0,true); },
+        }
+    }
+
+    pub fn disable_interrupt(&self, intr: AuxInterrupt) {
+        match intr {
+            AuxInterrupt::UartReceive => { Self::mini_uart().int_enable.set_bit(1,false); },
+            AuxInterrupt::UartTransmit => { Self::mini_uart().int_enable.set_bit(0,false); },
+        }
+    }
 }
 
 
