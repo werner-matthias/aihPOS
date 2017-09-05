@@ -24,17 +24,17 @@ pub struct Aux {
 
 #[repr(C)]
 pub struct MiniUART {
-    io:         u32,
-    int_enable: u32,
-    int_ident:  u32,
-    line_ctl:   u32,
-    modem_ctl:  u32,
-    line_stat:  u32,
-    modem_stat: u32,
-    scratch:    u32,
-    ctrl:       u32,
-    stat:       u32,
-    baud:       u32,
+        io:         u32,
+        int_enable: u32,
+        int_ident:  u32,
+        line_ctl:   u32,
+        modem_ctl:  u32,
+        line_stat:  u32,
+        modem_stat: u32,
+        scratch:    u32,
+        ctrl:       u32,
+        stat:       u32,
+    pub baud:       u32,
 }
 
 pub struct SPI {
@@ -91,20 +91,11 @@ impl Aux {
     }
 
     pub fn set_baudrate(&self, rate: u16) {
-        let uart = Self::mini_uart();
-        uart.line_ctl.set_bit(7,true);
-        uart.io.set_bits(0..8, (rate & 0xff) as u32);
-        uart.int_enable.set_bits(0..8, (rate as u32 >> 8) );
-        uart.line_ctl.set_bit(7,false);
+        Self::mini_uart().baud = rate as u32;
     }
 
     pub fn get_baudrate(&self) -> u16 {
-        let ret: u16;
-        let uart = Self::mini_uart();
-        uart.line_ctl.set_bit(7,true);
-        ret = uart.io.get_bits(0..8) as u16 | ( uart.int_enable.get_bits(0..8) << 8 ) as u16;
-        uart.line_ctl.set_bit(7,false);
-        ret
+        Self::mini_uart().baud as u16
     }
 
 }
