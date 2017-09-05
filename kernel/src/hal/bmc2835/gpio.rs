@@ -23,6 +23,193 @@ pub enum GpioPinFunctions {
 }
 
 ///
+pub enum FuncGroup {
+    None,
+    Input,
+    Output,
+    BscMaster0(u8),
+    BscMaster1(u8),
+    GeneralClock,
+    Spi(u8),
+    Pwm,
+    Uart(u8),
+    Pcm(u8),
+    Smi(u8),
+    BsiSlave(u8),
+    AuxSpi1(u8),
+    AuxSpi2(u8),
+    AuxUart(u8),
+    Jtag(u8)
+}
+
+const GPIO_PIN_ALT_FUNCTIONS: [[FuncGroup;8];MAX_PIN_NR as usize +1] =
+    [   //Pin 0
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::BscMaster0(0),FuncGroup::Smi(5),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 1
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::BscMaster0(1),FuncGroup::Smi(4),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 2
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::BscMaster1(0),FuncGroup::Smi(3),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 3
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::BscMaster1(1),FuncGroup::Smi(2),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 4
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::GeneralClock,FuncGroup::Smi(1),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::Jtag(0)],
+        // Pin 5
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::GeneralClock,FuncGroup::Smi(0),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::Jtag(1)],
+        // Pin 6
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::GeneralClock,FuncGroup::Smi(6),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::Jtag(2)],
+        // Pin 7
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Spi(1),FuncGroup::Smi(7),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 8
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Spi(0),FuncGroup::Smi(10),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 9
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Spi(2),FuncGroup::Smi(11),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 10
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Spi(3),FuncGroup::Smi(12),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 11
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Spi(4),FuncGroup::Smi(13),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 12
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Pwm,FuncGroup::Smi(14),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::Jtag(3)],
+        // Pin 13
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Pwm,FuncGroup::Smi(15),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::Jtag(4)],
+        // Pin 14
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Uart(0),FuncGroup::Smi(16),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::AuxUart(0)],
+        // Pin 15
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Uart(1),FuncGroup::Smi(17),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::AuxUart(1)],
+        // Pin 16
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::None,FuncGroup::Smi(18),
+         FuncGroup::None,FuncGroup::Uart(2),FuncGroup::AuxSpi1(2),FuncGroup::AuxUart(2)],
+        // Pin 17
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::None,FuncGroup::Smi(19),
+         FuncGroup::None,FuncGroup::Uart(3),FuncGroup::AuxSpi1(1),FuncGroup::AuxUart(3)],
+        // Pin 18
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Pcm(0),FuncGroup::Smi(20),
+         FuncGroup::None,FuncGroup::BsiSlave(0),FuncGroup::AuxSpi1(0),FuncGroup::Pwm],
+        // Pin 19
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Pcm(1),FuncGroup::Smi(21),
+         FuncGroup::None,FuncGroup::BsiSlave(1),FuncGroup::AuxSpi1(3),FuncGroup::Pwm],
+        // Pin 20
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Pcm(2),FuncGroup::Smi(22),
+         FuncGroup::None,FuncGroup::BsiSlave(1),FuncGroup::AuxSpi1(4),FuncGroup::GeneralClock],
+// Here are dragons
+        
+        // Pin 21
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 22
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 23
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 24
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 25
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 26
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 27
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 28
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 29
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 30
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 31
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 32
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 33
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 34
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 35
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 36
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 37
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 38
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 39
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 40
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 41
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 42
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 43
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 44
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 45
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 46
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 47
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 48
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 49
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 50
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 51
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 52
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
+        // Pin 53
+        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
+         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None]
+    ];     
+
+///
 impl Into<u32> for GpioPinFunctions {
     fn into(self) -> u32 {
         match self {
