@@ -116,6 +116,16 @@ impl Aux {
             AuxInterrupt::UartTransmit => { Self::mini_uart().int_enable.set_bit(0,false); },
         }
     }
+
+    pub fn reset_interrupt(&self, intr: AuxInterrupt) {
+        match intr {
+            AuxInterrupt::UartReceive => { Self::mini_uart().int_ident.set_bit(1,false); },
+            AuxInterrupt::UartTransmit => { Self::mini_uart().int_ident.set_bit(2,false); },
+        }
+    }
+
+    
+
 }
 
 
