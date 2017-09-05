@@ -36,7 +36,7 @@ pub struct MiniUART {
     stat:       u32,
     baud:       u32,
 }
-/*
+
 pub struct SPI {
     ctl0:        u32,
     ctl1:        u32,
@@ -60,7 +60,7 @@ impl Bmc2835 for MiniUART {
     }
     
 }
-
+/*
 impl Bmc2835 for SPI {
 
     fn base_offset() -> usize {
@@ -78,6 +78,10 @@ impl Bmc2835 for SPI2 {
 
 impl Aux {
 
+    pub fn mini_uart() -> &'static mut MiniUART {
+        MiniUART::get()
+    }
+
     pub fn enable(&mut self, dev: AuxDevice, a: bool) {
         self.enables.set_bit(dev as u8, a);
     }
@@ -85,6 +89,24 @@ impl Aux {
     pub fn is_pending(&self, dev: AuxDevice) -> bool {
         self.irq.get_bit(dev as u8)
     }
+
+    pub fn set_baudrate(&self, rate: u16) {
+        let uart = Self::mini_uart();
+        uart.line_ctl.set_bit(7,true);
+        uart.io.set_bits(0..8, (rate & 0xff) as u32);
+        uart.int_enable.set_bits(0..8, (rate as u32 >> 8) );
+        uart.line_ctl.set_bit(7,false);
+    }
+
+    pub fn get_baudrate(&self) -> u16 {
+        let ret: u16;
+        let uart = Self::mini_uart();
+        uart.line_ctl.set_bit(7,true);
+        ret = uart.io.get_bits(0..8) as u16 | ( uart.int_enable.get_bits(0..8) << 8 ) as u16;
+        uart.line_ctl.set_bit(7,false);
+        ret
+    }
+
 }
 
 
