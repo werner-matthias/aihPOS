@@ -23,6 +23,7 @@ pub enum GpioPinFunctions {
 }
 ///
 impl Into<u32> for GpioPinFunctions {
+    /// 
     fn into(self) -> u32 {
         match self {
             GpioPinFunctions::Input  => 0b000,
@@ -38,76 +39,131 @@ impl Into<u32> for GpioPinFunctions {
 }
 
 pub mod gpio_functions {
+    /// Pinbelegung für UART (Universal Asynchronous Receiver Transmitter)
     #[derive(PartialEq)]
     pub enum UART {
+        /// Daten senden (transmit data)
         TxD,
+        /// Daten empfangen (receive data)
         RxD,
+        /// Sendeerlaubnis (clear to send)
         CTS,
+        /// Sendeanforderung (request to send)
         RTS,
     }
 
+    /// Pinbelegung für SPI (Serial Peripheral Interface)
     #[derive(PartialEq)]
     pub enum SPI {
-        CE0,      // chip enable 0 (nur Master)
-        CE1,      // chip enable 1 (nur Master)
-        CE2,      // chip enable 2 (nur Master)
-        CEin,     // chip enable in (nur Slave)
-        MiSo,     // master in, slave out
-        MoSi,     // master out, slave in
-        SClk      // Serial Clock
+        /// Auswahl von Slave 0 (chip enable 0) (nur Master)
+        CE0,
+        /// Auswahl von Slave 1, (chip enable 1) (nur Master)
+        CE1,
+        /// Auswahl von Slave 2, (chip enable 2) (nur Master)
+        CE2,
+        /// Eingang für Auswahl, (chip enable in) (nur Slave)
+        CEin,
+        /// Daten von Slave zu Master (master in, slave out)
+        MiSo,
+        /// Daten von Master zu Slave (master out, slave in)
+        MoSi,
+        /// Takt (serial clock)
+        SClk      
     }
-    
+
+    /// Pinbelegung für JTAG (Joint Test Action Group Interface)
     #[derive(PartialEq)]
-    pub enum JTag {
-        TDI,  // test data in
-        TDO,  // test data outer
-        TCK,  // clock
-        TMS,  // mode select
-        TRST, // reset
-        RTCK, // return clock     
+    pub enum JTAG {
+        /// Dateneingang (test data in)
+        TDI,
+        /// Datenausgang (test data out)
+        TDO,
+        /// Takt (test clock)
+        TCK,
+        /// Modusauswahl (test mode select)
+        TMS,
+        /// Rücksetzen (test reset)
+        TRST,
+        /// Taskrücklauf (return test clock)
+        ///
+        /// # Anmerkung
+        /// RTCK ist nicht in der IEEE 1149 spezifiziert. Es dient zur
+        /// automatischen Anpassung des Takts.
+        RTCK, 
     }
 
     #[derive(PartialEq)]
+    /// Pinbelegung für BSC (Broadcom Serial Controller)
+    ///
+    /// BSC ist Broadcoms Variante von I2C (Inter-Integrated Circuit)
     pub enum BSC {
+        /// Daten
         data,
+        /// Takt
         clock
     }
 
+    /// Pinbelegung für PCM/I2S Audio 
     #[derive(PartialEq)]
     pub enum PCM {
-        Clk,   // clock
-        FS,    // frame sync
-        DIn,   // data in
-        DOut   // data out
+        /// Takt (clock)
+        Clk,
+        /// Signal zur Framesynchronisation (frame sync)
+        FS,
+        /// Dateneingang (data in)
+        DIn,
+        /// Datenausgang (data out)
+        DOut   
     }
 
     ///
     #[derive(PartialEq)]
     pub enum Device {
+        /// Nicht belegt / reserviert
         None,
+        /// externer Dateneingang
         Input,
+        /// externer Datenausgang
         Output,
+        /// BSC Master 0
         BscMaster0(BSC),
+        /// BSC Master 1
         BscMaster1(BSC),
+        /// Taktgenerator 0
         GeneralClock0,
+        /// Taktgenerator 1
         GeneralClock1,
+        /// Taktgenerator 2
         GeneralClock2,
+        /// SPI 0
         Spi0(SPI),
+        /// SPI 1 (über AUX)
         Spi1(SPI),
+        /// SPI 2 (über AUX)
         Spi2(SPI),
+        /// Pulseweitenmodulator 0 (pulse width modulator 0)
         Pwm0,
+        /// Pulseweitenmodulator 1 (pulse width modulator 1)
         Pwm1,
+        /// 
         Emmc(u8),
+        /// UART 0
         Uart0(UART),
+        /// UART 1 (mini UART über AUX)
         Uart1(UART),
+        /// PCM Audio
         Pcm(PCM),
+        /// Interface für erweiterten Speicher (secondary memory interface)
         Smi(u8),
+        /// BSI/SPI Slave
         BscSpiSlave(SPI),
-        Jtag(JTag)
+        /// JTAG-Interface
+        Jtag(JTAG)
     }
     
     use super::MAX_PIN_NR;
-    
+
+    #[doc(hidden)]
     pub(super) const GPIO_PIN_ALT_FUNCTIONS: [[Device;8];MAX_PIN_NR as usize +1] =
         [   //Pin 0
             [Device::Input,Device::Output,Device::BscMaster0(BSC::data),Device::Smi(5),
@@ -123,13 +179,13 @@ pub mod gpio_functions {
              Device::None,Device::None,Device::None,Device::None],
             // Pin 4
             [Device::Input,Device::Output,Device::GeneralClock0,Device::Smi(1),
-             Device::None,Device::None,Device::None,Device::Jtag(JTag::TDI)],
+             Device::None,Device::None,Device::None,Device::Jtag(JTAG::TDI)],
             // Pin 5
             [Device::Input,Device::Output,Device::GeneralClock1,Device::Smi(0),
-             Device::None,Device::None,Device::None,Device::Jtag(JTag::TDO)],
+             Device::None,Device::None,Device::None,Device::Jtag(JTAG::TDO)],
             // Pin 6
             [Device::Input,Device::Output,Device::GeneralClock2,Device::Smi(6),
-             Device::None,Device::None,Device::None,Device::Jtag(JTag::RTCK)],
+             Device::None,Device::None,Device::None,Device::Jtag(JTAG::RTCK)],
             // Pin 7
             [Device::Input,Device::Output,Device::Spi0(SPI::CE1),Device::Smi(7),
              Device::None,Device::None,Device::None,Device::None],
@@ -147,10 +203,10 @@ pub mod gpio_functions {
              Device::None,Device::None,Device::None,Device::None],
             // Pin 12
             [Device::Input,Device::Output,Device::Pwm0,Device::Smi(14),
-             Device::None,Device::None,Device::None,Device::Jtag(JTag::TMS)],
+             Device::None,Device::None,Device::None,Device::Jtag(JTAG::TMS)],
             // Pin 13
             [Device::Input,Device::Output,Device::Pwm1,Device::Smi(15),
-             Device::None,Device::None,Device::None,Device::Jtag(JTag::TCK)],
+             Device::None,Device::None,Device::None,Device::Jtag(JTAG::TCK)],
             // Pin 14
             [Device::Input,Device::Output,Device::Uart0(UART::TxD),Device::Smi(16),
              Device::None,Device::None,Device::None,Device::Uart1(UART::TxD)],
@@ -177,22 +233,22 @@ pub mod gpio_functions {
              Device::None,Device::BscSpiSlave(SPI::CEin),Device::Spi1(SPI::SClk),Device::GeneralClock1],
             // Pin 22
             [Device::Input,Device::Output,Device::None,Device::Smi(24),
-             Device::None,Device::Emmc(4),Device::Jtag(JTag::TRST),Device::None],
+             Device::None,Device::Emmc(4),Device::Jtag(JTAG::TRST),Device::None],
             // Pin 23
             [Device::Input,Device::Output,Device::None,Device::Smi(25),
-             Device::None,Device::Emmc(5),Device::Jtag(JTag::RTCK),Device::None],
+             Device::None,Device::Emmc(5),Device::Jtag(JTAG::RTCK),Device::None],
             // Pin 24
             [Device::Input,Device::Output,Device::None,Device::Smi(26),
-             Device::None,Device::Emmc(0),Device::Jtag(JTag::TDO),Device::None],
+             Device::None,Device::Emmc(0),Device::Jtag(JTAG::TDO),Device::None],
             // Pin 25
             [Device::Input,Device::Output,Device::None,Device::Smi(27),
-             Device::None,Device::Emmc(1),Device::Jtag(JTag::TCK),Device::None],
+             Device::None,Device::Emmc(1),Device::Jtag(JTAG::TCK),Device::None],
             // Pin 26
             [Device::Input,Device::Output,Device::None,Device::None,
-             Device::None,Device::Emmc(2),Device::Jtag(JTag::TDI),Device::None],
+             Device::None,Device::Emmc(2),Device::Jtag(JTAG::TDI),Device::None],
             // Pin 27
             [Device::Input,Device::Output,Device::None,Device::None,
-             Device::None,Device::Emmc(3),Device::Jtag(JTag::TMS),Device::None],
+             Device::None,Device::Emmc(3),Device::Jtag(JTAG::TMS),Device::None],
             // Pin 28
             [Device::Input,Device::Output,Device::BscMaster0(BSC::data),Device::Smi(5),
              Device::Pcm(PCM::Clk),Device::None,Device::None,Device::None],

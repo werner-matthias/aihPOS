@@ -23,13 +23,18 @@ cargo kernel --target=arm-none-eabihf
 - [x] Debug LED interface
 - [x] Console ouput (framebuffer, for debug)
 - [ ] Keyboard input
-- [x] Interrupt controller
-- [x] ARM timer
-- [ ] System timer
 - [x] Heap (allocator)
 - [x] Paging
 - [ ] Context switch
 - [ ] IPC
+- Geräte (BMC2835)
+  - [x] GPIO
+  - [x] Interrupt controller
+  - [x] ARM timer
+  - [x] System timer
+  - [x] Mini Uart
+  - [ ] Uart
+  - [ ] DMA controller
 
 ## Remark
 Since aihPOS should support an undergraduate course at a German university, all
