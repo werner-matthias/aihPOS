@@ -5,6 +5,7 @@ pub enum AuxDevice {
     SPI1,
     SPI2
 }
+
 impl Into<u8> for AuxDevice {
     fn into(self) -> u8 {
         match self {
@@ -15,10 +16,47 @@ impl Into<u8> for AuxDevice {
     }
 }
 
+pub enum AuxInterrupt {
+    UartReceive,
+    UartTransmit
+}
+
 #[repr(C)]
 pub struct Aux {
     irq:              u32,
     enables:          u32,
+}
+
+use super::Bmc2835;
+impl Bmc2835 for Aux {
+
+    fn base_offset() -> usize {
+        0x215000
+    }
+    
+}
+
+
+impl Aux {
+    pub fn enable(&mut self, dev: AuxDevice, a: bool) {
+        self.enables.set_bit(dev as u8, a);
+    }
+
+    pub fn is_pending(&self, dev: AuxDevice) -> bool {
+        self.irq.get_bit(dev as u8)
+    }
+}
+
+pub enum MiniUartEnable {
+    None,
+    Receiver,
+    Transmitter,
+    Both
+}
+
+pub MiniUartTError {
+    Empty,
+    Overrun,
 }
 
 #[repr(C)]
@@ -36,9 +74,77 @@ pub struct MiniUART {
     pub baud:       u32,
 }
 
-pub enum AuxInterrupt {
-    UartReceive,
-    UartTransmit
+
+impl Bmc2835 for MiniUART {
+
+    fn base_offset() -> usize {
+        0x215040
+    }
+    
+}
+
+impl MiniUART {
+
+    pub fn enable(&mut self, e: MiniUartEnable) {
+        match e {
+            MiniUartEnable::None => {
+                Aux::get().enable(AuxDevice::MiniUART,false);
+                self.ctrl.set_bits(0..2,0b00);
+            },
+            MiniUartEnable::Transmitter => {
+                Aux::get().enable(AuxDevice::MiniUART,true);
+                self.ctrl.set_bits(0..2,0b10);
+            },
+            MiniUartEnable::Receiver => {
+                Aux::get().enable(AuxDevice::MiniUART,true);
+                self.ctrl.set_bits(0..2,0b01);
+            },
+            MiniUartEnable::Both => {
+                Aux::get().enable(AuxDevice::MiniUART,true);
+                self.ctrl.set_bits(0..2,0b11);
+            }
+        }
+    }
+
+    pub fn is_pending(&self) -> bool {
+        Aux::get().is_pending(AuxDevice::MiniUART)
+    }
+
+    pub fn set_baudrate(&mut self, rate: u16) {
+        self.baud = rate as u32;
+    }
+
+    pub fn get_baudrate(&self) -> u16 {
+        self.baud as u16
+    }
+
+    pub fn enable_interrupt(&mut self, intr: AuxInterrupt) {
+        match intr {
+            AuxInterrupt::UartReceive => { self.int_enable.set_bit(1,true); },
+            AuxInterrupt::UartTransmit => { self.int_enable.set_bit(0,true); },
+        }
+    }
+
+    pub fn disable_interrupt(&mut self, intr: AuxInterrupt) {
+        match intr {
+            AuxInterrupt::UartReceive => { self.int_enable.set_bit(1,false); },
+            AuxInterrupt::UartTransmit => { self.int_enable.set_bit(0,false); },
+        }
+    }
+
+    pub fn reset_interrupt(&mut self, intr: AuxInterrupt) {
+        match intr {
+            AuxInterrupt::UartReceive => { self.int_ident.set_bit(1,false); },
+            AuxInterrupt::UartTransmit => { self.int_ident.set_bit(2,false); },
+        }
+    }
+
+    
+
+    pub fn read(&self) -> Result<u8,()> {
+        Ok(0)
+    }
+
 }
 
 pub struct SPI {
@@ -49,22 +155,6 @@ pub struct SPI {
     peek:        u32,
 }
 
-use super::Bmc2835;
-impl Bmc2835 for Aux {
-
-    fn base_offset() -> usize {
-        0x215000
-    }
-    
-}
-
-impl Bmc2835 for MiniUART {
-
-    fn base_offset() -> usize {
-        0x215040
-    }
-    
-}
 /*
 impl Bmc2835 for SPI {
 
@@ -80,52 +170,3 @@ impl Bmc2835 for SPI2 {
     }
     
 }*/
-
-impl Aux {
-
-    pub fn mini_uart() -> &'static mut MiniUART {
-        MiniUART::get()
-    }
-
-    pub fn enable(&mut self, dev: AuxDevice, a: bool) {
-        self.enables.set_bit(dev as u8, a);
-    }
-
-    pub fn is_pending(&self, dev: AuxDevice) -> bool {
-        self.irq.get_bit(dev as u8)
-    }
-
-    pub fn set_baudrate(&self, rate: u16) {
-        Self::mini_uart().baud = rate as u32;
-    }
-
-    pub fn get_baudrate(&self) -> u16 {
-        Self::mini_uart().baud as u16
-    }
-
-    pub fn enable_interrupt(&self, intr: AuxInterrupt) {
-        match intr {
-            AuxInterrupt::UartReceive => { Self::mini_uart().int_enable.set_bit(1,true); },
-            AuxInterrupt::UartTransmit => { Self::mini_uart().int_enable.set_bit(0,true); },
-        }
-    }
-
-    pub fn disable_interrupt(&self, intr: AuxInterrupt) {
-        match intr {
-            AuxInterrupt::UartReceive => { Self::mini_uart().int_enable.set_bit(1,false); },
-            AuxInterrupt::UartTransmit => { Self::mini_uart().int_enable.set_bit(0,false); },
-        }
-    }
-
-    pub fn reset_interrupt(&self, intr: AuxInterrupt) {
-        match intr {
-            AuxInterrupt::UartReceive => { Self::mini_uart().int_ident.set_bit(1,false); },
-            AuxInterrupt::UartTransmit => { Self::mini_uart().int_ident.set_bit(2,false); },
-        }
-    }
-
-    
-
-}
-
-
