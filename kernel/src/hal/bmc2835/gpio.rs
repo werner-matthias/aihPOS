@@ -21,194 +21,6 @@ pub enum GpioPinFunctions {
     Func4,
     Func5
 }
-
-///
-pub enum FuncGroup {
-    None,
-    Input,
-    Output,
-    BscMaster0(u8),
-    BscMaster1(u8),
-    GeneralClock,
-    Spi(u8),
-    Pwm,
-    Uart(u8),
-    Pcm(u8),
-    Smi(u8),
-    BsiSlave(u8),
-    AuxSpi1(u8),
-    AuxSpi2(u8),
-    AuxUart(u8),
-    Jtag(u8)
-}
-
-const GPIO_PIN_ALT_FUNCTIONS: [[FuncGroup;8];MAX_PIN_NR as usize +1] =
-    [   //Pin 0
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::BscMaster0(0),FuncGroup::Smi(5),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 1
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::BscMaster0(1),FuncGroup::Smi(4),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 2
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::BscMaster1(0),FuncGroup::Smi(3),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 3
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::BscMaster1(1),FuncGroup::Smi(2),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 4
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::GeneralClock,FuncGroup::Smi(1),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::Jtag(0)],
-        // Pin 5
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::GeneralClock,FuncGroup::Smi(0),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::Jtag(1)],
-        // Pin 6
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::GeneralClock,FuncGroup::Smi(6),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::Jtag(2)],
-        // Pin 7
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Spi(1),FuncGroup::Smi(7),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 8
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Spi(0),FuncGroup::Smi(10),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 9
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Spi(2),FuncGroup::Smi(11),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 10
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Spi(3),FuncGroup::Smi(12),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 11
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Spi(4),FuncGroup::Smi(13),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 12
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Pwm,FuncGroup::Smi(14),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::Jtag(3)],
-        // Pin 13
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Pwm,FuncGroup::Smi(15),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::Jtag(4)],
-        // Pin 14
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Uart(0),FuncGroup::Smi(16),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::AuxUart(0)],
-        // Pin 15
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Uart(1),FuncGroup::Smi(17),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::AuxUart(1)],
-        // Pin 16
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::None,FuncGroup::Smi(18),
-         FuncGroup::None,FuncGroup::Uart(2),FuncGroup::AuxSpi1(2),FuncGroup::AuxUart(2)],
-        // Pin 17
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::None,FuncGroup::Smi(19),
-         FuncGroup::None,FuncGroup::Uart(3),FuncGroup::AuxSpi1(1),FuncGroup::AuxUart(3)],
-        // Pin 18
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Pcm(0),FuncGroup::Smi(20),
-         FuncGroup::None,FuncGroup::BsiSlave(0),FuncGroup::AuxSpi1(0),FuncGroup::Pwm],
-        // Pin 19
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Pcm(1),FuncGroup::Smi(21),
-         FuncGroup::None,FuncGroup::BsiSlave(1),FuncGroup::AuxSpi1(3),FuncGroup::Pwm],
-        // Pin 20
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Pcm(2),FuncGroup::Smi(22),
-         FuncGroup::None,FuncGroup::BsiSlave(1),FuncGroup::AuxSpi1(4),FuncGroup::GeneralClock],
-// Here are dragons
-        
-        // Pin 21
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 22
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 23
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 24
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 25
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 26
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 27
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 28
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 29
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 30
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 31
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 32
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 33
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 34
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 35
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 36
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 37
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 38
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 39
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 40
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 41
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 42
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 43
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 44
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 45
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 46
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 47
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 48
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 49
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 50
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 51
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 52
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None],
-        // Pin 53
-        [FuncGroup::Input,FuncGroup::Output,FuncGroup::Smi(5),
-         FuncGroup::None,FuncGroup::None,FuncGroup::None,FuncGroup::None]
-    ];     
-
 ///
 impl Into<u32> for GpioPinFunctions {
     fn into(self) -> u32 {
@@ -223,6 +35,243 @@ impl Into<u32> for GpioPinFunctions {
             GpioPinFunctions::Func5  => 0b010
         }
     }
+}
+
+pub mod gpio_functions {
+    #[derive(PartialEq)]
+    pub enum UART {
+        TxD,
+        RxD,
+        CTS,
+        RTS,
+    }
+
+    #[derive(PartialEq)]
+    pub enum SPI {
+        CE0,      // chip enable 0 (nur Master)
+        CE1,      // chip enable 1 (nur Master)
+        CE2,      // chip enable 2 (nur Master)
+        CEin,     // chip enable in (nur Slave)
+        MiSo,     // master in, slave out
+        MoSi,     // master out, slave in
+        SClk      // Serial Clock
+    }
+    
+    #[derive(PartialEq)]
+    pub enum JTag {
+        TDI,  // test data in
+        TDO,  // test data outer
+        TCK,  // clock
+        TMS,  // mode select
+        TRST, // reset
+        RTCK, // return clock     
+    }
+
+    #[derive(PartialEq)]
+    pub enum BSC {
+        data,
+        clock
+    }
+
+    #[derive(PartialEq)]
+    pub enum PCM {
+        Clk,   // clock
+        FS,    // frame sync
+        DIn,   // data in
+        DOut   // data out
+    }
+
+    ///
+    #[derive(PartialEq)]
+    pub enum Device {
+        None,
+        Input,
+        Output,
+        BscMaster0(BSC),
+        BscMaster1(BSC),
+        GeneralClock0,
+        GeneralClock1,
+        GeneralClock2,
+        Spi0(SPI),
+        Spi1(SPI),
+        Spi2(SPI),
+        Pwm0,
+        Pwm1,
+        Emmc(u8),
+        Uart0(UART),
+        Uart1(UART),
+        Pcm(PCM),
+        Smi(u8),
+        BscSpiSlave(SPI),
+        Jtag(JTag)
+    }
+    
+    use super::MAX_PIN_NR;
+    
+    pub(super) const GPIO_PIN_ALT_FUNCTIONS: [[Device;8];MAX_PIN_NR as usize +1] =
+        [   //Pin 0
+            [Device::Input,Device::Output,Device::BscMaster0(BSC::data),Device::Smi(5),
+             Device::None,Device::None,Device::None,Device::None],
+            // Pin 1
+            [Device::Input,Device::Output,Device::BscMaster0(BSC::clock),Device::Smi(4),
+             Device::None,Device::None,Device::None,Device::None],
+            // Pin 2
+            [Device::Input,Device::Output,Device::BscMaster1(BSC::data),Device::Smi(3),
+             Device::None,Device::None,Device::None,Device::None],
+            // Pin 3
+            [Device::Input,Device::Output,Device::BscMaster1(BSC::clock),Device::Smi(2),
+             Device::None,Device::None,Device::None,Device::None],
+            // Pin 4
+            [Device::Input,Device::Output,Device::GeneralClock0,Device::Smi(1),
+             Device::None,Device::None,Device::None,Device::Jtag(JTag::TDI)],
+            // Pin 5
+            [Device::Input,Device::Output,Device::GeneralClock1,Device::Smi(0),
+             Device::None,Device::None,Device::None,Device::Jtag(JTag::TDO)],
+            // Pin 6
+            [Device::Input,Device::Output,Device::GeneralClock2,Device::Smi(6),
+             Device::None,Device::None,Device::None,Device::Jtag(JTag::RTCK)],
+            // Pin 7
+            [Device::Input,Device::Output,Device::Spi0(SPI::CE1),Device::Smi(7),
+             Device::None,Device::None,Device::None,Device::None],
+            // Pin 8
+            [Device::Input,Device::Output,Device::Spi0(SPI::CE0),Device::Smi(10),
+             Device::None,Device::None,Device::None,Device::None],
+            // Pin 9
+            [Device::Input,Device::Output,Device::Spi0(SPI::MiSo),Device::Smi(11),
+             Device::None,Device::None,Device::None,Device::None],
+            // Pin 10
+            [Device::Input,Device::Output,Device::Spi0(SPI::MoSi),Device::Smi(12),
+             Device::None,Device::None,Device::None,Device::None],
+            // Pin 11
+            [Device::Input,Device::Output,Device::Spi0(SPI::SClk),Device::Smi(13),
+             Device::None,Device::None,Device::None,Device::None],
+            // Pin 12
+            [Device::Input,Device::Output,Device::Pwm0,Device::Smi(14),
+             Device::None,Device::None,Device::None,Device::Jtag(JTag::TMS)],
+            // Pin 13
+            [Device::Input,Device::Output,Device::Pwm1,Device::Smi(15),
+             Device::None,Device::None,Device::None,Device::Jtag(JTag::TCK)],
+            // Pin 14
+            [Device::Input,Device::Output,Device::Uart0(UART::TxD),Device::Smi(16),
+             Device::None,Device::None,Device::None,Device::Uart1(UART::TxD)],
+            // Pin 15
+            [Device::Input,Device::Output,Device::Uart0(UART::RxD),Device::Smi(17),
+             Device::None,Device::None,Device::None,Device::Uart1(UART::RxD)],
+            // Pin 16
+            [Device::Input,Device::Output,Device::None,Device::Smi(18),
+             Device::None,Device::Uart0(UART::CTS),Device::Spi1(SPI::CE2),Device::Uart1(UART::CTS)],
+            // Pin 17
+            [Device::Input,Device::Output,Device::None,Device::Smi(19),
+             Device::None,Device::Uart0(UART::RTS),Device::Spi1(SPI::CE1),Device::Uart1(UART::RTS)],
+            // Pin 18
+            [Device::Input,Device::Output,Device::Pcm(PCM::Clk),Device::Smi(20),
+             Device::None,Device::BscSpiSlave(SPI::MoSi),Device::Spi1(SPI::CE0),Device::Pwm0],
+            // Pin 19
+            [Device::Input,Device::Output,Device::Pcm(PCM::FS),Device::Smi(21),
+             Device::None,Device::BscSpiSlave(SPI::SClk),Device::Spi1(SPI::MiSo),Device::Pwm1],
+            // Pin 20
+            [Device::Input,Device::Output,Device::Pcm(PCM::DIn),Device::Smi(22),
+             Device::None,Device::BscSpiSlave(SPI::MiSo),Device::Spi1(SPI::MoSi),Device::GeneralClock0],
+            // Pin 21
+            [Device::Input,Device::Output,Device::Pcm(PCM::DOut),Device::Smi(23),
+             Device::None,Device::BscSpiSlave(SPI::CEin),Device::Spi1(SPI::SClk),Device::GeneralClock1],
+            // Pin 22
+            [Device::Input,Device::Output,Device::None,Device::Smi(24),
+             Device::None,Device::Emmc(4),Device::Jtag(JTag::TRST),Device::None],
+            // Pin 23
+            [Device::Input,Device::Output,Device::None,Device::Smi(25),
+             Device::None,Device::Emmc(5),Device::Jtag(JTag::RTCK),Device::None],
+            // Pin 24
+            [Device::Input,Device::Output,Device::None,Device::Smi(26),
+             Device::None,Device::Emmc(0),Device::Jtag(JTag::TDO),Device::None],
+            // Pin 25
+            [Device::Input,Device::Output,Device::None,Device::Smi(27),
+             Device::None,Device::Emmc(1),Device::Jtag(JTag::TCK),Device::None],
+            // Pin 26
+            [Device::Input,Device::Output,Device::None,Device::None,
+             Device::None,Device::Emmc(2),Device::Jtag(JTag::TDI),Device::None],
+            // Pin 27
+            [Device::Input,Device::Output,Device::None,Device::None,
+             Device::None,Device::Emmc(3),Device::Jtag(JTag::TMS),Device::None],
+            // Pin 28
+            [Device::Input,Device::Output,Device::BscMaster0(BSC::data),Device::Smi(5),
+             Device::Pcm(PCM::Clk),Device::None,Device::None,Device::None],
+            // Pin 29
+            [Device::Input,Device::Output,Device::BscMaster0(BSC::clock),Device::Smi(4),
+             Device::Pcm(PCM::FS),Device::None,Device::None,Device::None],
+            // Pin 30
+            [Device::Input,Device::Output,Device::None,Device::Smi(3),
+             Device::Pcm(PCM::DIn),Device::Uart0(UART::CTS),Device::None,Device::Uart1(UART::CTS)],
+            // Pin 31
+            [Device::Input,Device::Output,Device::None,Device::Smi(2),
+             Device::Pcm(PCM::DOut),Device::Uart0(UART::RTS),Device::None,Device::Uart1(UART::RTS)],
+            // Pin 32
+            [Device::Input,Device::Output,Device::GeneralClock0,Device::Smi(1),
+             Device::None,Device::Uart0(UART::TxD),Device::None,Device::Uart1(UART::TxD)],
+            // Pin 33
+            [Device::Input,Device::Output,Device::None,Device::Smi(0),
+             Device::None,Device::Uart0(UART::RxD),Device::None,Device::Uart1(UART::RxD)],
+            // Pin 34
+            [Device::Input,Device::Output,Device::GeneralClock0,Device::Smi(6),
+             Device::None,Device::None,Device::None,Device::None],
+            // Pin 35
+            [Device::Input,Device::Output,Device::Spi0(SPI::CE1),Device::Smi(7),
+             Device::None,Device::None,Device::None,Device::None],
+            // Pin 36
+            [Device::Input,Device::Output,Device::Spi0(SPI::CE0),Device::Smi(10),
+             Device::Uart0(UART::TxD),Device::None,Device::None,Device::None],
+            // Pin 37
+            [Device::Input,Device::Output,Device::Spi0(SPI::MiSo),Device::Smi(11),
+             Device::Uart0(UART::RxD),Device::None,Device::None,Device::None],
+            // Pin 38
+            [Device::Input,Device::Output,Device::Spi0(SPI::MoSi),Device::Smi(12),
+             Device::Uart0(UART::RTS),Device::None,Device::None,Device::None],
+            // Pin 39
+            [Device::Input,Device::Output,Device::Spi0(SPI::SClk),Device::Smi(13),
+             Device::Uart0(UART::CTS),Device::None,Device::None,Device::None],
+            // Pin 40
+            [Device::Input,Device::Output,Device::Pwm0,Device::Smi(14),
+             Device::None,Device::None,Device::Spi2(SPI::MiSo),Device::Uart1(UART::TxD)],
+            // Pin 41
+            [Device::Input,Device::Output,Device::Pwm1,Device::Smi(15),
+             Device::None,Device::None,Device::Spi2(SPI::MoSi),Device::Uart1(UART::RxD)],
+            // Pin 42
+            [Device::Input,Device::Output,Device::GeneralClock1,Device::Smi(16),
+             Device::None,Device::None,Device::Spi2(SPI::SClk),Device::Uart1(UART::RTS)],
+            // Pin 43
+            [Device::Input,Device::Output,Device::GeneralClock2,Device::Smi(17),
+             Device::None,Device::None,Device::Spi2(SPI::CE0),Device::Uart1(UART::CTS)],
+            // Pin 44
+            [Device::Input,Device::Output,Device::GeneralClock1,Device::BscMaster0(BSC::data),
+             Device::BscMaster1(BSC::data),Device::None,Device::Spi2(SPI::CE1),Device::None],
+            // Pin 45
+            [Device::Input,Device::Output,Device::Pwm1,Device::BscMaster0(BSC::clock),
+             Device::BscMaster1(BSC::clock),Device::None,Device::Spi2(SPI::CE2),Device::None],
+            // Pin 46
+            [Device::Input,Device::Output,Device::None,Device::None,
+             Device::None,Device::None,Device::None,Device::None],
+            // Pin 47
+            [Device::Input,Device::Output,Device::None,Device::None,
+             Device::None,Device::None,Device::None,Device::None],
+            // Pin 48
+            [Device::Input,Device::Output,Device::None,Device::None,
+             Device::None,Device::None,Device::None,Device::None],
+            // Pin 49
+            [Device::Input,Device::Output,Device::None,Device::None,
+             Device::None,Device::None,Device::None,Device::None],
+            // Pin 50
+            [Device::Input,Device::Output,Device::None,Device::None,
+             Device::None,Device::None,Device::None,Device::None],
+            // Pin 51
+            [Device::Input,Device::Output,Device::None,Device::None,
+             Device::None,Device::None,Device::None,Device::None],
+            // Pin 52
+            [Device::Input,Device::Output,Device::None,Device::None,
+             Device::None,Device::None,Device::None,Device::None],
+            // Pin 53
+            [Device::Input,Device::Output,Device::None,Device::None,
+             Device::None,Device::None,Device::None,Device::None]
+        ];
 }
 
 enum Event {
@@ -408,5 +457,27 @@ impl Gpio {
             self.pull_up_down_clock[pin as usize / 32].set_bit(pin,false);
         }
     }
-    
+
+    pub fn config_pin(&mut self, pin: u8, func: gpio_functions::Device)  -> Result<(),()> {
+        use self::gpio_functions::{GPIO_PIN_ALT_FUNCTIONS,Device};
+        for i in 0..9 {
+            if GPIO_PIN_ALT_FUNCTIONS[pin as usize][i] == func {
+                let f = match i {
+                    0 => GpioPinFunctions::Input,
+                    1 => GpioPinFunctions::Output,
+                    2 => GpioPinFunctions::Func0,
+                    3 => GpioPinFunctions::Func1,
+                    4 => GpioPinFunctions::Func2,
+                    5 => GpioPinFunctions::Func3,
+                    6 => GpioPinFunctions::Func4,
+                    7 => GpioPinFunctions::Func5,
+                    _ => unreachable!()
+                };
+                self.set_function(pin, f);
+                return Ok(())
+            }
+        }
+        Err(())
+        
+    }
 }
