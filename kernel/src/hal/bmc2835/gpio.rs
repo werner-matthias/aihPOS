@@ -1,11 +1,25 @@
 //! General Purpose Input und Output (GPIO).
 //!
-//! Siehe BMC2835 Peripherals Manual, Seite 89ff.
-use super::Bmc2835;
-use bit_field::BitField;
-use super::system_timer::SystemTimer;
-use alloc::Vec;
-
+//! Die GPIO kann einerseits als einfache parallele Ein- und Ausgabeeinheit dienen,
+//! andererseit stellt sie das Interface für eine Vielzahl von Geräten dar. Dies sind:
+//!
+//! - 2 BSC/I2C-Master
+//! - 3 SPI (Serial Peripheral Interface, davon zwei Mini-SPI ohne DMA)
+//! - BSC/I2C/SPI-Slave
+//! - 2 UART (Mini-UART und PL011-UART)
+//! - 3 Taktgeneratoren
+//! - 2 Pulseweitenmodulatoren
+//! - PMC-Audio
+//! - JTAG
+//! - 2 Interfaces für externe Speichermedien (nicht vollständig dokumentiert)
+//!
+//! Die einzigen "eigenständigen" Funktionen der GPIO bestehen in der Ausgabe oder
+//! dem Lesen von Werten an den Pins: `get_pin` und `set_pin`.
+//! Alle anderen Methoden dienen der Konfiguration.
+//! Für ausführlichere Informationen, siehe BMC2835 Peripherals Manual, Seite 89ff.
+//!
+#![allow(dead_code)]
+#![warn(missing_docs)]
 const MAX_PIN_NR: u8 = 53;
 /// Alternative Funktionen für I/O-Pins.
 ///
@@ -21,7 +35,7 @@ pub enum GpioPinFunctions {
     Func4,
     Func5
 }
-///
+
 impl Into<u32> for GpioPinFunctions {
     /// 
     fn into(self) -> u32 {
@@ -38,7 +52,8 @@ impl Into<u32> for GpioPinFunctions {
     }
 }
 
-pub mod gpio_functions {
+/// Semanitische Konfiguration der Pin-Funktionen.
+pub mod gpio_config {
     /// Pinbelegung für UART (Universal Asynchronous Receiver Transmitter)
     #[derive(PartialEq)]
     pub enum UART {
@@ -98,9 +113,9 @@ pub mod gpio_functions {
     /// BSC ist Broadcoms Variante von I2C (Inter-Integrated Circuit)
     pub enum BSC {
         /// Daten
-        data,
+        Data,
         /// Takt
-        clock
+        Clock
     }
 
     /// Pinbelegung für PCM/I2S Audio 
@@ -166,16 +181,16 @@ pub mod gpio_functions {
     #[doc(hidden)]
     pub(super) const GPIO_PIN_ALT_FUNCTIONS: [[Device;8];MAX_PIN_NR as usize +1] =
         [   //Pin 0
-            [Device::Input,Device::Output,Device::BscMaster0(BSC::data),Device::Smi(5),
+            [Device::Input,Device::Output,Device::BscMaster0(BSC::Data),Device::Smi(5),
              Device::None,Device::None,Device::None,Device::None],
             // Pin 1
-            [Device::Input,Device::Output,Device::BscMaster0(BSC::clock),Device::Smi(4),
+            [Device::Input,Device::Output,Device::BscMaster0(BSC::Clock),Device::Smi(4),
              Device::None,Device::None,Device::None,Device::None],
             // Pin 2
-            [Device::Input,Device::Output,Device::BscMaster1(BSC::data),Device::Smi(3),
+            [Device::Input,Device::Output,Device::BscMaster1(BSC::Data),Device::Smi(3),
              Device::None,Device::None,Device::None,Device::None],
             // Pin 3
-            [Device::Input,Device::Output,Device::BscMaster1(BSC::clock),Device::Smi(2),
+            [Device::Input,Device::Output,Device::BscMaster1(BSC::Clock),Device::Smi(2),
              Device::None,Device::None,Device::None,Device::None],
             // Pin 4
             [Device::Input,Device::Output,Device::GeneralClock0,Device::Smi(1),
@@ -250,10 +265,10 @@ pub mod gpio_functions {
             [Device::Input,Device::Output,Device::None,Device::None,
              Device::None,Device::Emmc(3),Device::Jtag(JTAG::TMS),Device::None],
             // Pin 28
-            [Device::Input,Device::Output,Device::BscMaster0(BSC::data),Device::Smi(5),
+            [Device::Input,Device::Output,Device::BscMaster0(BSC::Data),Device::Smi(5),
              Device::Pcm(PCM::Clk),Device::None,Device::None,Device::None],
             // Pin 29
-            [Device::Input,Device::Output,Device::BscMaster0(BSC::clock),Device::Smi(4),
+            [Device::Input,Device::Output,Device::BscMaster0(BSC::Clock),Device::Smi(4),
              Device::Pcm(PCM::FS),Device::None,Device::None,Device::None],
             // Pin 30
             [Device::Input,Device::Output,Device::None,Device::Smi(3),
@@ -298,11 +313,11 @@ pub mod gpio_functions {
             [Device::Input,Device::Output,Device::GeneralClock2,Device::Smi(17),
              Device::None,Device::None,Device::Spi2(SPI::CE0),Device::Uart1(UART::CTS)],
             // Pin 44
-            [Device::Input,Device::Output,Device::GeneralClock1,Device::BscMaster0(BSC::data),
-             Device::BscMaster1(BSC::data),Device::None,Device::Spi2(SPI::CE1),Device::None],
+            [Device::Input,Device::Output,Device::GeneralClock1,Device::BscMaster0(BSC::Data),
+             Device::BscMaster1(BSC::Data),Device::None,Device::Spi2(SPI::CE1),Device::None],
             // Pin 45
-            [Device::Input,Device::Output,Device::Pwm1,Device::BscMaster0(BSC::clock),
-             Device::BscMaster1(BSC::clock),Device::None,Device::Spi2(SPI::CE2),Device::None],
+            [Device::Input,Device::Output,Device::Pwm1,Device::BscMaster0(BSC::Clock),
+             Device::BscMaster1(BSC::Clock),Device::None,Device::Spi2(SPI::CE2),Device::None],
             // Pin 46
             [Device::Input,Device::Output,Device::None,Device::None,
              Device::None,Device::None,Device::None,Device::None],
@@ -330,23 +345,34 @@ pub mod gpio_functions {
         ];
 }
 
-enum Event {
+/// Ereignisse, die durch die Ereignisserkennung 
+pub enum GpioEvent {
+    /// High-Signal (1) am Pin.
     High,
+    /// Low-Signal (0) am Pin.
     Low,
+    /// Steigende synchrone Signalflanke. 
     Rising,
+    /// Fallende synchrone Signalflanke. 
     Falling,
+    /// Steigende asynchrone Signalflanke. Damit werden auch sehr kurze Impulse erkannt.
     AsyncRising,
+    /// Fallende asynchrone Signalflanke. Damit werden auch sehr kurze Impulse erkannt.
     AsyncFalling
 }
 
-enum Pull {
+/// Werte für das Pullup/Pulldown-Verhalten eines Pins.
+pub enum GpioPull {
+    /// Kein Pullup/Pulldown
     Off,
+    /// Pulldown
     Down,
+    /// Pullup
     Up
 }
 
 #[repr(C)]
-struct Gpio {
+pub struct Gpio {
     function_select:     [u32;5],
     _reserved_0:         u32,
     output_set:          [u32;2],
@@ -375,6 +401,7 @@ struct Gpio {
     test:                u32
 }
 
+use super::Bmc2835;
 impl Bmc2835 for Gpio {
 
     fn base_offset() -> usize {
@@ -383,6 +410,8 @@ impl Bmc2835 for Gpio {
 
 }
 
+use bit_field::BitField;
+use alloc::Vec;
 impl Gpio {
 
     /// Weist dem `pin` die Funktion `func` zu.
@@ -425,28 +454,28 @@ impl Gpio {
     /// Aktiviert die Erkennung des gewünschten Ereignisses für den angegebenen Pin.
     ///
     /// Bei aktivierten GPIO-Interrupt (GPIO0 für 
-    fn set_event_detection(&mut self,pin: u8, ev: Event, b: bool) {
+    fn set_event_detection(&mut self,pin: u8, ev: GpioEvent, b: bool) {
         if pin <= MAX_PIN_NR {
             let regs: &mut[u32;2] = 
                 match ev {
-                    Event::High => &mut self.high_level_enable,
-                    Event::Low  => &mut self.low_level_enable,
-                    Event::Rising => &mut self.rising_edge_enable,
-                    Event::Falling => &mut self.falling_edge_enable,
-                    Event::AsyncRising => &mut self.async_rising_edge,
-                    Event::AsyncFalling => &mut self.async_falling_edge
+                    GpioEvent::High         => &mut self.high_level_enable,
+                    GpioEvent::Low          => &mut self.low_level_enable,
+                    GpioEvent::Rising       => &mut self.rising_edge_enable,
+                    GpioEvent::Falling      => &mut self.falling_edge_enable,
+                    GpioEvent::AsyncRising  => &mut self.async_rising_edge,
+                    GpioEvent::AsyncFalling => &mut self.async_falling_edge
                 };
             regs[pin as usize / 32].set_bit(pin % 32,b);
         }
     }
 
     /// Aktiviert die Ereigniserkennung für das gegebene Ereignis und den gegebenen Pin.
-    pub fn enable_event_detection(&mut self, pin: u8, ev: Event) {
+    pub fn enable_event_detection(&mut self, pin: u8, ev: GpioEvent) {
         self.set_event_detection(pin,ev,true);
     }
 
     /// Deaktiviert die Ereigniserkennung den gegebenen Pin.
-    pub fn disable_event_detection(&mut self, pin: u8, ev: Event) {
+    pub fn disable_event_detection(&mut self, pin: u8, ev: GpioEvent) {
         self.set_event_detection(pin,ev,false);
     }
 
@@ -499,12 +528,13 @@ impl Gpio {
     }
 
     /// Setzt Pullup/pulldown-Verhalten für den gegebenen Pin.
-    pub fn set_pull(&mut self, pin: u8, pull: Pull) {
+    pub fn set_pull(&mut self, pin: u8, pull: GpioPull) {
+        use super::system_timer::SystemTimer;
         if pin <= MAX_PIN_NR {
             let val: u32 = match pull {
-                Pull::Off  => 0b00,
-                Pull::Down => 0b01,
-                Pull::Up   => 0b10,
+                GpioPull::Off  => 0b00,
+                GpioPull::Down => 0b01,
+                GpioPull::Up   => 0b10,
             };
             self.pull_up_down_enable.set_bits(0..2,val);
             SystemTimer::get().busy_csleep(160);
@@ -514,8 +544,8 @@ impl Gpio {
         }
     }
 
-    pub fn config_pin(&mut self, pin: u8, func: gpio_functions::Device)  -> Result<(),()> {
-        use self::gpio_functions::{GPIO_PIN_ALT_FUNCTIONS,Device};
+    pub fn config_pin(&mut self, pin: u8, func: gpio_config::Device) -> Result<(),()> {
+        use self::gpio_config::GPIO_PIN_ALT_FUNCTIONS;
         for i in 0..9 {
             if GPIO_PIN_ALT_FUNCTIONS[pin as usize][i] == func {
                 let f = match i {
