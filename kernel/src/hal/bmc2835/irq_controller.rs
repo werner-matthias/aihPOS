@@ -1,8 +1,5 @@
-use super::Bmc2835;
-use bit_field::BitField;
-use alloc::vec::Vec;
-use super::Interrupt;
-
+#![allow(dead_code)]
+//use alloc::vec::Vec;
 const FIQ_BASIC_INTR_OFFSET: u32 = 64;
 const FIQ_ENABLE_BIT: u8        = 7;
 const FIQ_LAST_VALID: u32       = 71;
@@ -25,6 +22,7 @@ pub struct IrqController {
     disable_basic:   u32
 }
 
+use super::Bmc2835;
 impl Bmc2835 for IrqController {
     /// Basisadresse der IrqController-Hardwareregister.
     ///
@@ -37,7 +35,8 @@ impl Bmc2835 for IrqController {
 
 }
 
-
+use super::Interrupt;
+use bit_field::BitField;
 impl IrqController {
 
     /// Schaltet den gegebenen Interrupt aktiv.

@@ -1,7 +1,8 @@
 use super::Bmc2835;
-use bit_field::BitField;
+//use bit_field::BitField;
 
-pub struc Uart {
+#[allow(dead_code)]
+pub struct Uart {
     data:          u32,
     rcv_status:    u32,
     _padding_0:    [u32;4],

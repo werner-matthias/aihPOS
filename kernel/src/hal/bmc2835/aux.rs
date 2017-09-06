@@ -1,6 +1,5 @@
-use super::Bmc2835;
+#![allow(dead_code)] 
 use bit_field::BitField;
-
 pub enum AuxDevice {
     MiniUART = 0,
     SPI1,
@@ -50,6 +49,7 @@ pub struct SPI {
     peek:        u32,
 }
 
+use super::Bmc2835;
 impl Bmc2835 for Aux {
 
     fn base_offset() -> usize {

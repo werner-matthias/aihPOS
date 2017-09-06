@@ -1,8 +1,11 @@
 mod uart;
 mod aux;
+pub use self::aux::Aux;
 mod gpio;
+pub use self::gpio::{Gpio,GpioPinFunctions,GpioPull,GpioEvent,gpio_config};
 mod system_timer;
-
+pub use self::system_timer::SystemTimer;
+    
 mod arm_timer;
 pub use self::arm_timer::{ArmTimer,ArmTimerResolution};
 mod interrupts;

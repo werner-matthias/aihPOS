@@ -1,6 +1,5 @@
-use super::Bmc2835;
+#![allow(dead_code)]
 use bit_field::BitField;
-use core::ptr::read_volatile;
 
 #[repr(C)]
 pub struct SystemTimer {
@@ -13,6 +12,7 @@ pub struct SystemTimer {
     pub compare_3: u32,
 }
 
+use super::Bmc2835;
 impl Bmc2835 for SystemTimer {
 
     fn base_offset() -> usize {
@@ -58,10 +58,11 @@ impl SystemTimer {
     }
 
     pub fn get_long_counter(&self) -> u64 {
+        use core::ptr::read_volatile;
         let mut low:  u32 = unsafe{ read_volatile(&self.counter_low)};;
         let mut high: u32 = 0;
         let mut last: u32 = unsafe{ read_volatile(&self.counter_high)};
-        while (last != high) {
+        while last != high {
             high = last;
             unsafe{
                 low =  read_volatile(&self.counter_low);
@@ -76,6 +77,7 @@ impl SystemTimer {
     /// # Anmerkung
     /// `busy_csleep` sollte nicht in ISRs eingesetzt werden.
     pub fn busy_csleep(&self, cyc: u32) {
+        use core::ptr::read_volatile;
         let dest: u32 = self.counter_low.wrapping_add(cyc);
         if dest > self.counter_low {
             unsafe {

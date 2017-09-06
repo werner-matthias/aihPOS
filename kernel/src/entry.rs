@@ -250,7 +250,7 @@ pub extern "C" fn interrupt_service() {
     //use core::sync::atomic::{Ordering};
     //use ::TEST_BIT;
     //unsafe{ TEST_BIT.store(true,Ordering::SeqCst);}
-    let mut timer = ArmTimer::get();
+    let timer = ArmTimer::get();
     kprint!("Interrupt!\n";GREEN);
     //timer.next_count(1000000);
     timer.reset_interrupt();
