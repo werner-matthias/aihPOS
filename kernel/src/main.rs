@@ -76,8 +76,7 @@ pub  const INIT_HEAP_SIZE: usize = 25 * 4096; // 25 Seiten = 100 kB
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
-use core::sync::atomic::{AtomicBool, Ordering};
-
+use core::sync::atomic::{AtomicBool};
 static mut TEST_BIT: AtomicBool = AtomicBool::new(false);
 
 #[no_mangle]      // Name wird für den Export nicht verändert
@@ -113,7 +112,7 @@ pub(self) fn kernel_init() {
     KernelData::set_pid(KERNEL_PID);
     report();
     init_mem();
-    init_interrupt();
+    init_devices();
     test();
     kprint!("Rückkehr aus test() ??!\n";RED);
     loop {}
@@ -246,7 +245,20 @@ fn init_paging() {
     kprint!("MMU aktiviert.\n");
 }
 
-fn init_interrupt() {
+fn init_devices() {
+    // Uart
+    //
+    // Schalte die entsprechenden Pins frei.
+    use hal::bmc2835::{Gpio,GpioPull,gpio_config};
+    let gpio = Gpio::get();
+    gpio.config_pin(14,gpio_config::Device::Uart0(gpio_config::UART::TxD)).expect_err("invalid GPIO configuration.");
+    gpio.config_pin(15,gpio_config::Device::Uart0(gpio_config::UART::RxD)).expect_err("invalid GPIO configuration.");
+    // Schalte Pullup/down für diese Pins ab.
+    gpio.set_pull(14,GpioPull::Off);
+    gpio.set_pull(15,GpioPull::Off);
+    //
+    // Timer
+    // 
     let irq_controller = IrqController::get();
     irq_controller.enable(BasicInterrupt::ARMtimer);
     let timer = ArmTimer::get()
@@ -288,6 +300,7 @@ fn report() {
     debug::kprint::deb_info();
 }
 
+#[allow(unreachable_code)]
 fn test() {
     let _stack: [u32;1024] = [0u32;1024];
     kprint!("Start Test.\n");
@@ -296,7 +309,7 @@ fn test() {
     Cpu::enable_interrupts();
     //Cpu::set_mode(ProcessorMode::User);
     /*
-    kprint!("Arbeite im Usr-Mode.\n");
+    kprint!("Arbeite im Usr-Mode.\n"); 
     {
         let ret=syscall!(23,1,2);
         kprint!("Returned from system call: {}.\n",ret);
