@@ -54,13 +54,13 @@ pub enum MiniUartEnable {
     Both
 }
 
-pub MiniUartTError {
+pub enum MiniUartError {
     Empty,
     Overrun,
 }
 
 #[repr(C)]
-pub struct MiniUART {
+pub struct MiniUart {
         io:         u32,
         int_enable: u32,
         int_ident:  u32,
@@ -75,7 +75,7 @@ pub struct MiniUART {
 }
 
 
-impl Bmc2835 for MiniUART {
+impl Bmc2835 for MiniUart {
 
     fn base_offset() -> usize {
         0x215040
@@ -83,7 +83,7 @@ impl Bmc2835 for MiniUART {
     
 }
 
-impl MiniUART {
+impl MiniUart {
 
     pub fn enable(&mut self, e: MiniUartEnable) {
         match e {
