@@ -1,6 +1,6 @@
 mod uart;
 mod aux;
-pub use self::aux::Aux;
+pub use self::aux::{MiniUart,MiniUartEnable};
 mod gpio;
 pub use self::gpio::{Gpio,GpioPinFunctions,GpioPull,GpioEvent,gpio_config};
 mod system_timer;

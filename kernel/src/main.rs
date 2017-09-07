@@ -26,6 +26,7 @@
     //nonzero,                  // Werte ohne Null (hier: usize)
     plugin,                   // Nutzung von Compiler-Plugins
     repr_align,               // Alignment
+    try_from,                 // Nutzung des TryFrom-Traits
     use_extern_macros,
     //unique,                   // Unique-Pointer
     used,                     // Erlaubt das Verbot, scheinbar toten Code zu eliminieren
@@ -251,11 +252,23 @@ fn init_devices() {
     // Schalte die entsprechenden Pins frei.
     use hal::bmc2835::{Gpio,GpioPull,gpio_config};
     let gpio = Gpio::get();
-    gpio.config_pin(14,gpio_config::Device::Uart0(gpio_config::UART::TxD)).expect_err("invalid GPIO configuration.");
-    gpio.config_pin(15,gpio_config::Device::Uart0(gpio_config::UART::RxD)).expect_err("invalid GPIO configuration.");
+    gpio.config_pin(14,gpio_config::Device::Uart1(gpio_config::UART::TxD)).unwrap();
+    gpio.config_pin(15,gpio_config::Device::Uart1(gpio_config::UART::RxD)).unwrap();
     // Schalte Pullup/down für diese Pins ab.
     gpio.set_pull(14,GpioPull::Off);
     gpio.set_pull(15,GpioPull::Off);
+
+    use hal::bmc2835::{MiniUart,MiniUartEnable};
+    let uart1 = MiniUart::get();
+    // Löscht alle Interrupts
+    /*
+    PUT32(UART0_ICR,0x7FF);
+    Löscht alle Inter
+    PUT32(UART0_IBRD,1);
+    PUT32(UART0_FBRD,40);
+    PUT32(UART0_LCRH,0x70);
+    PUT32(UART0_CR,0x301);
+     */
     //
     // Timer
     // 
