@@ -544,7 +544,7 @@ impl Gpio {
         }
     }
 
-    pub fn config_pin(&mut self, pin: u8, func: gpio_config::Device) -> Result<(),()> {
+    pub fn config_pin(&mut self, pin: u8, func: gpio_config::Device) -> Result<(),&str> {
         use self::gpio_config::GPIO_PIN_ALT_FUNCTIONS;
         for i in 0..9 {
             if GPIO_PIN_ALT_FUNCTIONS[pin as usize][i] == func {
@@ -563,7 +563,7 @@ impl Gpio {
                 return Ok(())
             }
         }
-        Err(())
+        Err("invalid GPIO Pin configuration")
         
     }
 }
