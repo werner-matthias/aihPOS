@@ -411,7 +411,6 @@ impl Bmc2835 for Gpio {
 }
 
 use bit_field::BitField;
-use alloc::Vec;
 impl Gpio {
 
     /// Weist dem `pin` die Funktion `func` zu.
@@ -511,20 +510,10 @@ impl Gpio {
         self.event_status[pin as usize / 32].get_bit(pin & 32)
     }
 
-    /// Gibt all vorliegenden Ereignisse zurück.
-    pub fn get_events(&self) -> Vec<u8> {
-        let mut ret: Vec<u8> = Vec::<u8>::new();
+    /// Gibt alle vorliegenden Ereignisse als Bit-Menge zurück.
+    pub fn get_events(&self) -> u64 {
         let events: u64 = ((self.level[1] as u64) << 32) + self.level[0] as u64;
-        let mut mask: u64 = 0x1;
-        let mut nr: u8 = 0;
-        while nr <= MAX_PIN_NR {
-            if events & mask != 0 {
-                ret.push(nr.clone());
-            }
-            nr += 1;
-            mask <<= 1;
-        }
-        ret
+        events
     }
 
     /// Setzt Pullup/pulldown-Verhalten für den gegebenen Pin.
