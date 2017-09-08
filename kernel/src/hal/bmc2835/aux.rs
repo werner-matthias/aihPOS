@@ -1,5 +1,7 @@
 #![allow(dead_code)] 
 use bit_field::BitField;
+use hal::bmc2835::uart::*;
+
 pub enum AuxDevice {
     MiniUART = 0,
     SPI1,
@@ -47,12 +49,7 @@ impl Aux {
     }
 }
 
-pub enum MiniUartEnable {
-    None,
-    Receiver,
-    Transmitter,
-    Both
-}
+
 
 pub enum MiniUartError {
     Empty,
@@ -85,26 +82,6 @@ impl Bmc2835 for MiniUart {
 
 impl MiniUart {
 
-    pub fn enable(&mut self, e: MiniUartEnable) {
-        match e {
-            MiniUartEnable::None => {
-                Aux::get().enable(AuxDevice::MiniUART,false);
-                self.ctrl.set_bits(0..2,0b00);
-            },
-            MiniUartEnable::Transmitter => {
-                Aux::get().enable(AuxDevice::MiniUART,true);
-                self.ctrl.set_bits(0..2,0b10);
-            },
-            MiniUartEnable::Receiver => {
-                Aux::get().enable(AuxDevice::MiniUART,true);
-                self.ctrl.set_bits(0..2,0b01);
-            },
-            MiniUartEnable::Both => {
-                Aux::get().enable(AuxDevice::MiniUART,true);
-                self.ctrl.set_bits(0..2,0b11);
-            }
-        }
-    }
 
     pub fn is_pending(&self) -> bool {
         Aux::get().is_pending(AuxDevice::MiniUART)
@@ -139,12 +116,52 @@ impl MiniUart {
         }
     }
 
-    
-
     pub fn read(&self) -> Result<u8,()> {
         Ok(0)
     }
 
+}
+
+impl Uart for MiniUart {
+    fn enable(&mut self, e:UartEnable) {
+        match e {
+            UartEnable::None => {
+                Aux::get().enable(AuxDevice::MiniUART,false);
+                self.ctrl.set_bits(0..2,0b00);
+            },
+            UartEnable::Transmitter => {
+                Aux::get().enable(AuxDevice::MiniUART,true);
+                self.ctrl.set_bits(0..2,0b10);
+            },
+            UartEnable::Receiver => {
+                Aux::get().enable(AuxDevice::MiniUART,true);
+                self.ctrl.set_bits(0..2,0b01);
+            },
+            UartEnable::Both => {
+                Aux::get().enable(AuxDevice::MiniUART,true);
+                self.ctrl.set_bits(0..2,0b11);
+            }
+        }
+    }
+    fn set_data_width(&mut self, width: u8) -> Result<(),UartError> {
+        unimplemented!();
+    }
+    
+    fn set_parity(&mut self, parity: UartParity) -> Result<(),UartError>{
+        unimplemented!();
+    }
+    
+    fn set_stop_bits(&mut self, number: u8) -> Result<(),UartError>{
+        unimplemented!();
+    }
+    
+    fn read(&self) -> Result<u8,UartError>{
+        unimplemented!();
+    }
+    
+    fn write(&mut self, data: u8) -> Result<u8,UartError>{
+        unimplemented!();
+    }
 }
 
 pub struct SPI {

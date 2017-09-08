@@ -1,25 +1,33 @@
-pub enum UartError {
-    NotSupported,
-    InvalidParity,
-    InvalidFrame,
-    Break,
-    Overrun,
-    Empty,
-}
-
+#[derive(Copy, Clone, Debug, PartialEq)]
+#[allow(dead_code)]
 pub enum UartParity {
     None,
     Even,
     Odd,
-    Stick
+    StickOne,
+    StickZero,
 }
 
-pub enum UartInterrupt {
-    
+#[derive(Copy, Clone, Debug)]
+#[allow(dead_code)]
+pub enum UartEnable {
+    None,
+    Receiver,
+    Transmitter,
+    Both
 }
 
-trait Uart {
-    fn enable(&mut self);
+#[derive(Copy, Clone, Debug)]
+#[allow(dead_code)]
+pub enum UartError {
+    NoSupported,
+    Invalid,
+    FIFOfull,
+    Failed
+}
+
+pub trait Uart {
+    fn enable(&mut self, e: UartEnable);
     
     fn set_data_width(&mut self, width: u8) -> Result<(),UartError>;
 
