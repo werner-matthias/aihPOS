@@ -1,77 +1,63 @@
 use core::mem;
+use core::marker::Sized;
+use compiler_builtins::int::Int;
 use core::marker::PhantomData;
-use core::ops::{BitOr,BitOrAssign};
-use core::convert::Into;
 
-#[derive(Clone,Copy)]
-struct EnumSet<T,U>(U, PhantomData<T>);
 
-struct EnumSetIterator<T,U> {
-    set: EnumSet<T,U>,
+pub struct EnumSetIterator<E,U> {
+    set:  U,
+    phantom: PhantomData<E>
 }
 
-impl<T,U> EnumSet<T,U> {
-
-    pub fn empty() -> EnumSet<T,U>  where U:From<u32>{
-        EnumSet::<T,U>(U::from(0),PhantomData)
-    }
+pub trait EnumSet<U: Int> {
     
-    pub fn new(v: &T) -> Result<EnumSet<T,U>,U>
-        where U:PartialOrd {
-        let val: U = unsafe{ mem::transmute_copy(v) };
-        if val.into::<u64>() > 31 {
-            Err(val)
-        } else {
-            Ok(EnumSet(0x1 << val,PhantomData))
-        }
+    fn as_set(&self) -> U where Self: Sized, U: Int {
+        let val: u32  = unsafe{ mem::transmute(self) };
+        U::one() << val
     }
 
-    pub fn iterator (&self) -> EnumSetIterator<T,U> where T:Clone {
-        EnumSetIterator::<T,U> {
-            set: (*self).clone(),
+    fn iterator(set: U) -> EnumSetIterator<Self,U> where Self: Sized{
+        EnumSetIterator::<Self,U> {
+            set: set,
+            phantom: PhantomData
         }
     }
 }
 
-impl<T,U> Into<U> for EnumSet<T,U> {
-    fn into(self) -> U {
-        self.0
-    }
-}
-
-impl<T,U> BitOr<EnumSet<T,U>> for EnumSet<T,U> {
-    type Output = Self;
-
-    fn bitor(self, rhs: Self) -> Self {
-        EnumSet::<T,U>(self.0 | rhs.0,PhantomData)
-    }
-}
-
-impl<T,U> BitOrAssign<EnumSet<T,U>> for EnumSet<T,U> {
-
-    fn bitor_assign(&mut self, rhs: EnumSet<T,U>)  {
-        self.0 = self.0 | rhs.0;
-    }
-}
-
-
-impl<T,U> Iterator for EnumSet<T,U> {
-    type Item = T;
-
-    fn next(&mut self) -> Option<T> {
-        if self.0 == 0 {
-            None
-        } else {
-            let pos = self.0.trailing_zeros();
-            let element = 0x1 << pos;
-            self.0 &= !element;
-            let en: T =  unsafe{ mem::transmute_copy(&element) };
-            Some(en)
+impl<E,U: Int> Iterator for EnumSetIterator<E,U> {
+    type Item = E;
+    
+    fn next(&mut self) -> Option<E> {
+        let pos: u32 = 0;
+        while pos < U::bits() {
+            let mask: U = U::one() << pos;
+            if self.set & mask != U::zero() {
+                // Lösche Bit
+                self.set &= mask;
+                // Sicher, da E das #[repr(u32)]-Attribut hat
+                let element: E = unsafe{  mem::transmute_copy(&pos) };
+                return Some(element)
+            }
         }
+        None
     }
 }
 
-
-
-
+// Hier wären vermutlich ein Macro 1.1 besser, 
+// aber es geht auch so.
+#[macro_export]
+macro_rules! setable_enum{
+    ($t:ty; $e:ident
+     {
+         $($i:ident $(= $val:expr)*, )*
+     }
+    ) => (
+        #[repr(u32)]
+        enum $e {
+            $( $i $(= $val)* , )*
+        }
+            
+        impl EnumSet<$t> for $e {}
+        )
+}
 
