@@ -26,25 +26,26 @@
     //nonzero,                  // Werte ohne Null (hier: usize)
     plugin,                   // Nutzung von Compiler-Plugins
     repr_align,               // Alignment
-    try_from,                 // Nutzung des TryFrom-Traits
+    //try_from,                 // Nutzung des TryFrom-Traits
     use_extern_macros,
     //unique,                   // Unique-Pointer
     used,                     // Erlaubt das Verbot, scheinbar toten Code zu eliminieren
 )
 ]
-#![plugin(compiler_error)]
+//#![plugin(compiler_error)]
 #![doc(html_logo_url = "file:///Users/mwerner/Development/aihPOS/aihPOS-docs/logo-128.png")]
 /// Benutzte Crates
 extern crate alloc;
 //extern crate collections;
 extern crate bit_field;
 extern crate compiler_builtins;
-
 #[macro_use]
 mod aux_macros;
-#[macro_use] mod debug;
+#[macro_use]
+mod debug;
 mod hal;
 mod panic;
+#[macro_use]
 mod data;
 mod process;
 mod sync;
@@ -258,17 +259,14 @@ fn init_devices() {
     gpio.set_pull(14,GpioPull::Off);
     gpio.set_pull(15,GpioPull::Off);
 
-    use hal::bmc2835::{MiniUart,MiniUartEnable};
-    let uart1 = MiniUart::get();
+    use hal::bmc2835::{Pl011,Pl011Interrupt,Uart,UartEnable,UartParity};
+    let uart0 = Pl011::get();
     // Löscht alle Interrupts
-    /*
-    PUT32(UART0_ICR,0x7FF);
-    Löscht alle Inter
-    PUT32(UART0_IBRD,1);
-    PUT32(UART0_FBRD,40);
-    PUT32(UART0_LCRH,0x70);
-    PUT32(UART0_CR,0x301);
-     */
+    uart0.clear_interrupt(Pl011Interrupt::All);
+    uart0.set_baud_rate(1,40).expect("Can't set baud rate");
+    uart0.set_data_width(8).expect("Can't set data width");
+    uart0.set_parity(UartParity::None).expect("Can't set parity");;
+    uart0.enable(UartEnable::Both);
     //
     // Timer
     // 
@@ -312,14 +310,28 @@ fn report() {
     kprint!("0x{:08x} ({:10}): TOS Interrupt\n",determine_irq_stack() as usize, determine_irq_stack() as usize; WHITE);
     debug::kprint::deb_info();
 }
-
+//#[macro_use]
+//use data::bit_pos_enum::{EnumSet,EnumSetIterator};
+/*
+setable_enum!{
+    u32;
+    Foo{
+        A,
+        B = 0,
+        C,
+        D,
+    }
+}*/
+                   
 #[allow(unreachable_code)]
 fn test() {
     let _stack: [u32;1024] = [0u32;1024];
     kprint!("Start Test.\n");
+
+    
     //Cpu::set_mode(ProcessorMode::System);
     //Cpu::set_stack(&stack as *const _ as usize);
-    Cpu::enable_interrupts();
+    //Cpu::enable_interrupts();
     //Cpu::set_mode(ProcessorMode::User);
     /*
     kprint!("Arbeite im Usr-Mode.\n"); 
