@@ -2,6 +2,7 @@
 use hal::cpu::Cpu;
 use hal::bmc2835::Bmc2835;
 use hal::bmc2835::ArmTimer;
+use syscall_interface::{SysCall};
 use ::kernel_start;
 //use debug::blink;
 
@@ -12,7 +13,7 @@ pub struct ExceptionTable {
     dispatch: (
         extern "C" fn(), // (Re-)Start
         extern "C" fn(), // Unbekannter Befehl
-        extern "C" fn(u32,u32,u32), // Systemruf
+        extern "C" fn(u32,u32,u32,u32), // Systemruf
         extern "C" fn(), // Befehl soll von ungültiger Adresse gelesen werden
         extern "C" fn(), // Speicherzugriff mit ungültiger Adresse, z.B. nichtexistent oder
                          // unaligned, oder fehlende Zugriffsrechte etc.
@@ -46,7 +47,7 @@ pub static execption_table: ExceptionTable = ExceptionTable {
 
 pub struct ServiceRoutine{
     undef:      fn(*const u32),
-    svc:        fn(u32,u32,u32) -> u32,
+    svc:        fn(SysCall,u32,u32,u32) -> u32,
     abort:      fn(*const u32),
     data_abort: fn(*const u32),
     irq:        fn(),
@@ -56,7 +57,7 @@ pub struct ServiceRoutine{
 #[allow(non_upper_case_globals)]
 pub static service_routine: ServiceRoutine =  ServiceRoutine{
             undef:      undefined_service_routine,
-            svc:        ::svc_service_routine,
+            svc:        SysCall::svc_service_routine,
             abort:      abort_service_routine,
             data_abort: data_abort_service_routine,
             irq:        irq_service_routine,
@@ -81,17 +82,17 @@ pub extern "C" fn dispatch_undefined() {
 #[naked]
 #[inline(never)]
 #[allow(unused_variables)]
-pub extern "C" fn dispatch_svc(nr: u32, arg1: u32, arg2: u32){
+pub extern "C" fn dispatch_svc(nr: u32, arg1: u32, arg2: u32, arg3: u32){
      unsafe {
          asm!("push {r0-r12, lr}":::"memory");
-         asm!("and r4, sp, #4":::"memory");
-         asm!("sub sp, sp, r4":::"memory");
-         asm!("push {r0,r4}":::"memory");
+         //asm!("and r5, sp, #4":::"memory");
+         //asm!("sub sp, sp, r5":::"memory");
+         //asm!("push {r0,r5}":::"memory");
          Cpu::data_memory_barrier();
          asm!("bl svc_service_routine":::"memory","r0","r1");
          Cpu::data_memory_barrier();
-         asm!("pop {r0,r4}":::"memory");
-         asm!("add sp, sp, r4":::"memory");
+         //asm!("pop {r0,r5}":::"memory");
+         //asm!("add sp, sp, r5":::"memory");
          asm!("ldmfd sp!, {r0-r12, pc}^":::"memory");
     }}
 
@@ -226,13 +227,13 @@ pub fn data_abort_service_routine(adr: *const u32) {
 // und damit nicht vom Optimizer global verändert wird.
 #[linkage="weak"]
 #[allow(unused_variables)]
-pub fn syscall(nr: u32, arg1: u32, arg2: u32) -> u32 {
+pub fn syscall(nr: SysCall, arg1: u32, arg2: u32, arg3: u32) -> u32 {
     #[allow(unused_assignments)]
     let ret: u32;// = nr;
     unsafe{
-        // Die Parameter (nach ARM Calling Konvention in den Registern r0-r2) werden durchgereicht.
+        // Die Parameter (nach ARM Calling Konvention in den Registern r0-r3) werden durchgereicht.
         // Sicherheitshalber werden diese Register dem Compiler als "vermint" gemeldet.
-        asm!("":::"r0","r1","r2");
+        asm!("":::"r0","r1","r2","r3");
         // Der Optimizer erkennt keinen Ruf und rettet das Link-Register nicht, daher
         // muss dies manuell geschehen
         asm!("push {lr}");   
@@ -260,7 +261,8 @@ pub extern "C" fn interrupt_service() {
 // Zur Bequemlichkeit gibt es ein Macro, das Systemrufe mit 0 bis 2 Argumenten zulässt.
 // Ungenutzte Argumente werden auf Null gesetzt.
 macro_rules! syscall{
-    ($e:expr) => { syscall($e,0,0)};
-    ($e:expr,$a1:expr) => { syscall($e,$a1,0)};
-    ($e:expr,$a1:expr,$a2:expr) => { syscall($e,$a1,$a2)};
+    ($e:expr) => { syscall($e,0,0,0)};
+    ($e:expr,$a1:expr) => { syscall($e,$a1,0,0)};
+    ($e:expr,$a1:expr,$a2:expr) => { syscall($e,$a1,$a2,0)};
+    ($e:expr,$a1:expr,$a2:expr,$a3:expr) => { syscall($e,$a1,$a2,$a3)};
 }
