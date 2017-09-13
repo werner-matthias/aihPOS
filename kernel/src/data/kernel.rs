@@ -6,17 +6,19 @@ pub type PidType = usize;
 pub const KERNEL_PID: PidType = 0;
 
 pub struct KernelData {
-    pid: PidType,
-    kpages: PageTable,
-    spages: PageTable,
+        pid: PidType,
+        kpages: PageTable,
+        spages: PageTable,
+    pub toss:   Option<usize>,
 }
 
 impl KernelData {
     pub const fn new() -> KernelData {
         KernelData {
-            pid: KERNEL_PID,
-            kpages: PageTable::new(),
-            spages: PageTable::new(),
+                pid:    KERNEL_PID,
+                kpages: PageTable::new(),
+                spages: PageTable::new(),
+                toss:   None,
         }
     }
 }
@@ -30,6 +32,14 @@ impl KernelData {
 
     pub fn set_pid(pid: PidType) {
         KERNEL_DATA.get().pid = pid
+    }
+
+    pub fn get_toss() -> Option<usize> {
+        KERNEL_DATA.get().toss
+    }
+
+    pub fn set_toss(tos: usize) {
+        KERNEL_DATA.get().toss = Some(tos);
     }
 
     pub fn kpages<'a>() -> &'a mut PageTable {
