@@ -25,6 +25,8 @@ const MAX_PIN_NR: u8 = 53;
 ///
 /// Jedes Pin des Gpio kann bis zu 8 verschiedene Funktionen ausüben.
 /// Für eine Übersicht der einzelnen Funktionsen siehe BMC2835 Peripherals Manual, Seite 102f.
+#[derive(Copy,Clone,Debug)]
+#[repr(u32)]
 pub enum GpioPinFunctions {
     Input,
     Output,
@@ -53,9 +55,10 @@ impl Into<u32> for GpioPinFunctions {
 }
 
 /// Semanitische Konfiguration der Pin-Funktionen.
+
 pub mod gpio_config {
     /// Pinbelegung für UART (Universal Asynchronous Receiver Transmitter)
-    #[derive(PartialEq)]
+    #[derive(Debug,PartialEq)]
     pub enum UART {
         /// Daten senden (transmit data)
         TxD,
@@ -68,7 +71,7 @@ pub mod gpio_config {
     }
 
     /// Pinbelegung für SPI (Serial Peripheral Interface)
-    #[derive(PartialEq)]
+    #[derive(Debug,PartialEq)]
     pub enum SPI {
         /// Auswahl von Slave 0 (chip enable 0) (nur Master)
         CE0,
@@ -87,7 +90,7 @@ pub mod gpio_config {
     }
 
     /// Pinbelegung für JTAG (Joint Test Action Group Interface)
-    #[derive(PartialEq)]
+    #[derive(Debug,PartialEq)]
     pub enum JTAG {
         /// Dateneingang (test data in)
         TDI,
@@ -107,7 +110,7 @@ pub mod gpio_config {
         RTCK, 
     }
 
-    #[derive(PartialEq)]
+    #[derive(Debug,PartialEq)]
     /// Pinbelegung für BSC (Broadcom Serial Controller)
     ///
     /// BSC ist Broadcoms Variante von I2C (Inter-Integrated Circuit)
@@ -119,7 +122,7 @@ pub mod gpio_config {
     }
 
     /// Pinbelegung für PCM/I2S Audio 
-    #[derive(PartialEq)]
+    #[derive(Debug,PartialEq)]
     pub enum PCM {
         /// Takt (clock)
         Clk,
@@ -132,7 +135,7 @@ pub mod gpio_config {
     }
 
     ///
-    #[derive(PartialEq)]
+    #[derive(Debug,PartialEq)]
     pub enum Device {
         /// Nicht belegt / reserviert
         None,
@@ -162,7 +165,7 @@ pub mod gpio_config {
         Pwm1,
         /// 
         Emmc(u8),
-        /// UART 0
+        /// UART 0 = Pl001
         Uart0(UART),
         /// UART 1 (mini UART über AUX)
         Uart1(UART),
@@ -420,7 +423,11 @@ impl Gpio {
             let ndx: usize = pin as usize / 10;
             // ... und jeder Pin braucht 3 Bit.
             let start_bit: u8 = (pin % 10) * 3;
-            self.function_select[ndx].set_bits(start_bit..(start_bit+3),func as u32);
+            let bits: u32 = func.into();
+            //kprint!("Setze Pin {} (Bits {:x}...{:x}) auf {:03b}\n",pin,start_bit,start_bit+2,bits;RED);
+            self.function_select[ndx].set_bits(start_bit..(start_bit+3),bits);
+            //kprint!("Selection-Word @ {:08x} ist {:08x}\n",&self.function_select[ndx] as *const _ as u32,
+            //        self.function_select[ndx];CYAN);
         }
     }
 
@@ -534,10 +541,11 @@ impl Gpio {
     }
 
     pub fn config_pin(&mut self, pin: u8, func: gpio_config::Device) -> Result<(),&str> {
+        // kprint!("Call config_pin({:x},{:?})\n",pin,func;BLUE);
         use self::gpio_config::GPIO_PIN_ALT_FUNCTIONS;
         for i in 0..9 {
             if GPIO_PIN_ALT_FUNCTIONS[pin as usize][i] == func {
-                let f = match i {
+                let f: GpioPinFunctions = match i {
                     0 => GpioPinFunctions::Input,
                     1 => GpioPinFunctions::Output,
                     2 => GpioPinFunctions::Func0,
@@ -548,6 +556,8 @@ impl Gpio {
                     7 => GpioPinFunctions::Func5,
                     _ => unreachable!()
                 };
+                let ib: u32 = f.clone().into();
+                //kprint!("Gefunden: {} => Setze Pin {} auf {:03b}.\n",i,pin as u32,ib;CYAN);
                 self.set_function(pin, f);
                 return Ok(())
             }
