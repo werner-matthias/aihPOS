@@ -7,7 +7,7 @@
     "vendor": "unknown",
     "arch": "arm",
     "cpu": "arm1176jzf-s",
-    "features": "+dsp,+vfp2",
+    "features": "+dsp,+vfp2,+strict-align",
     "linker": "arm-none-eabi-gcc",
     "linker-flavor": "gcc",
     "pre-link-args": [ 
