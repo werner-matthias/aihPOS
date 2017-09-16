@@ -1,24 +1,29 @@
 use memory::{PageTable, FrameManager,PageDirectory};
 use sync::no_concurrency::NoConcurrency;
 
+use data::isr_table::IsrTable;
+
 pub type PidType = usize;
+
 
 pub const KERNEL_PID: PidType = 0;
 
 pub struct KernelData {
-        pid: PidType,
-        kpages: PageTable,
-        spages: PageTable,
-    pub toss:   Option<usize>,
+        pid:              PidType,
+        kpages:           PageTable,
+        spages:           PageTable,
+        isr_table:        Option<IsrTable>,
+    pub toss:             Option<usize>,
 }
 
 impl KernelData {
     pub const fn new() -> KernelData {
         KernelData {
-                pid:    KERNEL_PID,
-                kpages: PageTable::new(),
-                spages: PageTable::new(),
-                toss:   None,
+            pid:       KERNEL_PID,
+            kpages:    PageTable::new(),
+            spages:    PageTable::new(),
+            isr_table: None,
+            toss:      None,
         }
     }
 }
@@ -56,5 +61,12 @@ impl KernelData {
 
     pub fn page_directory<'a>() -> &'a mut PageDirectory {
         PageDirectory::get()
+    }
+
+    pub fn isr_table<'a>() -> &'a mut IsrTable {
+        if !KERNEL_DATA.get().isr_table.is_some() {
+            KERNEL_DATA.get().isr_table = Some(IsrTable::new());
+        }
+        KERNEL_DATA.get().isr_table.as_mut().unwrap()
     }
 }
