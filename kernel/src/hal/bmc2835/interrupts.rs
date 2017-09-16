@@ -1,3 +1,6 @@
+pub const NUM_INTERRUPTS: usize        = 72;
+pub const FIRST_BASIC_INTERRUPT: usize = 64;
+
 /// Der `Interrupt`-Trait dient zum Überladen von `IrqController`-Methoden.
 ///
 /// # Arten von Interrupts
@@ -17,8 +20,11 @@
 pub trait Interrupt {
     /// Konvertiert Interrupt in die u32-Interruptnummer.
     fn as_u32(&self) -> u32;
-
+    
     /// Gibt den Interrupt als `Option`, wenn es ein Basicinterrupt ist, sonst `None`.
+    ///
+    /// # Anmerkung
+    /// Einige allgemeine Interrupts sind auch Basicinterrupts und werden als solche zurückgegeben.
     fn as_basic_interrupt(&self) -> Option<BasicInterrupt>;
 
     /// Gibt den Interrupt als `Option`, wenn es ein allgemeiner Interrupt ist, sonst `None`.
@@ -27,16 +33,31 @@ pub trait Interrupt {
     /// Einige Basicinterrupts sind auch allgemeine Interrupts und werden als solche zurückgegeben.
     fn as_general_interrupt(&self) -> Option<GeneralInterrupt>;
 
+    /// Wahr bei einem allgemeinem Interrupt.
     fn is_general(&self) -> bool;
 
+    /// Wahr bei einem Basicinterrupt.
     fn is_basic(&self) -> bool;
+    
+    /// Eindeutige Id des Interrupt.
+    ///
+    /// Diese entspricht der Nummer, die bei der Auswahl des FIQ genutzt wird,
+    /// siehe BMC2835 ARM Peripherals 7.5, S.116.
+    fn uid(&self) -> usize {
+        if let Some(int) = self.as_general_interrupt() {
+            self.as_u32() as usize
+        } else {
+            FIRST_BASIC_INTERRUPT + self.as_u32() as usize
+        }
+    }
 }
 
+ 
 /// General Interrupts.
 ///
 /// Vgl. https://github.com/raspberrypi/linux/blob/rpi-3.6.y/arch/arm/mach-bcm2708/include/mach/platform.h
 /// Die genaue Interruptursache ist z.T. schlecht dokumentiert.
-#[derive(Copy,Clone,Debug)]
+#[derive(Copy,Clone,Debug,PartialOrd,PartialEq,Eq,Ord)]
 #[repr(u32)]
 #[allow(missing_docs)]
 #[allow(dead_code)]
@@ -146,7 +167,20 @@ impl Interrupt for GeneralInterrupt {
     }
 
     fn as_basic_interrupt(&self) -> Option<BasicInterrupt> {
-        None
+       match *self {
+           GeneralInterrupt::JPEG  => Some(BasicInterrupt::JPEG),
+           GeneralInterrupt::USB   => Some(BasicInterrupt::USB),
+           GeneralInterrupt::GPU3D => Some(BasicInterrupt::GPU3D),
+           GeneralInterrupt::DMA2  => Some(BasicInterrupt::DMA2),
+           GeneralInterrupt::DMA3  => Some(BasicInterrupt::DMA3),
+           GeneralInterrupt::I2C   => Some(BasicInterrupt::I2C),
+           GeneralInterrupt::SPI   => Some(BasicInterrupt::SPI),
+           GeneralInterrupt::PCM   => Some(BasicInterrupt::PCM),
+           GeneralInterrupt::SDIO  => Some(BasicInterrupt::SDIO),
+           GeneralInterrupt::UART  => Some(BasicInterrupt::UART),
+           GeneralInterrupt::SDHCI => Some(BasicInterrupt::SDHCI),
+           _                       => None,
+        }
     }
 
     fn as_general_interrupt(&self) -> Option<GeneralInterrupt> {

@@ -1,8 +1,7 @@
 #![allow(dead_code)]
-//use alloc::vec::Vec;
+use alloc::vec::Vec;
 const FIQ_BASIC_INTR_OFFSET: u32 = 64;
 const FIQ_ENABLE_BIT: u8        = 7;
-const FIQ_LAST_VALID: u32       = 71;
 
 /// Interrupt-Controller.
 ///
@@ -32,10 +31,9 @@ impl Bmc2835 for IrqController {
     fn base_offset() -> usize {
         0xb200
     }
-
 }
 
-use super::Interrupt;
+use super::{Interrupt,NUM_INTERRUPTS,FIRST_BASIC_INTERRUPT};
 use bit_field::BitField;
 impl IrqController {
 
@@ -51,7 +49,7 @@ impl IrqController {
         self
     }
 
-    /// Schaltet den gegebenen Interrupt aktiv.
+    /// Deaktiviert den gegebenen Interrupt.
     pub fn disable<T: Interrupt + Sized>(&mut self, int: T) -> &mut Self {
          if let Some(general_int) = int.as_general_interrupt() {
             let (ndx, shift) = general_int.index_and_bit();
@@ -66,14 +64,14 @@ impl IrqController {
     /// Wählt einen Interrupt als Schnellen Interrupt (FIQ) aus, und aktiviert den ihn.
     ///
     /// Bei Angabe eines ungültigen Interrupts (Basic-Sammelinterrupt) wird FIQ deaktiviert.
-    fn set_and_enable_fiq<T: Interrupt>(&mut self, int: T) -> &mut Self {
+    pub fn set_and_enable_fiq<T: Interrupt>(&mut self, int: T) -> &mut Self {
         let nr =
             if int.is_general() {
                 int.as_u32()
             } else {
                 FIQ_BASIC_INTR_OFFSET + int.as_u32()
             };
-        if nr <= FIQ_LAST_VALID {
+        if nr < NUM_INTERRUPTS as u32 {
             self.fiq_control.set_bits(0..7,nr);
             self.fiq_control.set_bit(FIQ_ENABLE_BIT,true);
         } else {
@@ -83,13 +81,13 @@ impl IrqController {
     }
 
     /// Deaktivert den Schnellen Interrupt.
-    fn disable_fiq(&mut self) -> &mut Self {
+    pub fn disable_fiq(&mut self) -> &mut Self {
         self.fiq_control.set_bit(FIQ_ENABLE_BIT,false);
         self
     }
 
     /// Gibt an, ob für die gegebene Interruptquelle ein Interrupt angemeldet ist.
-    fn is_pending<T: Interrupt + Sized>(&self, int: T) -> bool {
+    pub fn is_pending<T: Interrupt + Sized>(&self, int: T) -> bool {
         if int.is_basic() {
             self.basic_pending  & (0x1 << int.as_u32()) != 0
         } else {
@@ -97,4 +95,58 @@ impl IrqController {
             self.general_pending[ndx]  & (0x1 << bit) != 0
         }
     }
+
+    /// Gibt einen Vektor mit den UIDs aller anliegenden Interrupts zurück.
+    pub fn get_all_pending(&self) -> Vec<usize> {
+        let mut res = Vec::new();
+        // Wenn überhaupt ein Interrupt anliegt, dann ist das ist mindestens ein Bit im
+        // Basic-Pending-Register gesetzt.
+        // Um einen stabilen Zustand zu haben, wird das Register kopiert und dann nur noch mit
+        // der Kopie gearbeitet.
+        let basic = self.basic_pending.clone();
+        if basic != 0 {
+            // Teste die Nur-ARM-Interrupts
+            for i in 0 .. 8 {
+                if basic.get_bit(i)  {
+                    res.push(FIRST_BASIC_INTERRUPT+i as usize);
+                }
+            }
+            // Das Array enthält die allgemeinen Interrupts, die es auch als Basic-Interrupts
+            // gibt. Die korrespondierenden Bits beginnen im Register ab Bit 10.
+            const general_ints: [usize;11] = [7,9,10,18,19,53,54,55,56,57,62];
+            // Ich weiß, iterieren über den Index ist ein Anti-Pattern in Rust.
+            // Ich brauche jedoch den Wert *und* den Index.
+            for i in 0.. general_ints.len() {
+                if basic.get_bit(i as u8 + 10) {
+                    res.push(general_ints[i]);
+                }
+            }
+            // Wenn noch sonstige allgemeine Interrupts gesetzt sind, sind die Bits 8
+            // oder/und 9 gesetzt.
+            if basic.get_bit(8) {
+                // Die bereits als Basic-Interrupt behandelten Interrupts werden ausgefiltert.
+                let general = self.general_pending[0] &
+                    !(0x1 << 7 | 0x1 << 9 | 0x1 << 10 | 0x1 << 18 | 0x1 << 19);
+                for i in 0..32 {
+                    if general.get_bit(i) {
+                        res.push(i as usize)
+                    }
+                }
+            }
+            if basic.get_bit(9) {
+                let general = self.general_pending[1] &
+                    !(0x1 << (53-32) | 0x1 << (54-32) | 0x1 << (55-32) | 0x1 << (56-32) |
+                      0x1 << (57-32) | 0x1 << (62-32));
+                for i in 0..32 {
+                    if general.get_bit(i) {
+                        res.push(32 + i as usize)
+                    }
+                }
+            }
+           
+        }
+        res
+    }
+    
+
 }

@@ -3,7 +3,7 @@ pub use self::uart::*;
 mod aux;
 pub use self::aux::{MiniUart};
 mod pl011;
-pub use self::pl011::{Pl011,Pl011Interrupt};
+pub use self::pl011::{Pl011,Pl011Interrupt,Pl011Flag};
 mod gpio;
 pub use self::gpio::{Gpio,GpioPinFunctions,GpioPull,GpioEvent,gpio_config};
 mod system_timer;
@@ -12,7 +12,7 @@ pub use self::system_timer::SystemTimer;
 mod arm_timer;
 pub use self::arm_timer::{ArmTimer,ArmTimerResolution};
 mod interrupts;
-pub use self::interrupts::{Interrupt,BasicInterrupt,GeneralInterrupt};
+pub use self::interrupts::{Interrupt,BasicInterrupt,GeneralInterrupt,NUM_INTERRUPTS,FIRST_BASIC_INTERRUPT};
 mod irq_controller;
 pub use self::irq_controller::IrqController;
 
