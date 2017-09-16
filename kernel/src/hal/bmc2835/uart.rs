@@ -17,12 +17,17 @@ pub enum UartEnable {
     Both
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug,PartialEq)]
 #[allow(dead_code)]
 pub enum UartError {
+    FrameError,    
+    ParityError,   
+    BreakError,    
+    OverrunError,       
     NoSupported,
     Invalid,
     FIFOfull,
+    NoData,
     Failed
 }
 
