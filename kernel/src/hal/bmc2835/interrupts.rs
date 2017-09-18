@@ -18,6 +18,20 @@ pub const FIRST_BASIC_INTERRUPT: usize = 64;
 /// irq_controller.enable(GeneralInterrupt::SystemTimer1);
 /// ```
 pub trait Interrupt {
+    /// Eindeutige Id des Interrupts.
+    ///
+    /// Diese entspricht der Nummer, die bei der Auswahl des FIQ genutzt wird,
+    /// siehe BMC2835 ARM Peripherals 7.5, S.116.
+    fn uid(&self) -> usize {
+        if let Some(int) = self.as_general_interrupt() {
+            self.as_u32() as usize
+        } else {
+            FIRST_BASIC_INTERRUPT + self.as_u32() as usize
+        }
+    }
+
+    fn from_uid(uid: usize) -> Option<Self> where Self: Sized;
+    
     /// Konvertiert Interrupt in die u32-Interruptnummer.
     fn as_u32(&self) -> u32;
     
@@ -39,17 +53,7 @@ pub trait Interrupt {
     /// Wahr bei einem Basicinterrupt.
     fn is_basic(&self) -> bool;
     
-    /// Eindeutige Id des Interrupt.
-    ///
-    /// Diese entspricht der Nummer, die bei der Auswahl des FIQ genutzt wird,
-    /// siehe BMC2835 ARM Peripherals 7.5, S.116.
-    fn uid(&self) -> usize {
-        if let Some(int) = self.as_general_interrupt() {
-            self.as_u32() as usize
-        } else {
-            FIRST_BASIC_INTERRUPT + self.as_u32() as usize
-        }
-    }
+
 }
 
  
@@ -183,6 +187,17 @@ impl Interrupt for GeneralInterrupt {
         }
     }
 
+    fn from_uid(uid: usize) -> Option<Self>  {
+        if uid >= FIRST_BASIC_INTERRUPT {
+           None
+        } else {
+            unsafe{
+                Some(::core::intrinsics::transmute::<usize,GeneralInterrupt>(uid))
+            }
+        }
+    }
+
+
     fn as_general_interrupt(&self) -> Option<GeneralInterrupt> {
         Some(*self)
     }
@@ -257,6 +272,17 @@ impl Interrupt for BasicInterrupt {
 
     fn as_basic_interrupt(&self) -> Option<BasicInterrupt> {
         Some(*self)
+    }
+
+    fn from_uid(uid: usize) -> Option<Self>  {
+        if uid >= FIRST_BASIC_INTERRUPT {
+          unsafe{
+                Some(::core::intrinsics::transmute::<usize,BasicInterrupt>(uid))
+            }
+        } else {
+            // ToDo: Shared Interrupts korrekt als BasicInterrupt zurückgeben
+            None
+        }
     }
 }
 

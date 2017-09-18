@@ -123,6 +123,7 @@ impl IrqController {
             }
             // Wenn noch sonstige allgemeine Interrupts gesetzt sind, sind die Bits 8
             // oder/und 9 gesetzt.
+            // Bit 8 ist für die Interrupts 0 ... 31.
             if basic.get_bit(8) {
                 // Die bereits als Basic-Interrupt behandelten Interrupts werden ausgefiltert.
                 let general = self.general_pending[0] &
@@ -133,6 +134,7 @@ impl IrqController {
                     }
                 }
             }
+            // Bit 9 ist für die Interrupts 32 ... 71.
             if basic.get_bit(9) {
                 let general = self.general_pending[1] &
                     !(0x1 << (53-32) | 0x1 << (54-32) | 0x1 << (55-32) | 0x1 << (56-32) |
