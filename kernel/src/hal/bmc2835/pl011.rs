@@ -241,16 +241,16 @@ impl Uart for Pl011 {
                 self.control.set_bit(0,false);
             },
             UartEnable::Transmitter => {
-                self.control.set_bits(8..10,0b01);
                 self.control.set_bit(0,true);
+                self.control.set_bits(8..10,0b01);
             },
             UartEnable::Receiver => {
-                self.control.set_bits(8..10,0b10);
                 self.control.set_bit(0,true);
+                self.control.set_bits(8..10,0b10);
             },
             UartEnable::Both => {
-                self.control.set_bits(8..10,0b11);
                 self.control.set_bit(0,true);
+                self.control.set_bits(8..10,0b11);
             }
         }
         Cpu::data_memory_barrier();
@@ -308,7 +308,7 @@ impl Uart for Pl011 {
         if self.rx_is_empty() {
             return Err(UartError::NoData);
         }
-        let data: u32 = self.data & 0x7ff;
+        let data: u32 = self.data & 0xfff;
         if data & (0x1 << 8) != 0 {
             return Err(UartError::FrameError);
         }
@@ -321,7 +321,7 @@ impl Uart for Pl011 {
         if data & (0x1 << 11) != 0 {
             return Err(UartError::OverrunError);
         }
-        Ok(self.data.get_bits(0..9) as u8)
+        Ok(self.data.get_bits(0..8) as u8)
     }
     
     fn write(&mut self, data: u8) -> Result<u8,UartError>{
@@ -329,7 +329,8 @@ impl Uart for Pl011 {
         if self.get_state(Pl011Flag::RxFull) {
             Err(UartError::FIFOfull)
         } else {
-            self.data.set_bits(0..9,data as u32);
+            self.data = data as u32;
+            //self.data.set_bits(0..8,data as u32);
             Cpu::data_memory_barrier();
             Ok(data)
         }

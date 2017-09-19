@@ -9,7 +9,7 @@
     asm,                      // Assembler in Funktionen...
     associated_type_defaults, // Verknüpfung von Traits mit Typen
     // concat_idents,
-    //collections,            // Nutzung des Collection-Crate
+    collections,            // Nutzung des Collection-Crate
     const_fn,                 // const Funktionen (für Constructoren)
     //range_contains,          // Funktion zur Bestimmung, ob eine Range einen Wert enthält
     compiler_builtins_lib,    // Nutzung der Compiler-Buildins-Bibliothek (div, mul, ...)
@@ -35,6 +35,7 @@
 //#![plugin(compiler_error)]
 #![doc(html_logo_url = "file:///Users/mwerner/Development/aihPOS/aihPOS-docs/logo-128.png")]
 /// Benutzte Crates
+//#[macro_use]
 extern crate alloc;
 //extern crate collections;
 extern crate bit_field;
@@ -49,12 +50,13 @@ mod panic;
 mod data;
 mod process;
 mod sync;
+mod syscall_interface;
 //use alloc::boxed::Box;
 
 //#[macro_use] mod hal;
 use hal::bmc2835::Bmc2835;
 use hal::bmc2835::{MemReport,BoardReport,report_board_info,report_memory};
-use hal::bmc2835::{IrqController,BasicInterrupt,ArmTimer,ArmTimerResolution};
+use hal::bmc2835::{IrqController,BasicInterrupt,GeneralInterrupt,ArmTimer,ArmTimerResolution};
 #[macro_use]
 mod entry;
 use debug::*;
@@ -121,15 +123,23 @@ pub(self) fn kernel_init() {
     unreachable!();
 }
 
+
+// Wahrscheinlich sollte nur mit einem Stack gearbeitet werden? => ToDo
 #[inline(never)]
 fn determine_irq_stack() -> Address {
-    report_memory(MemReport::ArmSize) 
+    if KernelData::get_toss().is_some() {
+        KernelData::get_toss().unwrap()
+    } else {
+        let adr = report_memory(MemReport::ArmSize);
+        KernelData::set_toss(adr);
+        adr
+    }
 }
 
 #[inline(never)]
 fn determine_svc_stack() -> Address {
     kprint!("determine stack called.\n";WHITE);
-    report_memory(MemReport::ArmSize) - IRQ_STACK_SIZE
+    self::determine_irq_stack() - IRQ_STACK_SIZE
 }
 
 #[inline(never)]
@@ -138,9 +148,9 @@ fn init_mem() {
     init_stacks();
     kprint!("done.\nInit heap...");
     memory::init_heap(__bss_start as Address, INIT_HEAP_SIZE);
-    kprint!("done.\nInit pagetable...");
-    init_paging();
-    kprint!("done.\n");
+    //kprint!("done.\nInit pagetable...");
+    //init_paging();
+    //kprint!("done.\n");
 }
 
 /// Es werden die Stacks für alle Ausname-Modi gesetzt.
@@ -248,38 +258,55 @@ fn init_paging() {
 }
 
 fn init_devices() {
+    let irq_controller = IrqController::get();
     // Uart
     //
     // Schalte die entsprechenden Pins frei.
     use hal::bmc2835::{Gpio,GpioPull,gpio_config};
     let gpio = Gpio::get();
-    gpio.config_pin(14,gpio_config::Device::Uart1(gpio_config::UART::TxD)).unwrap();
-    gpio.config_pin(15,gpio_config::Device::Uart1(gpio_config::UART::RxD)).unwrap();
+    gpio.config_pin(14,gpio_config::Device::Output).unwrap();
+    gpio.config_pin(14,gpio_config::Device::Uart0(gpio_config::UART::TxD)).unwrap();
+    gpio.config_pin(15,gpio_config::Device::Uart0(gpio_config::UART::RxD)).unwrap();
     // Schalte Pullup/down für diese Pins ab.
     gpio.set_pull(14,GpioPull::Off);
     gpio.set_pull(15,GpioPull::Off);
 
-    use hal::bmc2835::{Pl011,Pl011Interrupt,Uart,UartEnable,UartParity};
+    use hal::bmc2835::{Pl011,Pl011Interrupt,Pl011FillLevel,Uart,UartEnable,UartParity};
     let uart0 = Pl011::get();
     // Löscht alle Interrupts
+    uart0.enable(UartEnable::None);
     uart0.clear_interrupt(Pl011Interrupt::All);
     uart0.set_baud_rate(1,40).expect("Can't set baud rate");
     uart0.set_data_width(8).expect("Can't set data width");
-    uart0.set_parity(UartParity::None).expect("Can't set parity");;
+    uart0.set_parity(UartParity::None).expect("Can't set parity");
+    uart0.enable_fifo(false);
+    uart0.disable_interrupt(Pl011Interrupt::All);
+    uart0.set_rcv_trigger_level(Pl011FillLevel::OneEighth);
+    uart0.enable_interrupt(Pl011Interrupt::Rcv);
     uart0.enable(UartEnable::Both);
+    irq_controller.enable(BasicInterrupt::UART);
+    kprint!("UART: set up.\n";WHITE);
     //
     // Timer
-    // 
-    let irq_controller = IrqController::get();
+    //
     irq_controller.enable(BasicInterrupt::ARMtimer);
     let timer = ArmTimer::get()
         .resolution(ArmTimerResolution::Counter23Bit)
         .predivider(250)
         .count(2000000)
         .enable(true)
-        .activate_interrupt(true);
+        .activate_interrupt(true)
+        ;
     kprint!("Timer: {:?}\n",timer;WHITE);
     kprint!("Interrupt aktiviert.\n";BLUE);
+    kprint!("Setze Isr...");
+    use data::isr_table::IsrTable;
+    use hal::bmc2835::BasicInterrupt;
+    let isr_table = KernelData::isr_table();
+    isr_table.add_isr(BasicInterrupt::ARMtimer, timer_tick);
+    //isr_table.add_isr(BasicInterrupt::ARMtimer, timer_tick2);
+    isr_table.add_isr(GeneralInterrupt::UART, uart_intr);
+    kprint!("Done.\n");
 }
  
 fn report() {
@@ -325,21 +352,55 @@ setable_enum!{
                    
 #[allow(unreachable_code)]
 fn test() {
-    let _stack: [u32;1024] = [0u32;1024];
+    let stack: [u32;1024] = [0u32;1024];
     kprint!("Start Test.\n");
-
     
     //Cpu::set_mode(ProcessorMode::System);
     //Cpu::set_stack(&stack as *const _ as usize);
-    //Cpu::enable_interrupts();
-    //Cpu::set_mode(ProcessorMode::User);
-    /*
-    kprint!("Arbeite im Usr-Mode.\n"); 
-    {
-        let ret=syscall!(23,1,2);
-        kprint!("Returned from system call: {}.\n",ret);
+    use hal::bmc2835::{Pl011,Pl011Flag,Uart,SystemTimer};
+    let uart = Pl011::get();
+    //uart.write_str("Test.\n");
+    //kprint!("Wrote to uart.\n";YELLOW);
+    Cpu::enable_interrupts();
+
+    // flush FIFO
+    let mut old_flags = (true,true,true,true,0);
+    loop {
+        /*
+        let (tx_e,tx_f,rx_e,rx_f,intr) = (
+            uart.tx_is_empty(),
+            uart.tx_is_full(),
+            uart.rx_is_empty(),
+            uart.rx_is_full(),
+            uart.raw_intr & !0b1101);
+        if old_flags != (tx_e,tx_f,rx_e,rx_f,intr) {
+            Cpu::disable_interrupts();
+            kprint!("TX e: {}, TX f: {},  RX e: {}, RX f: {} intr: {:b}\n",tx_e,tx_f,rx_e,rx_f,intr);
+            Cpu::enable_interrupts();
+            old_flags = (tx_e,tx_f,rx_e,rx_f,intr);
+        }
+        if !rx_e {
+            /*
+            let c = uart.read();
+            Cpu::disable_interrupts();
+            if let Ok(ch) = c {
+                kprint!("{}",ch);
+            } else {
+                kprint!("{:?} ",c);
+            }
+            Cpu::enable_interrupts();
+             */
+        }
+        //SystemTimer::get().busy_csleep(0xF000000);         
+         */
     }
-     */
+    use syscall_interface::SysCall;
+    //Cpu::set_mode(ProcessorMode::User);
+    //kprint!("Arbeite im Usr-Mode.\n"); 
+    {
+        let ret=syscall!(SysCall::Write,0,&format_args!("Hallo, world!\n") as *const _ as u32);
+        //kprint!("Returned from system call: {}.\n",ret);
+    }
     /*
     unsafe{
         let mut ptr: *const u32 = sp;
@@ -390,7 +451,7 @@ fn test() {
         //Cpu::disable_interrupts();
         //syscall!(1);
         //if unsafe{ TEST_BIT.load(Ordering::SeqCst)} {
-        kprint!(".");
+        //kprint!(".");
          //   syscall!(1);
         //    unsafe{ TEST_BIT.store(false,Ordering::SeqCst);}
         //}
@@ -399,26 +460,59 @@ fn test() {
          //   timer.reset_interrupt();
         //}
         //Cpu::enable_interrupts();
-        debug::blink::blink_once(debug::blink::BS_HI);
+        //let ret=syscall!(SysCall::Write,0,&format_args!(".") as *const _ as u32);
+        //debug::blink::blink_once(debug::blink::BS_HI);
     }
     debug::blink::blink(debug::blink::BS_SOS);
 }
 
-#[inline(never)]
-#[no_mangle]
-#[allow(private_no_mangle_fns,unused_variables)]
-#[linkage="weak"] // Verhindert, dass der Optimierer die Funktion eliminiert
-pub fn svc_service_routine(nr: u32, arg1: u32, arg2: u32)  -> u32
-{
-    match nr {
-        0 => { kprint!("Interrupt detected.\n";YELLOW); },
-        1 => { kprint!(".";YELLOW); },
-        _ => { kprint!("SysCall: {}, Param: {} und {}\n",nr,arg1,arg2;WHITE);}
-    }
-    0
+pub fn timer_tick() {
+    //kprint!("."; GREEN);
+    let timer = ArmTimer::get();
+    timer.next_count(1000000);
+    timer.reset_interrupt();
 }
 
+pub fn timer_tick2() {
+    kprint!("me too! "; GREEN);
+}
 
+pub fn uart_intr() {
+    use hal::bmc2835::{Pl011,Pl011Interrupt,Pl011Flag,Pl011Error,Uart,UartEnable,UartParity};
+    let uart0 = Pl011::get();
+    while !uart0.get_state(Pl011Flag::RxEmpty) {
+        let c = uart0.read();
+        if let Ok(ch) = c {
+            kprint!("{}",ch as char);
+            uart0.write(ch);
+        }
+    } 
+    if uart0.get_rvc_state(Pl011Error::Overrun) {
+        kprint!("Overrun ";RED);
+    }
+    if uart0.get_rvc_state(Pl011Error::Break) {
+        kprint!("Break ";RED);
+    }
+    if uart0.get_rvc_state(Pl011Error::Frame) {
+        kprint!("Frameerror ";RED);
+    }
+    if uart0.get_rvc_state(Pl011Error::Parity) {
+        kprint!("Parityerror ";RED);
+    }
+    let (tx_e,tx_f,rx_e,rx_f,intr) = (
+        uart0.tx_is_empty(),
+        uart0.tx_is_full(),
+        uart0.rx_is_empty(),
+        uart0.rx_is_full(),
+        uart0.raw_intr & !0b1101);
+    //kprint!("TX e: {}, TX f: {},  RX e: {}, RX f: {} intr: {:b}\n",tx_e,tx_f,rx_e,rx_f,intr);
+        
+    uart0.clear_interrupt(Pl011Interrupt::All);
+    //uart0.disable_interrupt(Pl011Interrupt::All);
+    //Cpu::disable_interrupts();
+}
+
+/*
 pub fn syscall_yield() {
     syscall!(1);
 }
@@ -440,3 +534,4 @@ pub fn process_b() {
         syscall_yield();
     }
 }
+*/
