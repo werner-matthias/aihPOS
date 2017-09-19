@@ -3,7 +3,7 @@ pub use self::uart::*;
 mod aux;
 pub use self::aux::{MiniUart};
 mod pl011;
-pub use self::pl011::{Pl011,Pl011Interrupt,Pl011Flag};
+pub use self::pl011::{Pl011,Pl011Interrupt,Pl011Flag,Pl011Error,Pl011FillLevel};
 mod gpio;
 pub use self::gpio::{Gpio,GpioPinFunctions,GpioPull,GpioEvent,gpio_config};
 mod system_timer;

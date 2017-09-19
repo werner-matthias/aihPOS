@@ -10,6 +10,14 @@ pub enum Pl011Error {
     Frame          = 0x1 << 8,
 }
 
+impl Pl011Error {
+    pub fn as_u32(&self) -> u32 {
+        use core::mem;
+        let ret: u32 = unsafe{ mem::transmute(*self)};
+        ret
+    }
+}
+
 #[derive(Copy, Clone, Debug)]
 #[repr(u32)]
 #[allow(dead_code)]
@@ -33,7 +41,7 @@ impl Pl011Flag {
 #[derive(Copy, Clone, Debug)]
 #[repr(u32)]
 #[allow(dead_code)]
-pub enum Pl001Control {
+pub enum Pl011Control {
     FlowCTS      = 0x1 << 15,
     FlowRTS      = 0x1 << 14,
     RTS          = 0x1 << 11,
@@ -66,6 +74,15 @@ impl Pl011Interrupt {
     }
 }
 
+/// Füllstand der FIFOs, zu denen ein Interrupt ausgelöst wird.
+pub enum Pl011FillLevel{
+    OneEighth,
+    OneQuarter,
+    OneHalf,
+    ThreeQuarter,
+    SevenEighth
+}
+
 #[allow(dead_code)]
 pub struct Pl011 {
     data:          u32,      // Offset 0x00
@@ -80,7 +97,7 @@ pub struct Pl011 {
     control:       u32,      // Offset 0x30
     fill_level:    u32,      // Offset 0x34
     intr_mask:     u32,      // Offset 0x38
-    raw_intr:      u32,      // Offset 0x3C 
+    pub raw_intr:      u32,      // Offset 0x3C 
     intr:          u32,      // Offset 0x40
     reset_intr:    u32,      // Offset 0x44
     _dma_ctrl:     u32,      // Offset 0x48
@@ -115,14 +132,56 @@ impl Pl011 {
         Cpu::data_memory_barrier();
     }
 
+    pub fn enable_interrupt(&mut self, mask: Pl011Interrupt) {
+        Cpu::data_memory_barrier();
+        self.intr_mask &= !mask.as_u32();
+        kprint!("Interrupt Mask: {:08b}\n",self.intr_mask;RED);
+        Cpu::data_memory_barrier();
+    }
+
+    pub fn disable_interrupt(&mut self, mask: Pl011Interrupt) {
+        Cpu::data_memory_barrier();
+        self.intr_mask |= mask.as_u32();
+        kprint!("Interrupt Mask: {:08b}\n",self.intr_mask;RED);
+        Cpu::data_memory_barrier();
+    }
+
+    pub fn set_rcv_trigger_level(&mut self, level: Pl011FillLevel) {
+        self.fill_level.set_bits(3..6,
+                                 match level {
+                                     Pl011FillLevel::OneEighth    => 0b000,
+                                     Pl011FillLevel::OneQuarter   => 0b001,
+                                     Pl011FillLevel::OneHalf      => 0b010,
+                                     Pl011FillLevel::ThreeQuarter => 0b011,
+                                     Pl011FillLevel::SevenEighth  => 0b100
+                                 });
+    }
+    
+    pub fn set_trm_trigger_level(&mut self, level: Pl011FillLevel) {
+        self.fill_level.set_bits(0..3,
+                                 match level {
+                                     Pl011FillLevel::OneEighth    => 0b000,
+                                     Pl011FillLevel::OneQuarter   => 0b001,
+                                     Pl011FillLevel::OneHalf      => 0b010,
+                                     Pl011FillLevel::ThreeQuarter => 0b011,
+                                     Pl011FillLevel::SevenEighth  => 0b100
+                                 });
+    }
+    
     pub fn get_state(&self, flag: Pl011Flag) -> bool {
         Cpu::data_memory_barrier();
         (self.flags & flag.as_u32()) != 0
     }
 
+    pub fn get_rvc_state(&self, flag: Pl011Error) -> bool {
+        Cpu::data_memory_barrier();
+        (self.rcv_status & flag.as_u32()) != 0
+    }
+
     pub fn enable_fifo(&mut self, b: bool) {
         Cpu::data_memory_barrier();
         self.line_control.set_bit(4,b);
+        Cpu::data_memory_barrier();
     }
 
     pub fn tx_is_empty(&self) -> bool {

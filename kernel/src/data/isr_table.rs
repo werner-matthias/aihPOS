@@ -3,30 +3,48 @@ use alloc::boxed::Box;
 
 #[derive(Debug,Clone)]
 pub struct Isr {
-    function:     &'static fn(),
+    function:     fn(),
     next:         Option<Box<Isr>>
 }
 
 impl Isr {
-    pub fn new(func: &'static fn()) -> Isr {
+    pub fn new(func:fn()) -> Isr {
         Isr {
             function:  func,
             next:      None,    
         }
     }
-}
 
-impl Iterator for Isr {
-    type Item= Isr;
-    
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.next.is_some() {
-            Some((**self.next.as_ref().unwrap()).clone())
-        } else {
-            None
+    fn iter(&self) -> IsrIterator {
+        IsrIterator{
+            isr: Some(self.clone())
         }
     }
 }
+
+struct IsrIterator {
+    isr: Option<Isr>
+}
+
+
+impl Iterator for IsrIterator {
+    type Item= fn();
+    
+    fn next(&mut self) -> Option<fn()> {
+        let ret = 
+            if let Some(ref isr) = self.isr {
+                Some(isr.function)
+            } else {
+                None
+            };
+        if ret.is_some() {
+            let new_isr = self.isr.clone();
+            self.isr = new_isr.unwrap().next.map_or(None, |obj| Some(*obj));
+        }
+        ret
+    }
+}
+
 
 pub struct IsrTable {
     table: [Option<Isr>; NUM_INTERRUPTS]
@@ -47,14 +65,20 @@ impl IsrTable {
     }
 
     /// Füge für Interrupt `int` eine Serviceroutine hinzu.
-    pub fn add_isr<T: Interrupt + Sized>(&mut self, mut int: T, mut isr: Isr) {
+    pub fn add_isr<T: Interrupt + Sized>(&mut self, mut int: T, func: fn()) {
+        let mut isr: Isr = Isr::new(func);
         let ndx = int.uid();
+        kprint!("Add ISF for Interrupt {}.\n",ndx; BLUE);
         if self.table[ndx].is_some() {
             isr.next = Some(Box::new(self.table[ndx].clone().unwrap()));
         } 
         self.table[ndx] = Some(isr);
     }
 
+#[inline(never)]
+#[no_mangle]
+#[allow(private_no_mangle_fns)]
+#[linkage="weak"] // Verhindert, dass der Optimierer die Funktion eliminiert
     /// Rufe für alle anliegenden Interrupts alle Serviceroutinen auf.
     pub fn dispatch() {
         use data::kernel::KernelData;
@@ -62,13 +86,15 @@ impl IsrTable {
         let irq_controller = IrqController::get();
         let mut next: Isr;
         for int in irq_controller.get_all_pending() {
+            //kprint!("Suche ISR for int #{}...",int;WHITE);
             if let Some(ref mut isr) = isr_table.table[int] {
-                (*isr.function)();
-                for next in isr {
-                    (*next.function)();
+                for func in isr.iter() {
+                    //kprint!("gefunden.\n";WHITE);
+                    func();
                 }
             } else {
-                // Wenn keine ISR definiert ist, sperre den Interrupt.
+                //kprint!("NICHT gefunden.\n";WHITE);
+                // ToDo: Wenn keine ISR definiert ist, sperre den Interrupt.
                 //irq_controller.
             }
         }

@@ -67,73 +67,73 @@ pub trait Interrupt {
 #[allow(dead_code)]
 pub enum GeneralInterrupt {
     /// System-Timer 0. Wird von GPU gebraucht, **nicht nutzen**.
-    SystemTimer0 = 0,
+    SystemTimer0 = 0,     // 0
     /// System-Timer 1.
-    SystemTimer1,
+    SystemTimer1,         //  1
     /// System-Timer 2. Wird von GPU gebraucht, **nicht nutzen**.
-    SystemTimer2,
+    SystemTimer2,         //  2
     /// System-Timer 3.
-    SystemTimer3,
-    Codec0,
-    Codec1,
-    Codec2,
-    JPEG,
-    ISP,
-    USB,
-    GPU3D,
-    Transposer,
-    MulticoreSync0,
-    MulticoreSync1,
-    MulticoreSync2,
-    MulticoreSync3,
-    DMA0,
-    DMA1,
-    DMA2,    // GPU DMA
-    DMA3,    // GPU DMA
-    DMA4,
-    DMA5,
-    DMA6,
-    DMA7,
-    DMA8,
-    DMA9,
-    DMA10,
-    DMA1114, // DMA 11 ... DMA 14
-    DMAall,  // alle DMA, auch DMA 15
-    AUX,     // UART1, SPI1, SPI2
-    ARM,
-    VPUDMA,
-    HostPort,
-    VideoScaler,
-    CCP2tx, // Compact Camera Port 2
-    SDC,
-    DSI0,
-    AVE,
-    CAM0,
-    CAM1,
-    HDMI0,
-    HDMI1,
-    PIXELVALVE1,
-    I2CSPISLV,
-    DSI1,
-    PWA0,
-    PWA1,
-    CPR,
-    SMI,
-    GPIO0,
-    GPIO1,
-    GPIO2,
-    GPIO3,
-    I2C,
-    SPI,
-    PCM,
-    SDIO,
-    UART,
-    SLIMBUS,
-    VEC,
-    CPG,
-    RNG,
-    SDHCI,
-    AVSPmon,
+    SystemTimer3,         //  3
+    Codec0,               //  4
+    Codec1,               //  5
+    Codec2,               //  6
+    JPEG,                 //  7
+    ISP,                  //  8
+    USB,                  //  9
+    GPU3D,                // 10
+    Transposer,           // 11
+    MulticoreSync0,       // 12
+    MulticoreSync1,       // 13
+    MulticoreSync2,       // 14
+    MulticoreSync3,       // 15
+    DMA0,                 // 16
+    DMA1,                 // 17
+    DMA2,                 // 18, GPU DMA
+    DMA3,                 // 19, GPU DMA
+    DMA4,                 // 20
+    DMA5,                 // 21
+    DMA6,                 // 22
+    DMA7,                 // 23
+    DMA8,                 // 24
+    DMA9,                 // 25
+    DMA10,                // 26
+    DMA1114,              // 27, DMA 11 ... DMA 14
+    DMAall,               // 28, alle DMA, auch DMA 15
+    AUX,                  // 29, UART1, SPI1, SPI2
+    ARM,                  // 30
+    VPUDMA,               // 31
+    HostPort,             // 32
+    VideoScaler,          // 33
+    CCP2tx,               // 34, Compact Camera Port 2
+    SDC,                  // 35
+    DSI0,                 // 36
+    AVE,                  // 37
+    CAM0,                 // 38
+    CAM1,                 // 39
+    HDMI0,                // 40
+    HDMI1,                // 41
+    PIXELVALVE1,          // 42
+    I2CSPISLV,            // 43
+    DSI1,                 // 44 
+    PWA0,                 // 45
+    PWA1,                 // 46
+    CPR,                  // 47
+    SMI,                  // 48
+    GPIO0,                // 49
+    GPIO1,                // 50
+    GPIO2,                // 51
+    GPIO3,                // 52
+    I2C,                  // 53
+    SPI,                  // 54
+    PCM,                  // 55
+    SDIO,                 // 56
+    UART,                 // 57
+    SLIMBUS,              // 58
+    VEC,                  // 59
+    CPG,                  // 60
+    RNG,                  // 61
+    SDHCI,                // 62
+    AVSPmon,              // 63
 }
 
 impl GeneralInterrupt {
@@ -212,14 +212,14 @@ impl Interrupt for GeneralInterrupt {
 #[repr(u32)]
 #[allow(dead_code)]
 pub enum BasicInterrupt {
-    ARMtimer= 0,
-    Mailbox,
-    Doorbell1,
-    Doorbell2,
-    GPU0Stop,
-    GPU1Stop,
-    IllegalAccessType1,
-    IllegalAccessType0,
+    ARMtimer= 0,         // 64 
+    Mailbox,             // 65
+    Doorbell1,           // 66
+    Doorbell2,           // 67
+    GPU0Stop,            // 68
+    GPU1Stop,            // 69
+    IllegalAccessType1,  // 70
+    IllegalAccessType0,  // 71
     General1,
     General2,    
     JPEG = 10,           // General Interrupt 7

@@ -2,6 +2,7 @@
 use alloc::vec::Vec;
 const FIQ_BASIC_INTR_OFFSET: u32 = 64;
 const FIQ_ENABLE_BIT: u8        = 7;
+const general_ints: [usize;11] = [7,9,10,18,19,53,54,55,56,57,62];
 
 /// Interrupt-Controller.
 ///
@@ -41,9 +42,11 @@ impl IrqController {
     pub fn enable<T: Interrupt + Sized>(&mut self, int: T) -> &mut Self {
         if let Some(general_int) = int.as_general_interrupt() {
             let (ndx, shift) = general_int.index_and_bit();
+            kprint!("General: Setze bit {} @ {:08x}\n",shift, &self.enable_general[ndx] as *const _ as u32;RED);
             self.enable_general[ndx] = 0x1u32 << shift;
-        } else {
-            let basic_int = int.as_basic_interrupt().unwrap();
+        } 
+        if let Some(basic_int) = int.as_basic_interrupt() {
+            kprint!("Basic Setze bit {} @ {:08x}\n",basic_int.as_u32(), &self.enable_basic as *const _ as u32;RED);
             self.enable_basic = 0x1u32 << basic_int.as_u32();
         }
         self
@@ -113,7 +116,6 @@ impl IrqController {
             }
             // Das Array enthält die allgemeinen Interrupts, die es auch als Basic-Interrupts
             // gibt. Die korrespondierenden Bits beginnen im Register ab Bit 10.
-            const general_ints: [usize;11] = [7,9,10,18,19,53,54,55,56,57,62];
             // Ich weiß, iterieren über den Index ist ein Anti-Pattern in Rust.
             // Ich brauche jedoch den Wert *und* den Index.
             for i in 0.. general_ints.len() {
@@ -147,6 +149,7 @@ impl IrqController {
             }
            
         }
+        //kprint!("Interrupts pending: {:?}\n",res;CYAN);
         res
     }
     
