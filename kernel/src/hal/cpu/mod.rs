@@ -42,6 +42,7 @@ impl Cpu {
                 ProcessorMode::System => asm!("cps 0x1F":::"memory":),
             };
         }
+        Cpu::data_memory_barrier();
     }
 
     /// Setzt das Stack-Register 
