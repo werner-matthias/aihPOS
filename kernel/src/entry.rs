@@ -4,6 +4,8 @@ use hal::bmc2835::Bmc2835;
 use hal::bmc2835::ArmTimer;
 use syscall_interface::{SysCall};
 use ::kernel_start;
+use data::isr_table::IsrTable;
+
 //use debug::blink;
 
 /// Sprungtabelle für Ausnahmen (Interrupts, Syscalls, etc.).
@@ -60,8 +62,8 @@ pub static service_routine: ServiceRoutine =  ServiceRoutine{
             svc:        SysCall::svc_service_routine,
             abort:      abort_service_routine,
             data_abort: data_abort_service_routine,
-            irq:        irq_service_routine,
-            fiq:        irq_service_routine,
+            irq:        IsrTable::dispatch,
+            fiq:        IsrTable::dispatch,
 };
 
 #[naked]
@@ -155,7 +157,8 @@ pub extern "C" fn dispatch_interrupt() {
         // operationen beendet sind.
         Cpu::data_memory_barrier();
         // Rufe eigentliche ISR.
-        asm!("bl interrupt_service":::"memory");
+        IsrTable::dispatch();
+        //asm!("bl interrupt_service":::"memory");
         Cpu::data_memory_barrier();
         // Hole Alignment-Korrektur und passe den Stack an
         asm!("pop {r0,r5}":::"memory");
@@ -177,6 +180,7 @@ pub extern "C" fn dispatch_interrupt() {
 pub extern "C" fn dispatch_fast_interrupt() {
 }
 
+/*
 #[inline(never)]
 #[no_mangle]
 #[allow(private_no_mangle_fns)]
@@ -185,6 +189,7 @@ pub fn irq_service_routine()
 {
     kprint!("Interrupt!\n");
 }
+*/
 
 #[inline(never)]
 #[no_mangle]
@@ -248,12 +253,10 @@ pub fn syscall(nr: SysCall, arg1: u32, arg2: u32, arg3: u32) -> u32 {
 #[linkage="weak"]
 #[inline(never)]
 pub extern "C" fn interrupt_service() {
-    //use core::sync::atomic::{Ordering};
-    //use ::TEST_BIT;
-    //unsafe{ TEST_BIT.store(true,Ordering::SeqCst);}
+    
     let timer = ArmTimer::get();
-    kprint!("Interrupt!\n";GREEN);
-    //timer.next_count(1000000);
+    kprint!("Interrupt! ";GREEN);
+    timer.next_count(1000000);
     timer.reset_interrupt();
     //kprint!("Acknowledged\n";GREEN);
 }
