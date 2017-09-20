@@ -24,12 +24,13 @@ pub trait Interrupt {
     /// siehe BMC2835 ARM Peripherals 7.5, S.116.
     fn uid(&self) -> usize {
         if let Some(int) = self.as_general_interrupt() {
-            self.as_u32() as usize
+            int.as_u32() as usize
         } else {
             FIRST_BASIC_INTERRUPT + self.as_u32() as usize
         }
     }
 
+    /// Interrupt aus UID.
     fn from_uid(uid: usize) -> Option<Self> where Self: Sized;
     
     /// Konvertiert Interrupt in die u32-Interruptnummer.
