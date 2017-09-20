@@ -1,4 +1,4 @@
-use hal::bmc2835::{Bmc2835,Interrupt,GeneralInterrupt,BasicInterrupt,IrqController,NUM_INTERRUPTS};
+use hal::bmc2835::{Bmc2835,Interrupt,IrqController,NUM_INTERRUPTS};
 use alloc::boxed::Box;
 
 #[derive(Debug,Clone)]

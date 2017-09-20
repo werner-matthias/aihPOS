@@ -121,7 +121,6 @@ pub extern "C" fn dispatch_data_abort() {
 }
 
 #[naked]
-#[allow(unreachable_code)] // remove after debug!!
 pub extern "C" fn dispatch_interrupt() {
     unsafe {
         // Das Linkregister zeigt bereits auf den übernächsten Befehl,
@@ -147,7 +146,7 @@ pub extern "C" fn dispatch_interrupt() {
         // Adresse unterscheidet sich von einer aligned also durch den Wert 1 für das Bit 2.
         // Dieses wird per AND-Operation bestimmt, r5 enthält also 4 oder 0.
         // Im Fall 4 (unaligned) muss der Stack um 4 erhöht werden, es kann also einfach
-        // addiert werden.
+        // subtrahiert werden.
         asm!("and r5, sp, #4":::"memory");
         asm!("sub sp, sp, r5":::"memory");
         // Um anschließend den Stack wieder zu korrigieren, wird der Offset gepeichert.
