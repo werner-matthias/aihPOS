@@ -267,22 +267,24 @@ fn init_devices() {
     gpio.config_pin(14,gpio_config::Device::Output).unwrap();
     gpio.config_pin(14,gpio_config::Device::Uart0(gpio_config::UART::TxD)).unwrap();
     gpio.config_pin(15,gpio_config::Device::Uart0(gpio_config::UART::RxD)).unwrap();
-    // Schalte Pullup/down für diese Pins ab.
+    // Setze Pullup/down für diese Pins.
     gpio.set_pull(14,GpioPull::Off);
-    gpio.set_pull(15,GpioPull::Off);
+    gpio.set_pull(15,GpioPull::Up); // Signal ist immer "low".
 
     use hal::bmc2835::{Pl011,Pl011Interrupt,Pl011FillLevel,Uart,UartEnable,UartParity};
     let uart0 = Pl011::get();
-    // Löscht alle Interrupts
     uart0.enable(UartEnable::None);
+    // Löscht alle Interrupts
+    uart0.disable_interrupt(Pl011Interrupt::All);
     uart0.clear_interrupt(Pl011Interrupt::All);
-    uart0.set_baud_rate(1,40).expect("Can't set baud rate");
+    // Flush FIFOs
+    uart0.enable_fifo(false);
+    uart0.set_baud_rate(115200).expect("Can't set baud rate");
     uart0.set_data_width(8).expect("Can't set data width");
     uart0.set_parity(UartParity::None).expect("Can't set parity");
-    uart0.enable_fifo(false);
-    uart0.disable_interrupt(Pl011Interrupt::All);
-    uart0.set_rcv_trigger_level(Pl011FillLevel::OneEighth);
+    uart0.set_rcv_trigger_level(Pl011FillLevel::OneQuarter);
     uart0.enable_interrupt(Pl011Interrupt::Rcv);
+    uart0.enable_fifo(true);
     uart0.enable(UartEnable::Both);
     irq_controller.enable(BasicInterrupt::UART);
     kprint!("UART: set up.\n";WHITE);
@@ -359,8 +361,8 @@ fn test() {
     //Cpu::set_stack(&stack as *const _ as usize);
     use hal::bmc2835::{Pl011,Pl011Flag,Uart,SystemTimer};
     let uart = Pl011::get();
-    //uart.write_str("Test.\n");
-    //kprint!("Wrote to uart.\n";YELLOW);
+    uart.write_str("Test.\n");
+    kprint!("Wrote to uart.\n";YELLOW);
     Cpu::enable_interrupts();
 
     // flush FIFO
@@ -480,11 +482,15 @@ pub fn timer_tick2() {
 pub fn uart_intr() {
     use hal::bmc2835::{Pl011,Pl011Interrupt,Pl011Flag,Pl011Error,Uart,UartEnable,UartParity};
     let uart0 = Pl011::get();
-    while !uart0.get_state(Pl011Flag::RxEmpty) {
+    loop {
         let c = uart0.read();
         if let Ok(ch) = c {
             kprint!("{}",ch as char);
-            uart0.write(ch);
+            //uart0.write(ch);
+        }
+        if uart0.get_state(Pl011Flag::RxEmpty)
+        {
+            break;
         }
     } 
     if uart0.get_rvc_state(Pl011Error::Overrun) {

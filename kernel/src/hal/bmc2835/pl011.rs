@@ -1,4 +1,5 @@
-
+const PL011_CLOCK_RATE: u32 = 3000000; // Default zum Reset
+// ToDo: Als globale Variable anpassbar machen.
 
 #[derive(Copy, Clone, Debug)]
 #[repr(u32)]
@@ -85,24 +86,24 @@ pub enum Pl011FillLevel{
 
 #[allow(dead_code)]
 pub struct Pl011 {
-    data:          u32,      // Offset 0x00
-    rcv_status:    u32,      // Offset 0x04
-    _padding_0:    [u32;4],  // Offset 0x08
-    flags:         u32,      // Offset 0x18
-    _padding_1:    u32,      // Offset 0x1C
-    _irda:         u32,      // Offset 0x20
-    baud_int:      u32,      // Offset 0x24
-    baud_frac:     u32,      // Offset 0x28 
-    line_control:  u32,      // Offset 0x2C
-    control:       u32,      // Offset 0x30
-    fill_level:    u32,      // Offset 0x34
-    intr_mask:     u32,      // Offset 0x38
-    pub raw_intr:      u32,      // Offset 0x3C 
-    intr:          u32,      // Offset 0x40
-    reset_intr:    u32,      // Offset 0x44
-    _dma_ctrl:     u32,      // Offset 0x48
- // _padding_2:    [u32;15], // Offset 0x4C
- // _test:         [u32;4]   // Offset 0x80
+        data:          u32,      // Offset 0x00 (DR)
+        rcv_status:    u32,      // Offset 0x04 (RSRECR)
+        _padding_0:    [u32;4],  // Offset 0x08 
+        flags:         u32,      // Offset 0x18 (FR)
+        _padding_1:    u32,      // Offset 0x1C 
+        _irda:         u32,      // Offset 0x20 (ILPR)
+        baud_int:      u32,      // Offset 0x24 (IBRD)
+        baud_frac:     u32,      // Offset 0x28 (FBRD)
+        line_control:  u32,      // Offset 0x2C (LCHR)
+        control:       u32,      // Offset 0x30 (CR)
+        fill_level:    u32,      // Offset 0x34 (IFLS)
+    pub intr_mask:     u32,      // Offset 0x38 (IMSC)
+    pub raw_intr:      u32,      // Offset 0x3C (RIS)
+        intr:          u32,      // Offset 0x40 (MIS)
+        reset_intr:    u32,      // Offset 0x44 (IRC)
+        _dma_ctrl:     u32,      // Offset 0x48 (DMACR)
+        _padding_2:    [u32;15], // Offset 0x4C 
+        _test:         [u32;4]   // Offset 0x80 (ITCR+ITIP+ITOP+TDR)
 }
 
 use super::Bmc2835;
@@ -118,10 +119,15 @@ use hal::cpu::Cpu;
 use bit_field::BitField;
 impl Pl011 {
     
-    pub fn set_baud_rate(&mut self, int: u16, frac: u8) -> Result<(),UartError> {
+    pub fn set_baud_rate(&mut self, rate: u32) -> Result<(),UartError> {
         Cpu::data_memory_barrier();
-        self.baud_int.set_bits(0..16,int as u32);
-        self.baud_frac.set_bits(0..6, frac as u32);
+        let div: u32 = if rate * 16 > PL011_CLOCK_RATE {
+            (PL011_CLOCK_RATE * 8)/ rate
+        } else {
+            (PL011_CLOCK_RATE * 4) / rate
+        };
+        self.baud_frac.set_bits(0..6, div & 0x3f);
+        self.baud_int.set_bits(0..16, div >> 6);
         Cpu::data_memory_barrier();
         Ok(())
     }
@@ -134,15 +140,13 @@ impl Pl011 {
 
     pub fn enable_interrupt(&mut self, mask: Pl011Interrupt) {
         Cpu::data_memory_barrier();
-        self.intr_mask &= !mask.as_u32();
-        kprint!("Interrupt Mask: {:08b}\n",self.intr_mask;RED);
+        self.intr_mask |= mask.as_u32();
         Cpu::data_memory_barrier();
     }
 
     pub fn disable_interrupt(&mut self, mask: Pl011Interrupt) {
         Cpu::data_memory_barrier();
-        self.intr_mask |= mask.as_u32();
-        kprint!("Interrupt Mask: {:08b}\n",self.intr_mask;RED);
+        self.intr_mask &= (!mask.as_u32() & 0b1101);
         Cpu::data_memory_barrier();
     }
 
@@ -204,10 +208,9 @@ impl Pl011 {
         (self.flags & Pl011Flag::RxFull as u32) != 0
     }
 
-    
     pub fn write_str(&mut self,str: &str) {
         for b in str.bytes() {
-            kprint!("Try to write {}\n",b);
+            //kprint!("Try to write {}\n",b);
             loop {
                 let ret = self.write(b);
                 if ret != Err(UartError::FIFOfull) {
@@ -215,17 +218,6 @@ impl Pl011 {
                 }
             }
         }
-        /*
-        for ch in str.chars() {
-            let c = if ch.is_ascii() { ch } else { '?' };
-            loop {
-                let ret = self.write(c as u8);
-                if ret != Err(UartError::FIFOfull) {
-                    break;
-                }
-            }
-    }*/
-        
     }
         
 }
@@ -305,10 +297,10 @@ impl Uart for Pl011 {
     }
     
     fn read(&self) -> Result<u8,UartError>{
+        let data: u32 = self.data & 0xfff;
         if self.rx_is_empty() {
             return Err(UartError::NoData);
         }
-        let data: u32 = self.data & 0xfff;
         if data & (0x1 << 8) != 0 {
             return Err(UartError::FrameError);
         }
@@ -321,7 +313,7 @@ impl Uart for Pl011 {
         if data & (0x1 << 11) != 0 {
             return Err(UartError::OverrunError);
         }
-        Ok(self.data.get_bits(0..8) as u8)
+        Ok(data.get_bits(0..8) as u8)
     }
     
     fn write(&mut self, data: u8) -> Result<u8,UartError>{
@@ -329,8 +321,8 @@ impl Uart for Pl011 {
         if self.get_state(Pl011Flag::RxFull) {
             Err(UartError::FIFOfull)
         } else {
-            self.data = data as u32;
-            //self.data.set_bits(0..8,data as u32);
+            kprint!("{}",data as char);
+            self.data = (data as u32 & 0x0f);
             Cpu::data_memory_barrier();
             Ok(data)
         }
