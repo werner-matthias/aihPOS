@@ -118,7 +118,10 @@ impl Bmc2835 for Pl011 {
 use hal::cpu::Cpu;
 use bit_field::BitField;
 impl Pl011 {
-    
+
+    /// Setze die Baudrate.
+    ///
+    /// Einheit der Rate ist baud.
     pub fn set_baud_rate(&mut self, rate: u32) -> Result<(),UartError> {
         Cpu::data_memory_barrier();
         let div: u32 = if rate * 16 > PL011_CLOCK_RATE {
@@ -132,24 +135,28 @@ impl Pl011 {
         Ok(())
     }
 
+    /// Lösche (bestätige) die gegebenen Interrupts.
     pub fn clear_interrupt(&mut self, mask: Pl011Interrupt ) {
         Cpu::data_memory_barrier();
         self.reset_intr = mask.as_u32();
         Cpu::data_memory_barrier();
     }
 
+    /// Schalte den/die gegebenen Interrupts an.
     pub fn enable_interrupt(&mut self, mask: Pl011Interrupt) {
         Cpu::data_memory_barrier();
         self.intr_mask |= mask.as_u32();
         Cpu::data_memory_barrier();
     }
 
+    /// Schalte den/die gegebenen Interrupts ab.
     pub fn disable_interrupt(&mut self, mask: Pl011Interrupt) {
         Cpu::data_memory_barrier();
-        self.intr_mask &= (!mask.as_u32() & 0b1101);
+        self.intr_mask &= !mask.as_u32() & 0b1101;
         Cpu::data_memory_barrier();
     }
 
+    /// Setze die Füllstand der FIFO, bei der der Empfangsinterrupt ausgelöst wird.
     pub fn set_rcv_trigger_level(&mut self, level: Pl011FillLevel) {
         self.fill_level.set_bits(3..6,
                                  match level {
@@ -161,6 +168,7 @@ impl Pl011 {
                                  });
     }
     
+    /// Setze die Füllstand der FIFO, bei der der Sendeinterrupt ausgelöst wird.
     pub fn set_trm_trigger_level(&mut self, level: Pl011FillLevel) {
         self.fill_level.set_bits(0..3,
                                  match level {
@@ -322,7 +330,7 @@ impl Uart for Pl011 {
             Err(UartError::FIFOfull)
         } else {
             kprint!("{}",data as char);
-            self.data = (data as u32 & 0x0f);
+            self.data = data as u32 & 0x0f;  // nur die letzen 8 Bits sind Datenbits.
             Cpu::data_memory_barrier();
             Ok(data)
         }
