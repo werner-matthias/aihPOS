@@ -116,11 +116,9 @@ impl IrqController {
             }
             // Das Array enthält die allgemeinen Interrupts, die es auch als Basic-Interrupts
             // gibt. Die korrespondierenden Bits beginnen im Register ab Bit 10.
-            // Ich weiß, iterieren über den Index ist ein Anti-Pattern in Rust.
-            // Ich brauche jedoch den Wert *und* den Index.
-            for i in 0.. general_ints.len() {
-                if basic.get_bit(i as u8 + 10) {
-                    res.push(general_ints[i]);
+            for (i,val) in general_ints. into_iter().enumerate() {
+                if basic.get_bit(i as u8 + 10) {  
+                    res.push(val.clone());
                 }
             }
             // Wenn noch sonstige allgemeine Interrupts gesetzt sind, sind die Bits 8
