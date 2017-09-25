@@ -39,16 +39,24 @@ impl Pl011Flag {
     }
 }
 
+/// Steuerworte für den Pl011.
 #[derive(Copy, Clone, Debug)]
 #[repr(u32)]
 #[allow(dead_code)]
 pub enum Pl011Control {
+    /// Aktivierung Flusssteuerung - Sendebereitschaft
     FlowCTS      = 0x1 << 15,
+    /// Aktivierung Flusssteuerung - Sendeanforderung
     FlowRTS      = 0x1 << 14,
+    /// Flusssteuerung - Sendeanforderung
     RTS          = 0x1 << 11,
+    /// Empfang aktivieren
     EnableRcv    = 0x1 <<  9,
+    /// Senden aktivieren
     EnableTrm    = 0x1 <<  8,
+    /// Senderückkopplung
     Loopback     = 0x1 <<  7,
+    /// Aktivierung der UART
     Enable       = 0x1 
 }
 
@@ -271,6 +279,7 @@ impl Uart for Pl011 {
         }
     }
 
+    /// Setze die Parität.
     fn set_parity(&mut self, parity: UartParity) -> Result<(),UartError> {
         Cpu::data_memory_barrier();
         if self.control.get_bit(0) == true {
@@ -290,7 +299,10 @@ impl Uart for Pl011 {
         }
     }
 
-    
+    /// Setze die Anzahl der Stop-Bits.
+    ///
+    /// #Anmerkung
+    /// Es werden nur 1 oder 2 Stop-Bits unterstützt.
     fn set_stop_bits(&mut self, number: u8) -> Result<(),UartError>{
         if self.control.get_bit(0) == true {
             Err(UartError::Failed)
@@ -303,7 +315,8 @@ impl Uart for Pl011 {
             Ok(())
         }
     }
-    
+
+    /// Lese ein Wort von der UART.
     fn read(&self) -> Result<u8,UartError>{
         let data: u32 = self.data & 0xfff;
         if self.rx_is_empty() {
@@ -329,7 +342,7 @@ impl Uart for Pl011 {
         if self.get_state(Pl011Flag::RxFull) {
             Err(UartError::FIFOfull)
         } else {
-            kprint!("{}",data as char);
+            //kprint!("{}",data as char);
             self.data = data as u32 & 0x0f;  // nur die letzen 8 Bits sind Datenbits.
             Cpu::data_memory_barrier();
             Ok(data)
