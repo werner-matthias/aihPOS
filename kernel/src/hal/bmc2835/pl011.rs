@@ -94,20 +94,32 @@ pub enum Pl011FillLevel{
 
 #[allow(dead_code)]
 pub struct Pl011 {
+        /// Daten
         data:          u32,      // Offset 0x00 (DR)
+        /// Empfangszustand
         rcv_status:    u32,      // Offset 0x04 (RSRECR)
-        _padding_0:    [u32;4],  // Offset 0x08 
+        _padding_0:    [u32;4],  // Offset 0x08
+        /// Flags
         flags:         u32,      // Offset 0x18 (FR)
         _padding_1:    u32,      // Offset 0x1C 
         _irda:         u32,      // Offset 0x20 (ILPR)
+        /// Baudrate, obere Bits
         baud_int:      u32,      // Offset 0x24 (IBRD)
+        /// Baudrate, niedere Bits
         baud_frac:     u32,      // Offset 0x28 (FBRD)
+        /// Leitungssteuerung
         line_control:  u32,      // Offset 0x2C (LCHR)
+        /// Steuerung
         control:       u32,      // Offset 0x30 (CR)
+        /// Trigger für Interrupt bei Füllstand
         fill_level:    u32,      // Offset 0x34 (IFLS)
+        /// Interruptmaske
     pub intr_mask:     u32,      // Offset 0x38 (IMSC)
+        /// Interrupts, nicht maskiert
     pub raw_intr:      u32,      // Offset 0x3C (RIS)
+        /// Interrupts (maskiert)
         intr:          u32,      // Offset 0x40 (MIS)
+        /// Rücksetzen von Interrupts
         reset_intr:    u32,      // Offset 0x44 (IRC)
         _dma_ctrl:     u32,      // Offset 0x48 (DMACR)
         _padding_2:    [u32;15], // Offset 0x4C 
