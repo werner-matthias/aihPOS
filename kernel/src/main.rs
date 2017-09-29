@@ -264,7 +264,7 @@ fn init_devices() {
     // Schalte die entsprechenden Pins frei.
     use hal::bmc2835::{Gpio,GpioPull,gpio_config};
     let gpio = Gpio::get();
-    gpio.config_pin(14,gpio_config::Device::Output).unwrap();
+    //gpio.config_pin(14,gpio_config::Device::Output).unwrap();
     gpio.config_pin(14,gpio_config::Device::Uart0(gpio_config::UART::TxD)).unwrap();
     gpio.config_pin(15,gpio_config::Device::Uart0(gpio_config::UART::RxD)).unwrap();
     // Setze Pullup/down für diese Pins.
@@ -306,8 +306,7 @@ fn init_devices() {
     use hal::bmc2835::BasicInterrupt;
     let isr_table = KernelData::isr_table();
     isr_table.add_isr(BasicInterrupt::ARMtimer, timer_tick);
-    //isr_table.add_isr(BasicInterrupt::ARMtimer, timer_tick2);
-    isr_table.add_isr(GeneralInterrupt::UART, uart_intr);
+    isr_table.add_isr(BasicInterrupt::UART, uart_intr);
     kprint!("Done.\n");
 }
  
@@ -361,14 +360,12 @@ fn test() {
     //Cpu::set_stack(&stack as *const _ as usize);
     use hal::bmc2835::{Pl011,Pl011Flag,Uart,SystemTimer};
     let uart = Pl011::get();
-    uart.write_str("Test.\n");
-    kprint!("Wrote to uart.\n";YELLOW);
+    uart.write_str("Hello world\n");
     Cpu::enable_interrupts();
 
     // flush FIFO
     let mut old_flags = (true,true,true,true,0);
     loop {
-        /*
         let (tx_e,tx_f,rx_e,rx_f,intr) = (
             uart.tx_is_empty(),
             uart.tx_is_full(),
@@ -394,7 +391,6 @@ fn test() {
              */
         }
         //SystemTimer::get().busy_csleep(0xF000000);         
-         */
     }
     use syscall_interface::SysCall;
     //Cpu::set_mode(ProcessorMode::User);
@@ -487,7 +483,11 @@ pub fn uart_intr() {
         if let Ok(ch) = c {
             kprint!("{}",ch as char);
             //uart0.write(ch);
+            if ch as char == '0' {
+                uart0.write_str("Hallo world!\n");
+            }
         }
+
         if uart0.get_state(Pl011Flag::RxEmpty)
         {
             break;

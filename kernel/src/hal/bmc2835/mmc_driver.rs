@@ -40,5 +40,10 @@ impl Bmc2835 for Gpio {
     fn base_offset() -> usize {
         0x300000
     }
-
 }
+
+/*
+impl MMCI {
+    pub fn send_cmd(
+}
+*/

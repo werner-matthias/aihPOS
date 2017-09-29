@@ -172,9 +172,10 @@ impl<'a> Framebuffer<'a> {
     pub fn scroll(&mut self) {
         // kopiere letzte Zeile
         if self.y_offset > SystemFont::glyph_height() {
-            for y in self.y_offset -2*SystemFont::glyph_height()..self.y_offset - SystemFont::glyph_height() {
-                for x in 0..self.width {
-                    self.screen[(y*self.width +x) as usize] = self.screen[((y+self.height+SystemFont::glyph_height()-2)*self.width +x) as usize];
+            for y in
+                self.y_offset -2*SystemFont::glyph_height()..self.y_offset - SystemFont::glyph_height() {
+                    for x in 0..self.width {
+                        self.screen[(y*self.width +x) as usize] = self.screen[((y+ self.height+SystemFont::glyph_height()-2)*self.width +x) as usize];
                 }
             }
         }

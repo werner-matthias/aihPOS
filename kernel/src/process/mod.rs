@@ -1,7 +1,7 @@
 use memory::{PageTable};
 use alloc::boxed::Box;
 use data::kernel::PidType;
-    
+
 #[repr(C)]
 struct Context {
     r0: u32,

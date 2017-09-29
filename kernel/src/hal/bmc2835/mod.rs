@@ -15,6 +15,8 @@ mod interrupts;
 pub use self::interrupts::{Interrupt,BasicInterrupt,GeneralInterrupt,NUM_INTERRUPTS,FIRST_BASIC_INTERRUPT};
 mod irq_controller;
 pub use self::irq_controller::IrqController;
+mod led;
+pub use self::led::Led;
 
 mod mailbox;
 mod propertytags;

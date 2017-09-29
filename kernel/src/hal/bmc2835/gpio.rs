@@ -462,7 +462,7 @@ impl Gpio {
     /// Bei aktivierten GPIO-Interrupt (GPIO0 für 
     fn set_event_detection(&mut self,pin: u8, ev: GpioEvent, b: bool) {
         if pin <= MAX_PIN_NR {
-            let regs: &mut[u32;2] = 
+            let reg: &mut[u32;2] = 
                 match ev {
                     GpioEvent::High         => &mut self.high_level_enable,
                     GpioEvent::Low          => &mut self.low_level_enable,
@@ -471,7 +471,7 @@ impl Gpio {
                     GpioEvent::AsyncRising  => &mut self.async_rising_edge,
                     GpioEvent::AsyncFalling => &mut self.async_falling_edge
                 };
-            regs[pin as usize / 32].set_bit(pin % 32,b);
+            reg[pin as usize / 32].set_bit(pin % 32,b);
         }
     }
 
@@ -483,6 +483,21 @@ impl Gpio {
     /// Deaktiviert die Ereigniserkennung den gegebenen Pin.
     pub fn disable_event_detection(&mut self, pin: u8, ev: GpioEvent) {
         self.set_event_detection(pin,ev,false);
+    }
+
+    /// Schreibt Wert `b` auf Pin `pin`.
+    pub fn output(&mut self, pin: u8, b: bool) {
+        let reg: &mut[u32;2] = if b {
+            &mut self.output_set
+        } else {
+            &mut self.output_clear
+        };
+        reg[pin as usize / 32].set_bit(pin % 32,b);
+    }
+
+    /// Liest den Wert von Pin `pin`.
+    pub fn input(&mut self, pin: u8) -> bool {
+        self.level[pin as usize / 32].get_bit(pin % 32)
     }
 
     /// Deaktiviert die Ereigniserkennung für alle Pins.

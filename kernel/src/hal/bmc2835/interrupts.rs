@@ -31,6 +31,9 @@ pub trait Interrupt {
     }
 
     /// Interrupt aus UID.
+    ///
+    /// Die UID entspricht der Nummer, die bei der Auswahl des FIQ genutzt wird,
+    /// siehe BMC2835 ARM Peripherals 7.5, S.116.
     fn from_uid(uid: usize) -> Option<Self> where Self: Sized;
     
     /// Konvertiert Interrupt in die u32-Interruptnummer.
@@ -281,6 +284,7 @@ impl Interrupt for BasicInterrupt {
                 Some(::core::intrinsics::transmute::<usize,BasicInterrupt>(uid))
             }
         } else {
+            //for i in 
             // ToDo: Shared Interrupts korrekt als BasicInterrupt zurückgeben
             None
         }
