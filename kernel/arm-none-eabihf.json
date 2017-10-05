@@ -2,6 +2,7 @@
     "llvm-target": "arm-none-eabihf",
     "target-endian": "little",
     "target-pointer-width": "32",
+    "target-c-int-width": "32",
     "os": "none",
     "env": "eabihf",
     "vendor": "unknown",
