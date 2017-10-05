@@ -3,6 +3,7 @@
 #![feature(
     alloc,                    // Nutzung der Alloc-Crate
     allocator_api,            // Nutzung der Allocator-API
+    const_cell_new,           // Nutzung von Cell::new in `const` Functionen 
     const_fn,                 // const Funktionen (für Constructoren)
     nonzero,                  // Werte ohne Null (hier: usize)
     unique,                   // Unique-Pointer

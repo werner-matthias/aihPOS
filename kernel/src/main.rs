@@ -9,8 +9,11 @@
     asm,                      // Assembler in Funktionen...
     associated_type_defaults, // Verknüpfung von Traits mit Typen
     // concat_idents,
-    collections,            // Nutzung des Collection-Crate
+    collections,              // Nutzung des Collection-Crate
+    const_cell_new,           // Nutzung von Cell::new in `const` Functionen 
     const_fn,                 // const Funktionen (für Constructoren)
+    const_size_of,            // size_of() wird als konstante Funktion behandelt
+    const_unsafe_cell_new,    // Nutzung von UnsafeCell::new in `const` Functionen 
     //range_contains,          // Funktion zur Bestimmung, ob eine Range einen Wert enthält
     compiler_builtins_lib,    // Nutzung der Compiler-Buildins-Bibliothek (div, mul, ...)
     core_intrinsics,          // Nutzung der Intrinsics der Co[dependencies.aihpos_process]
@@ -80,8 +83,8 @@ pub  const INIT_HEAP_SIZE: usize = 25 * 4096; // 25 Seiten = 100 kB
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
-use core::sync::atomic::{AtomicBool};
-static mut TEST_BIT: AtomicBool = AtomicBool::new(false);
+//use core::sync::atomic::{AtomicBool};
+//static mut TEST_BIT: AtomicBool = AtomicBool::new(false);
 
 #[no_mangle]      // Name wird für den Export nicht verändert
 #[naked]          // Kein Prolog, da dieser den Stack nutzen würde, den wir noch nicht gesetzt haben
