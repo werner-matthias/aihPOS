@@ -6,6 +6,7 @@ use super::{Address, AddressRange, SECTION_SIZE};
 /// Abschnitt im Speicher von 1 MiB Größe
 pub struct Section(usize);
 
+#[allow(dead_code)]
 impl Section {
     /// Section aus Sectionnummer
     pub fn from_nr(nr: usize) -> Self {

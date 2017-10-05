@@ -19,6 +19,7 @@ impl PageTable {
     }
 
     /// Füllt die Tabelle mit Seitenfehlern
+    #[allow(dead_code)]
     pub fn invalidate(&mut self) {
         for ndx in 0..256 {
             self.table[ndx] = MemoryBuilder::new_entry(TableEntry::Fault).entry();
@@ -26,6 +27,7 @@ impl PageTable {
     }
 
     /// Addresse der Tabelle
+    #[allow(dead_code)]
     pub fn addr(&self) -> Address {
         self as *const _ as usize
     }

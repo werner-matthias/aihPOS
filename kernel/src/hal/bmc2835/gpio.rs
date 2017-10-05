@@ -571,7 +571,7 @@ impl Gpio {
                     7 => GpioPinFunctions::Func5,
                     _ => unreachable!()
                 };
-                let ib: u32 = f.clone().into();
+                //let ib: u32 = f.clone().into();
                 //kprint!("Gefunden: {} => Setze Pin {} auf {:03b}.\n",i,pin as u32,ib;CYAN);
                 self.set_function(pin, f);
                 return Ok(())

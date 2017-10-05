@@ -12,9 +12,11 @@ pub type Address      = usize;
 pub type AddressRange = Range<Address>;
 
 pub const MEM_SIZE:          usize = 512*1024*1024;
+#[allow(dead_code)]
 pub const MAX_ADDRESS:       usize = usize::MAX;
 pub const PAGE_SIZE:         usize = 4*1024;
 pub const SECTION_SIZE:      usize = 1024 * 1024;
+#[allow(dead_code)]
 pub const PAGES_PER_SECTION: usize = SECTION_SIZE / PAGE_SIZE; // 256
 
 /// Sepicher- und Cachemodell für einen Speicherabschnitt.

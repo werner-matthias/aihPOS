@@ -27,6 +27,7 @@ pub struct FrameManager {
     first_free: usize,
 }
 
+#[allow(dead_code)]
 impl FrameManager {
     
     /// Erzeugt einen neuen Framemanager
@@ -55,6 +56,7 @@ impl FrameManager {
             Err(FrameError::NotFree)
         } else {
             self.set_bit(frm.abs(), true);
+            self.first_free = self.find_next_free(frm.abs()+1);
             Ok(frm)
         }
     }

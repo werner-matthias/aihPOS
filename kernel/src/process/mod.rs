@@ -3,6 +3,7 @@ use alloc::boxed::Box;
 use data::kernel::PidType;
 
 #[repr(C)]
+#[allow(dead_code)]
 struct Context {
     r0: u32,
     r1: u32,
@@ -23,6 +24,7 @@ struct Context {
     cpsr: u32,
 }
 
+#[allow(dead_code)]
 struct PCB {
     pid:        PidType,
     code:       usize,
@@ -32,6 +34,9 @@ struct PCB {
 }
 
 impl<'a> PCB {
+
+    #[allow(unused_variables)]
+    #[allow(dead_code)]
     pub fn create_process(stack_size: usize) -> PCB {
         unimplemented!()
             /*
@@ -41,6 +46,7 @@ impl<'a> PCB {
         *page_table*/
     }
 
+    #[allow(dead_code)]
     pub fn destroy() {
         unimplemented!()
     }

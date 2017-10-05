@@ -2,7 +2,7 @@
 use alloc::vec::Vec;
 const FIQ_BASIC_INTR_OFFSET: u32 = 64;
 const FIQ_ENABLE_BIT: u8        = 7;
-const general_ints: [usize;11] = [7,9,10,18,19,53,54,55,56,57,62];
+const GENERAL_INTS: [usize;11] = [7,9,10,18,19,53,54,55,56,57,62];
 
 /// Interrupt-Controller.
 ///
@@ -116,7 +116,7 @@ impl IrqController {
             }
             // Das Array enthält die allgemeinen Interrupts, die es auch als Basic-Interrupts
             // gibt. Die korrespondierenden Bits beginnen im Register ab Bit 10.
-            for (i,val) in general_ints. into_iter().enumerate() {
+            for (i,val) in GENERAL_INTS.into_iter().enumerate() {
                 if basic.get_bit(i as u8 + 10) {  
                     res.push(val.clone());
                 }

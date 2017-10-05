@@ -65,7 +65,7 @@ impl IsrTable {
     }
 
     /// Füge für Interrupt `int` eine Serviceroutine hinzu.
-    pub fn add_isr<T: Interrupt + Sized>(&mut self, mut int: T, func: fn()) {
+    pub fn add_isr<T: Interrupt + Sized>(&mut self, int: T, func: fn()) {
         let mut isr: Isr = Isr::new(func);
         let ndx = int.uid();
         kprint!("Add ISF for Interrupt {}.\n",ndx; BLUE);
@@ -84,7 +84,7 @@ impl IsrTable {
         use data::kernel::KernelData;
         let isr_table = KernelData::isr_table();
         let irq_controller = IrqController::get();
-        let mut next: Isr;
+        //let next: Isr;
         for int in irq_controller.get_all_pending() {
             //kprint!("Suche ISR for int #{}...",int;WHITE);
             if let Some(ref mut isr) = isr_table.table[int] {

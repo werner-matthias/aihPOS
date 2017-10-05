@@ -18,7 +18,7 @@
     compiler_builtins_lib,    // Nutzung der Compiler-Buildins-Bibliothek (div, mul, ...)
     core_intrinsics,          // Nutzung der Intrinsics der Co[dependencies.aihpos_process]
     doc_cfg,                  // Plattform-spezifische Dokumentation
-    drop_types_in_const,      // Statics dürfen Typen mit Destructoren enthalten
+    //drop_types_in_const,      // Statics dürfen Typen mit Destructoren enthalten
     global_allocator,         // eigener globaler Allocator
     i128_type,                // 128-Bit-Typen
     inclusive_range_syntax,   // Inklusiver Bereich mit "..."   
@@ -59,7 +59,7 @@ mod syscall_interface;
 //#[macro_use] mod hal;
 use hal::bmc2835::Bmc2835;
 use hal::bmc2835::{MemReport,BoardReport,report_board_info,report_memory};
-use hal::bmc2835::{IrqController,BasicInterrupt,GeneralInterrupt,ArmTimer,ArmTimerResolution};
+use hal::bmc2835::{IrqController,ArmTimer,ArmTimerResolution};
 #[macro_use]
 mod entry;
 use debug::*;
@@ -151,9 +151,9 @@ fn init_mem() {
     init_stacks();
     kprint!("done.\nInit heap...");
     memory::init_heap(__bss_start as Address, INIT_HEAP_SIZE);
-    //kprint!("done.\nInit pagetable...");
-    //init_paging();
-    //kprint!("done.\n");
+    kprint!("done.\nInit pagetable...");
+    init_paging();
+    kprint!("done.\n");
 }
 
 /// Es werden die Stacks für alle Ausname-Modi gesetzt.
@@ -305,7 +305,6 @@ fn init_devices() {
     kprint!("Timer: {:?}\n",timer;WHITE);
     kprint!("Interrupt aktiviert.\n";BLUE);
     kprint!("Setze Isr...");
-    use data::isr_table::IsrTable;
     use hal::bmc2835::BasicInterrupt;
     let isr_table = KernelData::isr_table();
     isr_table.add_isr(BasicInterrupt::ARMtimer, timer_tick);
@@ -356,12 +355,12 @@ setable_enum!{
                    
 #[allow(unreachable_code)]
 fn test() {
-    let stack: [u32;1024] = [0u32;1024];
+    //let stack: [u32;1024] = [0u32;1024];
     kprint!("Start Test.\n");
     
     //Cpu::set_mode(ProcessorMode::System);
     //Cpu::set_stack(&stack as *const _ as usize);
-    use hal::bmc2835::{Pl011,Pl011Flag,Uart,SystemTimer};
+    use hal::bmc2835::{Pl011};
     let uart = Pl011::get();
     uart.write_str("Hello world\n");
     Cpu::enable_interrupts();
@@ -399,7 +398,7 @@ fn test() {
     //Cpu::set_mode(ProcessorMode::User);
     //kprint!("Arbeite im Usr-Mode.\n"); 
     {
-        let ret=syscall!(SysCall::Write,0,&format_args!("Hallo, world!\n") as *const _ as u32);
+        let _ret=syscall!(SysCall::Write,0,&format_args!("Hallo, world!\n") as *const _ as u32);
         //kprint!("Returned from system call: {}.\n",ret);
     }
     /*
@@ -479,7 +478,7 @@ pub fn timer_tick2() {
 }
 
 pub fn uart_intr() {
-    use hal::bmc2835::{Pl011,Pl011Interrupt,Pl011Flag,Pl011Error,Uart,UartEnable,UartParity};
+    use hal::bmc2835::{Pl011,Pl011Interrupt,Pl011Flag,Pl011Error,Uart};
     let uart0 = Pl011::get();
     loop {
         let c = uart0.read();
@@ -508,14 +507,15 @@ pub fn uart_intr() {
     if uart0.get_rvc_state(Pl011Error::Parity) {
         kprint!("Parityerror ";RED);
     }
+    /*
     let (tx_e,tx_f,rx_e,rx_f,intr) = (
         uart0.tx_is_empty(),
         uart0.tx_is_full(),
         uart0.rx_is_empty(),
         uart0.rx_is_full(),
         uart0.raw_intr & !0b1101);
-    //kprint!("TX e: {}, TX f: {},  RX e: {}, RX f: {} intr: {:b}\n",tx_e,tx_f,rx_e,rx_f,intr);
-        
+    kprint!("TX e: {}, TX f: {},  RX e: {}, RX f: {} intr: {:b}\n",tx_e,tx_f,rx_e,rx_f,intr);
+    */    
     uart0.clear_interrupt(Pl011Interrupt::All);
     //uart0.disable_interrupt(Pl011Interrupt::All);
     //Cpu::disable_interrupts();

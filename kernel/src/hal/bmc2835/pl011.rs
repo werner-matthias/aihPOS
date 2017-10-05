@@ -84,6 +84,7 @@ impl Pl011Interrupt {
 }
 
 /// Füllstand der FIFOs, zu denen ein Interrupt ausgelöst wird.
+#[allow(dead_code)]
 pub enum Pl011FillLevel{
     OneEighth,
     OneQuarter,
@@ -142,6 +143,7 @@ impl Pl011 {
     /// Setze die Baudrate.
     ///
     /// Einheit der Rate ist baud.
+    #[allow(dead_code)]
     pub fn set_baud_rate(&mut self, rate: u32) -> Result<(),UartError> {
         Cpu::data_memory_barrier();
         let div: u32 = if rate * 16 > PL011_CLOCK_RATE {
@@ -156,6 +158,7 @@ impl Pl011 {
     }
 
     /// Lösche (bestätige) die gegebenen Interrupts.
+    #[allow(dead_code)]
     pub fn clear_interrupt(&mut self, mask: Pl011Interrupt ) {
         Cpu::data_memory_barrier();
         self.reset_intr = mask.as_u32();
@@ -163,6 +166,7 @@ impl Pl011 {
     }
 
     /// Schalte den/die gegebenen Interrupts an.
+    #[allow(dead_code)]
     pub fn enable_interrupt(&mut self, mask: Pl011Interrupt) {
         Cpu::data_memory_barrier();
         self.intr_mask |= mask.as_u32();
@@ -170,6 +174,7 @@ impl Pl011 {
     }
 
     /// Schalte den/die gegebenen Interrupts ab.
+    #[allow(dead_code)]
     pub fn disable_interrupt(&mut self, mask: Pl011Interrupt) {
         Cpu::data_memory_barrier();
         self.intr_mask &= !mask.as_u32() & 0b1101;
@@ -177,6 +182,7 @@ impl Pl011 {
     }
 
     /// Setze die Füllstand der FIFO, bei der der Empfangsinterrupt ausgelöst wird.
+    #[allow(dead_code)]
     pub fn set_rcv_trigger_level(&mut self, level: Pl011FillLevel) {
         self.fill_level.set_bits(3..6,
                                  match level {
@@ -189,6 +195,7 @@ impl Pl011 {
     }
     
     /// Setze die Füllstand der FIFO, bei der der Sendeinterrupt ausgelöst wird.
+    #[allow(dead_code)]
     pub fn set_trm_trigger_level(&mut self, level: Pl011FillLevel) {
         self.fill_level.set_bits(0..3,
                                  match level {
@@ -199,38 +206,49 @@ impl Pl011 {
                                      Pl011FillLevel::SevenEighth  => 0b100
                                  });
     }
-    
+
+    /// Gibt den angefragten Zustand zurück.
+    #[allow(dead_code)]
     pub fn get_state(&self, flag: Pl011Flag) -> bool {
         Cpu::data_memory_barrier();
         (self.flags & flag.as_u32()) != 0
     }
 
+    /// Gibt für den letzten Empfang den angefragten Zustand zurück.
     pub fn get_rvc_state(&self, flag: Pl011Error) -> bool {
         Cpu::data_memory_barrier();
         (self.rcv_status & flag.as_u32()) != 0
     }
 
+    /// Aktiviert oder deaktiviert die FIFO-Queues.
+    ///
+    /// #Anmerkung
+    /// Eine Deaktivierung der FIFOs löscht ihren Inhalt (=> flush).
     pub fn enable_fifo(&mut self, b: bool) {
         Cpu::data_memory_barrier();
         self.line_control.set_bit(4,b);
         Cpu::data_memory_barrier();
     }
 
+    /// Ist die Empfangsqueue leer?
     pub fn tx_is_empty(&self) -> bool {
         Cpu::data_memory_barrier();
         (self.flags & Pl011Flag::TxEmpty as u32) != 0
     }
 
+    /// Ist die Empfangsqueue voll?
     pub fn tx_is_full(&self) -> bool {
         Cpu::data_memory_barrier();
         (self.flags & Pl011Flag::TxFull as u32) != 0
     }
 
+    /// Ist die Sendequeue leer?
     pub fn rx_is_empty(&self) -> bool {
         Cpu::data_memory_barrier();
         (self.flags & Pl011Flag::RxEmpty as u32) != 0
     }
 
+    /// Ist die Sendequeue voll?
     pub fn rx_is_full(&self) -> bool {
         Cpu::data_memory_barrier();
         (self.flags & Pl011Flag::RxFull as u32) != 0

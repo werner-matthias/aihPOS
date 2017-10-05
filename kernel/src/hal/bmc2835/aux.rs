@@ -143,22 +143,28 @@ impl Uart for MiniUart {
             }
         }
     }
+    
+    #[allow(unused_variables)]
     fn set_data_width(&mut self, width: u8) -> Result<(),UartError> {
         unimplemented!();
     }
     
+    #[allow(unused_variables)]
     fn set_parity(&mut self, parity: UartParity) -> Result<(),UartError>{
         unimplemented!();
     }
     
+    #[allow(unused_variables)]
     fn set_stop_bits(&mut self, number: u8) -> Result<(),UartError>{
         unimplemented!();
     }
     
+    #[allow(unused_variables)]
     fn read(&self) -> Result<u8,UartError>{
         unimplemented!();
     }
     
+    #[allow(unused_variables)]
     fn write(&mut self, data: u8) -> Result<u8,UartError>{
         unimplemented!();
     }

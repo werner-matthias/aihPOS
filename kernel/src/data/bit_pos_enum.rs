@@ -3,7 +3,7 @@ use core::marker::Sized;
 use compiler_builtins::int::Int;
 use core::marker::PhantomData;
 
-
+#[allow(dead_code)]
 pub struct EnumSetIterator<E,U> {
     set:  U,
     phantom: PhantomData<E>

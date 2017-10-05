@@ -1,6 +1,7 @@
 pub use super::{Gpio,GpioPinFunctions,GpioPull,GpioEvent,gpio_config};
 use hal::bmc2835::Bmc2835;
 
+#[allow(dead_code)]
 pub enum LedType {
     Red, 
     Green 
@@ -14,19 +15,19 @@ impl Led {
     pub fn init(led: LedType) -> Led {
         let pin: u8 = match led {
             // Pins siehe 
-            Red => 35,   
-            Green => 47
+            LedType::Red => 35,   
+            LedType::Green => 47
         };
-        let mut gpio = Gpio::get();
+        let gpio = Gpio::get();
         gpio.set_pull(pin,GpioPull::Off);
-        gpio.config_pin(pin,gpio_config::Device::Output);
+        gpio.config_pin(pin,gpio_config::Device::Output).unwrap();
         Led {
             pin: pin
         }
     }
 
     pub fn switch(&mut self, b: bool) {
-        let mut gpio = Gpio::get();
+        let gpio = Gpio::get();
         gpio.output(self.pin,b);
     }
 }

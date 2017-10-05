@@ -2,6 +2,7 @@ use core::fmt::Arguments;
 use debug::kprint;
 
 #[repr(u32)]
+#[allow(dead_code)]
 pub enum SysCall {
     Exit,
     Fork,

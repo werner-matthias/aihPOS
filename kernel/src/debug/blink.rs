@@ -2,7 +2,7 @@
 //! Der Raspberry hat zwei LEDs. Dieses Modul nutzt die grüne LED,
 //! um Signal zu generieren. Dies kann z.B. als Low-Level-Debugging-Interface
 //! genutzt werden,
-use hal::bmc2835::{Bmc2835,Led,LedType};
+use hal::bmc2835::{Led,LedType};
 // Hardware-Adressen
 //const GPIO_BASE: u32 = 0x20200000;
 //const GPSET1: *mut u32 = (GPIO_BASE+0x20) as *mut u32;
