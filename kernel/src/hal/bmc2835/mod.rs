@@ -16,23 +16,30 @@ pub use self::interrupts::{Interrupt,BasicInterrupt,GeneralInterrupt,NUM_INTERRU
 mod irq_controller;
 pub use self::irq_controller::IrqController;
 mod led;
-pub use self::led::Led;
+pub use self::led::{Led,LedType};
 
 mod mailbox;
 mod propertytags;
 
 pub trait Bmc2835 {
 
+    /// Basisadresse der Hardwaregeräte.
     fn device_base() -> usize {
+        // Für den RPi 1 reicht eine Konstante.
+        // Später sollte hier eine Fallunterscheidung entweder zur Compile-Zeit
+        // oder zur Laufzeit gemacht werden.
         0x20000000
     }
 
+    /// Gerätetypischer Offset der I/O-Adressen.
     fn base_offset() -> usize;
 
+    /// Anfang der I/O-Adressen des Gerätes.
     fn base() -> usize {
         Self::device_base() + Self::base_offset()
     }
-    
+
+    /// Gibt den statischen Zeiger auf den I/O-Adressbereichs des Gerätes.
     fn get() -> &'static mut Self
         where Self: Sized {
         unsafe {

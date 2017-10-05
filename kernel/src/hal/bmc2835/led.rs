@@ -2,8 +2,8 @@ pub use super::{Gpio,GpioPinFunctions,GpioPull,GpioEvent,gpio_config};
 use hal::bmc2835::Bmc2835;
 
 pub enum LedType {
-    Red = 35,
-    Green = 47,
+    Red, 
+    Green 
 }
 
 pub struct Led {
@@ -13,7 +13,8 @@ pub struct Led {
 impl Led {
     pub fn init(led: LedType) -> Led {
         let pin: u8 = match led {
-            Red => 35,
+            // Pins siehe 
+            Red => 35,   
             Green => 47
         };
         let mut gpio = Gpio::get();
