@@ -21,6 +21,7 @@ cargo kernel --target=arm-none-eabihf
 ## Status
 - [x] Tools and Booting
 - [x] Debug LED interface
+- [x] Interrupt routines
 - [x] Console ouput (framebuffer, for debug)
 - [ ] Keyboard input
 - [x] Heap (allocator)
