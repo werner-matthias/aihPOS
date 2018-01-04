@@ -10,6 +10,8 @@ for opt in "$@"; do
 		TARGET=`echo $opt | cut -f2 -d'='` 
     esac
 done
+export RUST_TARGET_PATH=`pwd`
+#echo RUST_TARGET_PATH = $RUST_TARGET_PATH
 BINPATH=./target/$TARGET/$PROFILE
 xargo build $@
 PKG=`xargo pkgid -q | cut -d# -f2 | cut -d: -f1`
