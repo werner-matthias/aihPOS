@@ -21,6 +21,7 @@ cargo kernel --target=arm-none-eabihf
 ## Status
 - [x] Tools and Booting
 - [x] Debug LED interface
+- [x] Interrupt routines
 - [x] Console ouput (framebuffer, for debug)
 - [ ] Keyboard input
 - [x] Heap (allocator)
@@ -35,6 +36,9 @@ cargo kernel --target=arm-none-eabihf
   - [x] Mini Uart
   - [ ] Uart
   - [ ] DMA controller
+- User land
+  - [ ] Loader
+  - [ ] Shell
 
 ## Remark
 Since aihPOS should support an undergraduate course at a German university, all
