@@ -9,7 +9,7 @@
     asm,                      // Assembler in Funktionen...
     associated_type_defaults, // Verknüpfung von Traits mit Typen
     // concat_idents,
-    collections,              // Nutzung des Collection-Crate
+    // collections,              // Nutzung des Collection-Crate
     const_cell_new,           // Nutzung von Cell::new in `const` Functionen 
     const_fn,                 // const Funktionen (für Constructoren)
     const_size_of,            // size_of() wird als konstante Funktion behandelt
