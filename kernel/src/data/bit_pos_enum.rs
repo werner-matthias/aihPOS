@@ -13,7 +13,7 @@ pub trait EnumSet<U: Int> {
     
     fn as_set(&self) -> U where Self: Sized, U: Int {
         let val: u32  = unsafe{ mem::transmute(self) };
-        U::one() << val
+        U::ONE << val
     }
 
     fn iterator(set: U) -> EnumSetIterator<Self,U> where Self: Sized{
@@ -29,9 +29,9 @@ impl<E,U: Int> Iterator for EnumSetIterator<E,U> {
     
     fn next(&mut self) -> Option<E> {
         let pos: u32 = 0;
-        while pos < U::bits() {
-            let mask: U = U::one() << pos;
-            if self.set & mask != U::zero() {
+        while pos < U::BITS {
+            let mask: U = U::ONE << pos;
+            if self.set & mask != U::ZERO {
                 // Lösche Bit
                 self.set &= mask;
                 // Sicher, da E das #[repr(u32)]-Attribut hat
