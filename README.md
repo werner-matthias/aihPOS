@@ -12,6 +12,7 @@ Prerequisites:
 - Nightly Rust
 - Cargo
 - Xargo
+- GCC Arm Cross tools
 
 Put `cargo-kernel` in your path. Then run
 ```
