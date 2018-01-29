@@ -28,7 +28,6 @@
     naked_functions,          // Funktionen ohne Prolog/Epilog
     //nonzero,                  // Werte ohne Null (hier: usize)
     plugin,                   // Nutzung von Compiler-Plugins
-    repr_align,               // Alignment
     //try_from,                 // Nutzung des TryFrom-Traits
     use_extern_macros,
     //unique,                   // Unique-Pointer
@@ -110,10 +109,10 @@ pub extern fn kernel_start() {
 /// * Anlegen des Heaps
 /// * Einrichten Paging
 /// * Interrups
+#[inline(never)]
 // Verbietet dem Optimizer, kernel_init() und darin aufgerufene Funktionen mit
 // kernel_start() zu verschmelzen. Dies würde wegen #[naked]/keinen Stack schief
 // gehen
-#[inline(never)]
 #[allow(unreachable_code)]
 pub(self) fn kernel_init() {
     KernelData::set_pid(KERNEL_PID);
