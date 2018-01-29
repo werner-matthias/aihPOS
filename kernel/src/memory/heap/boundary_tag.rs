@@ -1,7 +1,7 @@
 extern crate bit_field;
 
 use self::bit_field::BitField;
-use core::ptr::Unique;
+use core::ptr::NonNull;
 use core::nonzero::NonZero;
 
 pub(super) type HeapAddress = Option<usize>;
@@ -81,7 +81,7 @@ impl EndBoundaryTag {
     /// Es muss sichergestellt werden, dass tatsächlich ein Tag an der Adresse liegt
     pub unsafe fn new_from_memory(addr: usize) -> EndBoundaryTag {
         assert_eq!(addr & 0b011,0);
-        let bt_ptr: Unique<EndBoundaryTag> = Unique::new_unchecked(addr as *mut EndBoundaryTag);
+        let bt_ptr: NonNull<EndBoundaryTag> = NonNull::new_unchecked(addr as *mut EndBoundaryTag);
         *bt_ptr.as_ptr()
     }
 }
@@ -97,7 +97,7 @@ impl BoundaryTag for EndBoundaryTag {
 
     unsafe fn write(&self, addr: usize) {
         assert_eq!(addr & 0b011,0);
-        let bt_ptr: Unique<EndBoundaryTag> = Unique::new_unchecked(addr as *mut EndBoundaryTag);
+        let bt_ptr: NonNull<EndBoundaryTag> = NonNull::new_unchecked(addr as *mut EndBoundaryTag);
         *bt_ptr.as_ptr() = *self
     }
 
@@ -171,7 +171,7 @@ impl BoundaryTag for StartBoundaryTag {
 
     unsafe fn write(&self, addr: usize) {
         assert_eq!(addr & 0b011,0);
-        let bt_ptr: Unique<StartBoundaryTag> = Unique::new_unchecked(addr as *mut StartBoundaryTag);
+        let bt_ptr: NonNull<StartBoundaryTag> = NonNull::new_unchecked(addr as *mut StartBoundaryTag);
         *bt_ptr.as_ptr() = *self
     }
 }
